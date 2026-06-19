@@ -2,30 +2,27 @@ import { BackArrow } from "@/src/shared";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen flex-col bg-black selection:bg-white selection:text-black">
-      {/* Подключаем нашу шапку */}
+    <div className="flex flex-1 flex-col">
+      <div className="flex-1">
+        <p className="mb-8 text-xs font-medium uppercase tracking-widest text-muted-foreground">
+          Главная / Home
+        </p>
 
-      <main className="flex-1 mx-auto w-full max-w-[1400px] px-6 md:px-12 py-16 md:py-24 flex flex-col justify-between">
-        {/* Главный блок с текстом и стрелкой */}
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] items-start gap-12 border-b border-neutral-800 pb-20">
-          {/* Текст заголовка в стиле Frame & Form */}
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-normal tracking-tight leading-[1.1] max-w-[4xl] text-neutral-100">
-            Интеллектуальный сервис <br className="hidden sm:inline" />
-            для создания, анализа <br className="hidden sm:inline" />
-            и кастомизации твоего <br className="hidden sm:inline" />
-            <span className="text-white font-medium">IT-резюме.</span>
-          </h1>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_auto] lg:gap-12">
+          <div className="space-y-6">
+            <h1 className="text-4xl font-normal leading-[1.1] tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl">
+              Интеллектуальный сервис <br className="hidden sm:inline" />
+              для создания, анализа <br className="hidden sm:inline" />
+              и кастомизации твоего <br className="hidden sm:inline" />
+              <span className="font-medium text-foreground">IT-резюме.</span>
+            </h1>
+          </div>
 
-          <BackArrow />
+          <div className="flex items-start justify-end pt-1">
+            <BackArrow />
+          </div>
         </div>
-
-        {/* Нижний технический блок (заглушка "Our Work" из референса) */}
-        <div className="pt-8">
-          <p className="text-xs uppercase tracking-widest text-neutral-500 font-medium">
-            Разделы сервиса
-          </p>
-        </div>
-      </main>
+      </div>
     </div>
   );
 }
