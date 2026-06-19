@@ -1,20 +1,19 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #000000; /* Чистый черный */
-  --color-foreground: #ffffff; /* Чистый белый */
-  --color-border: #262626;     /* Нейтральный серый border (neutral-800) */
-  --color-input: #262626;
-  --color-ring: #ccccccc;
-  
-  --color-primary: #ffffff;
-  --color-primary-foreground: #000000;
-  
+  --color-background: #000000;
+  --color-foreground: #ffffff;
+  --color-border: #262626;
   --color-muted: #262626;
   --color-muted-foreground: #a3a3a3;
-  
-  --color-accent: #1a1a1a;
-  --color-accent-foreground: #ffffff;
+}
+
+html.light {
+  --color-background: #ffffff;
+  --color-foreground: #000000;
+  --color-border: #e5e5e5;
+  --color-muted: #f5f5f5;
+  --color-muted-foreground: #737373;
 }
 
 @layer base {
@@ -22,6 +21,6 @@
     @apply border-border;
   }
   body {
-    @apply bg-black text-white antialiased;
+    @apply bg-background text-foreground antialiased;
   }
 }
