@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { supabase } from "@/src/shared/lib/supabase/client";
+import { useEffect, useState } from 'react';
+import { supabase } from '@/src/shared/lib/supabase/client';
 
 export function useAuth() {
   const [user, setUser] = useState<any>(null);
