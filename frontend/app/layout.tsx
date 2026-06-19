@@ -1,16 +1,10 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-// Импортируем стили. Убедись, что globals.css лежит в той же папке app/
-import "./globals.css"; 
-
-const inter = Inter({
-  subsets: ["latin", "cyrillic"],
-  variable: "--font-sans",
-});
+import "./globals.css";
+import { Header } from "@/src/widgets";
 
 export const metadata: Metadata = {
-  title: "CV Service",
-  description: "Интеллектуальный сервис для создания IT-резюме",
+  title: "CV Prophet",
+  description: "AI-сервис для анализа и адаптации резюме",
 };
 
 export default function RootLayout({
@@ -19,9 +13,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    // Принудительно добавляем класс dark и фоновые цвета на уровне HTML
-    <html lang="ru" className="dark" style={{ colorScheme: 'dark' }}>
-      <body className={`${inter.variable} bg-black text-white min-h-screen antialiased`}>
+    <html lang="ru">
+      <body className="bg-black text-white">
+        <Header />
         {children}
       </body>
     </html>

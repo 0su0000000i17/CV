@@ -1,6 +1,5 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Header } from "@/src/widgets";
 import { TelegramLogo } from "@/src/shared";
 import { GmailLogo } from "@/src/shared";
 import { BackArrow } from "@/src/shared";
@@ -8,7 +7,6 @@ import { BackArrow } from "@/src/shared";
 export default function ContactsPage() {
   return (
     <div className="flex min-h-screen flex-col bg-black selection:bg-white selection:text-black">
-      <Header />
 
       <main className="flex-1 mx-auto w-full max-w-[1400px] px-6 md:px-12 py-16 md:py-24">
         

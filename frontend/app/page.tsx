@@ -1,11 +1,9 @@
-import { Header } from "@/src/widgets";
 import { BackArrow } from "@/src/shared";
 
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col bg-black selection:bg-white selection:text-black">
       {/* Подключаем нашу шапку */}
-      <Header />
 
       <main className="flex-1 mx-auto w-full max-w-[1400px] px-6 md:px-12 py-16 md:py-24 flex flex-col justify-between">
         {/* Главный блок с текстом и стрелкой */}
