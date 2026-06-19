@@ -10,8 +10,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "CV Service",
-  description: "Интеллектуальный сервис для создания IT-резюме",
+  title: "CV Prophet",
+  description: "AI-сервис для анализа и адаптации резюме",
 };
 
 export default function RootLayout({
@@ -26,24 +26,18 @@ export default function RootLayout({
           <div className="flex min-h-screen flex-col bg-background text-foreground">
             <Header />
 
-            {/* Основной контент — растягивается */}
-            <main className="flex-1 mx-auto w-full max-w-[1400px] px-6 md:px-12 py-16 md:py-24">
+            <main className="mx-auto w-full max-w-[1400px] flex-1 px-6 py-16 md:px-12 md:py-24">
               {children}
             </main>
 
-            {/* Полоска и футер — ОБЩИЕ ДЛЯ ВСЕХ СТРАНИЦ */}
-            <div className="mx-auto w-full max-w-[1400px] px-6 md:px-12">
-              <div className="border-t border-border pt-8 h-[72px] flex items-center">
-                {/* <p className="text-xs uppercase tracking-widest text-muted-foreground font-medium">
-                  Разделы сервиса
-                </p> */}
+            <footer className="mx-auto w-full max-w-[1400px] px-6 md:px-12">
+              <div className="border-t border-border pt-8">
+                <div className="flex items-center justify-between pb-8 pt-4 text-xs font-medium uppercase tracking-widest text-muted-foreground">
+                  <span>v1.0.0</span>
+                  <span>© 2026 CV PROPHET</span>
+                </div>
               </div>
-
-              <div className="pt-4 pb-8 flex justify-between items-center text-xs uppercase tracking-widest text-muted-foreground font-medium">
-                <span>v1.0.0</span>
-                <span>© 2026 CV PROHPET</span>
-              </div>
-            </div>
+            </footer>
           </div>
         </ThemeProvider>
       </body>
