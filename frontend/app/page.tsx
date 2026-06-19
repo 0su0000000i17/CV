@@ -1,4 +1,5 @@
-import { Header } from "@/src/widgets/header/ui/Header";
+import { Header } from "@/src/widgets";
+import { BackArrow } from "@/src/shared";
 
 export default function Home() {
   return (
@@ -7,10 +8,8 @@ export default function Home() {
       <Header />
 
       <main className="flex-1 mx-auto w-full max-w-[1400px] px-6 md:px-12 py-16 md:py-24 flex flex-col justify-between">
-        
         {/* Главный блок с текстом и стрелкой */}
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] items-start gap-12 border-b border-neutral-800 pb-20">
-          
           {/* Текст заголовка в стиле Frame & Form */}
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-normal tracking-tight leading-[1.1] max-w-[4xl] text-neutral-100">
             Интеллектуальный сервис <br className="hidden sm:inline" />
@@ -19,18 +18,7 @@ export default function Home() {
             <span className="text-white font-medium">IT-резюме.</span>
           </h1>
 
-          {/* Минималистичная стрелка */}
-          <div className="pt-4 flex justify-end">
-            <svg 
-              className="w-12 h-12 md:w-20 md:h-20 text-neutral-400 stroke-[1] hover:text-white hover:translate-x-1 hover:-translate-y-1 transition-all cursor-pointer" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path d="M7 17L17 7M17 7H7M17 7V17" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
-          
+          <BackArrow />
         </div>
 
         {/* Нижний технический блок (заглушка "Our Work" из референса) */}
@@ -39,7 +27,6 @@ export default function Home() {
             Разделы сервиса
           </p>
         </div>
-
       </main>
     </div>
   );
