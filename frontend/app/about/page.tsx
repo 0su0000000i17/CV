@@ -1,4 +1,4 @@
-import { BackArrow } from '@/src/shared';
+import { BackArrow } from "@/src/shared";
 
 export default function AboutPage() {
   return (
@@ -22,6 +22,21 @@ export default function AboutPage() {
               анализируем лучшие практики рынка, помогая инженерам и
               специалистам кастомизировать свои навыки под требования
               современных IT-компаний.
+            </p>
+
+            <p className="max-w-2xl pt-4 text-base font-light leading-relaxed tracking-tight text-muted-foreground md:text-lg">
+              В основе платформы — современные языковые модели, которые помогают
+              анализировать резюме, находить скрытые сильные стороны и
+              адаптировать содержание под конкретные вакансии. Мы не просто
+              проверяем грамматику — мы помогаем упаковать твой опыт так, чтобы
+              он звучал убедительно для работодателя.
+            </p>
+
+            <p className="max-w-2xl pt-4 text-base font-light leading-relaxed tracking-tight text-muted-foreground md:text-lg">
+              Особое внимание мы уделяем ATS-фильтрам — автоматическим системам,
+              которые используют рекрутеры для первичного отбора. Наши алгоритмы
+              помогают адаптировать резюме так, чтобы оно проходило эти фильтры,
+              сохраняя при этом естественный и читаемый язык.
             </p>
           </div>
 

@@ -100,29 +100,34 @@ export function Header() {
             )}
           </button>
 
-          {!loading && !user && !isLoginPage && (
-            <Link
-              href="/login"
-              className="hidden rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-foreground/80 md:inline-block"
-            >
-              Войти
-            </Link>
-          )}
+          <div className="hidden min-w-[76px] md:block">
+            {isLoginPage ? (
+              <div className="h-[38px] w-full" />
+            ) : loading ? (
+              <div className="h-[38px] w-full animate-pulse rounded-lg bg-muted" />
+            ) : !user ? (
+              <Link
+                href="/login"
+                className="inline-block w-full rounded-lg bg-foreground px-4 py-2 text-center text-sm font-medium text-background transition-colors hover:bg-foreground/80"
+              >
+                Войти
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="inline-block w-full rounded-lg bg-foreground px-4 py-2 text-center text-sm font-medium text-background transition-colors hover:bg-foreground/80"
+              >
+                Выйти
+              </button>
+            )}
+          </div>
 
-          {!loading && user && (
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="hidden rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-foreground/80 md:inline-block"
-            >
-              Выйти
-            </button>
-          )}
 
           <button
             type="button"
-            onClick={() => setIsMenuOpen((value) => !value)}
-            className="group relative flex h-8 w-8 flex-col items-center justify-center gap-1.5 md:hidden"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="relative flex h-8 w-8 flex-col items-center justify-center gap-1.5 md:hidden"
             aria-label="Открыть меню"
           >
             <span
@@ -144,6 +149,7 @@ export function Header() {
         </div>
       </div>
 
+
       <div
         className={`overflow-hidden transition-all duration-300 ease-in-out md:hidden ${
           isMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
@@ -158,7 +164,6 @@ export function Header() {
             >
               О проекте
             </Link>
-
             <Link
               href="/how-it-works"
               className="text-muted-foreground transition-colors hover:text-foreground"
@@ -166,7 +171,6 @@ export function Header() {
             >
               Как это работает
             </Link>
-
             <Link
               href="/contacts"
               className="text-muted-foreground transition-colors hover:text-foreground"
@@ -189,25 +193,30 @@ export function Header() {
               </Link>
             )}
 
-            {!loading && !user && !isLoginPage && (
-              <Link
-                href="/login"
-                className="w-full max-w-[200px] rounded-lg bg-foreground px-4 py-2 text-center text-sm font-medium text-background transition-colors hover:bg-foreground/80"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Войти
-              </Link>
-            )}
-
-            {!loading && user && (
-              <button
-                type="button"
-                className="w-full max-w-[200px] rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-foreground/80"
-                onClick={handleLogout}
-              >
-                Выйти
-              </button>
-            )}
+            {/* ===== Кнопка в мобильном меню ===== */}
+            <div className="w-full max-w-[200px]">
+              {isLoginPage ? (
+                <div className="h-[38px] w-full" />
+              ) : loading ? (
+                <div className="h-[38px] w-full animate-pulse rounded-lg bg-muted" />
+              ) : !user ? (
+                <Link
+                  href="/login"
+                  className="block w-full rounded-lg bg-foreground px-4 py-2 text-center text-sm font-medium text-background transition-colors hover:bg-foreground/80"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Войти
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="block w-full rounded-lg bg-foreground px-4 py-2 text-center text-sm font-medium text-background transition-colors hover:bg-foreground/80"
+                >
+                  Выйти
+                </button>
+              )}
+            </div>
           </nav>
         </div>
       </div>
