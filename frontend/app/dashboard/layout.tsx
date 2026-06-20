@@ -1,16 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3,
   CreditCard,
   FileText,
   History,
   Home,
+  Loader2,
   Settings,
   Sparkles,
 } from "lucide-react";
+import { type ReactNode, useEffect } from "react";
+
+import { useAuth } from "@/src/shared/hooks/useAuth";
 
 const navItems = [
   {
@@ -58,20 +62,32 @@ function isActiveRoute(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+    }
+  }, [loading, pathname, router, user]);
+
+  if (loading) {
+    return <DashboardLoadingState />;
+  }
+
+  if (!user) {
+    return <DashboardRedirectState />;
+  }
 
   return (
     <div className="grid min-h-[calc(100vh-64px)] grid-cols-1 gap-8 lg:grid-cols-[280px_1fr]">
       <aside className="hidden lg:flex lg:flex-col">
-        <div className="fixed top-24 bottom-30 w-[280px] flex flex-col rounded-2xl border border-border bg-card/60 p-4 overflow-y-auto">
+        <div className="fixed bottom-30 top-24 flex w-[280px] flex-col overflow-y-auto rounded-2xl border border-border bg-card/60 p-4">
           <div className="px-3 pb-6 pt-2">
             <p className="text-lg font-semibold tracking-tight text-foreground">
-              CV Prophet
+              CV Pro
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               Личный кабинет
@@ -108,7 +124,12 @@ export default function DashboardLayout({
           </nav>
 
           <div className="mt-auto rounded-2xl border border-border bg-background p-4">
-            <p className="text-sm font-medium text-foreground">Тариф: Free</p>
+            <p className="text-sm font-medium text-foreground">
+              Тариф:{" "}
+              <span className="font-semibold uppercase tracking-wide text-emerald-500">
+                Free
+              </span>
+            </p>
 
             <p className="mt-3 text-xs text-muted-foreground">
               Адаптации в этом месяце
@@ -134,6 +155,27 @@ export default function DashboardLayout({
       </aside>
 
       <section className="min-w-0">{children}</section>
+    </div>
+  );
+}
+
+function DashboardLoadingState() {
+  return (
+    <div className="flex min-h-[calc(100vh-64px)] items-center justify-center">
+      <div className="flex items-center gap-3 rounded-2xl border border-border bg-card/60 px-5 py-4 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Проверяем сессию...
+      </div>
+    </div>
+  );
+}
+
+function DashboardRedirectState() {
+  return (
+    <div className="flex min-h-[calc(100vh-64px)] items-center justify-center">
+      <div className="rounded-2xl border border-border bg-card/60 px-5 py-4 text-sm text-muted-foreground">
+        Перенаправляем на страницу входа...
+      </div>
     </div>
   );
 }

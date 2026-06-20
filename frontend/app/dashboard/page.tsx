@@ -1,22 +1,46 @@
+"use client";
+
 import Link from "next/link";
 import { FileText, Plus, Sparkles } from "lucide-react";
 
-const recentResumes = [
-  {
-    title: "Frontend Developer Resume.pdf",
-    updatedAt: "Обновлено 2 дня назад",
-  },
-  {
-    title: "Product Manager Resume.pdf",
-    updatedAt: "Обновлено 5 дней назад",
-  },
-  {
-    title: "Marketing Specialist Resume.pdf",
-    updatedAt: "Обновлено 1 неделю назад",
-  },
-];
+import { useAuth } from "@/src/shared/hooks/useAuth";
+import { useProfileQuery } from "@/src/shared/hooks/useProfileQuery";
+import { useResumesQuery } from "@/src/shared/hooks/useResumesQuery";
+
+function getFirstName(fullName?: string, email?: string) {
+  const trimmedName = fullName?.trim();
+
+  if (trimmedName) {
+    return trimmedName.split(/\s+/)[0];
+  }
+
+  const emailName = email?.split("@")[0]?.trim();
+
+  if (emailName) {
+    return emailName;
+  }
+
+  return "пользователь";
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(value));
+}
 
 export default function DashboardPage() {
+  const { accessToken, user } = useAuth();
+  const profileQuery = useProfileQuery(accessToken);
+  const resumesQuery = useResumesQuery(accessToken);
+
+  const profile = profileQuery.data?.profile;
+  const resumes = resumesQuery.data?.resumes ?? [];
+  const recentResumes = resumes.slice(0, 3);
+  const firstName = getFirstName(profile?.full_name, profile?.email || user?.email);
+
   return (
     <div>
       <div className="mb-10">
@@ -53,7 +77,7 @@ export default function DashboardPage() {
           </p>
 
           <h2 className="text-xl font-medium text-foreground">
-            Привет, Иван
+            Привет, {profileQuery.isLoading ? "..." : firstName}
           </h2>
 
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
@@ -148,28 +172,54 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        <div className="divide-y divide-border rounded-xl border border-border">
-          {recentResumes.map((resume) => (
-            <div
-              key={resume.title}
-              className="flex items-center gap-4 px-4 py-4"
+        {resumesQuery.isLoading ? (
+          <div className="space-y-3">
+            <div className="h-16 animate-pulse rounded-xl bg-muted" />
+            <div className="h-16 animate-pulse rounded-xl bg-muted" />
+            <div className="h-16 animate-pulse rounded-xl bg-muted" />
+          </div>
+        ) : recentResumes.length > 0 ? (
+          <div className="divide-y divide-border rounded-xl border border-border">
+            {recentResumes.map((resume) => (
+              <Link
+                key={resume.id}
+                href={`/dashboard/resumes/${resume.id}`}
+                className="flex items-center gap-4 px-4 py-4 transition-colors hover:bg-muted/50"
+              >
+                <div className="rounded-xl bg-muted p-3">
+                  <FileText className="h-5 w-5 text-foreground" />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {resume.title}
+                  </p>
+
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Загружено {formatDate(resume.created_at)}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-border p-6 text-center">
+            <p className="text-sm font-medium text-foreground">
+              Резюме пока нет
+            </p>
+
+            <p className="mt-2 text-sm text-muted-foreground">
+              Загрузите первое резюме, чтобы начать работу.
+            </p>
+
+            <Link
+              href="/dashboard/resumes"
+              className="mt-4 inline-flex items-center justify-center rounded-xl bg-foreground px-4 py-2.5 text-sm font-medium text-background transition-colors hover:bg-foreground/80"
             >
-              <div className="rounded-xl bg-muted p-3">
-                <FileText className="h-5 w-5 text-foreground" />
-              </div>
-
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-foreground">
-                  {resume.title}
-                </p>
-
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {resume.updatedAt}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
+              Загрузить резюме
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

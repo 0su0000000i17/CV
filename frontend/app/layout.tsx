@@ -11,7 +11,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'CV Prophet',
+  title: 'CV Pro',
   description: 'AI-сервис для анализа и адаптации резюме',
 };
 
@@ -39,7 +39,7 @@ export default function RootLayout({
               <div className="border-t border-border pt-8">
                 <div className="flex items-center justify-between pb-8 pt-4 text-xs font-medium uppercase tracking-widest text-muted-foreground">
                   <span>v1.0.0</span>
-                  <span>© 2026 CV PROPHET</span>
+                  <span>© 2026 CV PRO</span>
                 </div>
               </div>
             </footer>
