@@ -1,3 +1,5 @@
+import type { Request, Response } from "express";
+
 import { supabaseAdmin } from "../lib/supabase.js";
 import { getUserFromRequest } from "../utils/auth.js";
 import {
@@ -6,7 +8,7 @@ import {
   decodeFileName,
 } from "../utils/resumeFiles.js";
 
-export async function getResumes(req, res) {
+export async function getResumes(req: Request, res: Response) {
   try {
     const { user, errorMessage } = await getUserFromRequest(req);
 
@@ -34,7 +36,7 @@ export async function getResumes(req, res) {
   }
 }
 
-export async function uploadResume(req, res) {
+export async function uploadResume(req: Request, res: Response) {
   try {
     const { user, errorMessage } = await getUserFromRequest(req);
     const file = req.file;
@@ -98,7 +100,7 @@ export async function uploadResume(req, res) {
   }
 }
 
-export async function deleteResume(req, res) {
+export async function deleteResume(req: Request, res: Response) {
   try {
     const { user, errorMessage } = await getUserFromRequest(req);
     const { resumeId } = req.params;
@@ -146,7 +148,7 @@ export async function deleteResume(req, res) {
   }
 }
 
-export async function getResumeById(req, res) {
+export async function getResumeById(req: Request, res: Response) {
   try {
     const { user, errorMessage } = await getUserFromRequest(req);
     const { resumeId } = req.params;
@@ -176,7 +178,7 @@ export async function getResumeById(req, res) {
   }
 }
 
-export async function getResumeDownloadUrl(req, res) {
+export async function getResumeDownloadUrl(req: Request, res: Response) {
   try {
     const { user, errorMessage } = await getUserFromRequest(req);
     const { resumeId } = req.params;
