@@ -228,6 +228,38 @@ router.delete("/:resumeId", async (req, res) => {
   }
 });
 
+router.get("/:resumeId", async (req, res) => {
+  try {
+    const { user, errorMessage } = await getUserFromRequest(req);
+    const { resumeId } = req.params;
+
+    if (!user) {
+      return res.status(401).json({ message: errorMessage });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("resumes")
+      .select("*")
+      .eq("id", resumeId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (error || !data) {
+      return res.status(404).json({ message: "Resume not found" });
+    }
+
+    return res.json({
+      resume: data,
+    });
+  } catch {
+    return res.status(500).json({
+      message: "Unexpected resume fetch error",
+    });
+  }
+});
+
+
+
 router.get("/:resumeId/download-url", async (req, res) => {
   try {
     const { user, errorMessage } = await getUserFromRequest(req);

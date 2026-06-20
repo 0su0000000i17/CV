@@ -22,6 +22,9 @@ type UploadResumeResponse = {
   resume: UploadedResume;
 };
 
+type ResumeResponse = {
+  resume: UploadedResume;
+};
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 function getApiUrl() {
@@ -107,4 +110,21 @@ export async function getResumeDownloadUrl(
   }
 
   return data as { downloadUrl: string };
+}
+
+
+export async function getResumeById(resumeId: string, accessToken: string) {
+  const response = await fetch(`${getApiUrl()}/api/resumes/${resumeId}`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Failed to fetch resume");
+  }
+
+  return data as ResumeResponse;
 }
