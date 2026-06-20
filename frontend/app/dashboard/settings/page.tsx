@@ -1,17 +1,25 @@
-export default function Page() {
+import { FutureSettings } from "./_components/FutureSettings";
+import { PreferenceSettings } from "./_components/PreferenceSettings";
+import { ProfileSettings } from "./_components/ProfileSettings";
+import { SecuritySettings } from "./_components/SecuritySettings";
+import { SettingsHeader } from "./_components/SettingsHeader";
+
+export default function SettingsPage() {
   return (
     <div>
-      <p className="mb-3 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-        Личный кабинет
-      </p>
+      <SettingsHeader />
 
-      <h1 className="text-4xl font-normal tracking-tight text-foreground">
-        Мои резюме
-      </h1>
+      <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
+        <div className="space-y-6">
+          <ProfileSettings />
+          <PreferenceSettings />
+        </div>
 
-      <p className="mt-4 text-muted-foreground">
-        Раздел в разработке.
-      </p>
+        <aside className="space-y-6">
+          <SecuritySettings />
+          <FutureSettings />
+        </aside>
+      </div>
     </div>
   );
 }

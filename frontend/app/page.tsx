@@ -14,7 +14,7 @@ export default function Home() {
               Интеллектуальный сервис <br className="hidden sm:inline" />
               для создания, анализа <br className="hidden sm:inline" />
               и кастомизации твоего <br className="hidden sm:inline" />
-              <span className="font-medium text-foreground">IT-резюме.</span>
+              <span className="font-medium text-foreground">IT-резюме</span>
             </h1>
           </div>
 
