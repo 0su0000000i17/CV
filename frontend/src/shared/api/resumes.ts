@@ -1,3 +1,9 @@
+import {
+  createAuthHeaders,
+  getApiUrl,
+  parseApiResponse,
+} from "./http";
+
 export type UploadedResume = {
   id: string;
   user_id: string;
@@ -25,30 +31,24 @@ type UploadResumeResponse = {
 type ResumeResponse = {
   resume: UploadedResume;
 };
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-function getApiUrl() {
-  if (!API_URL) {
-    throw new Error("NEXT_PUBLIC_API_URL is not configured");
-  }
+type DeleteResumeResponse = {
+  success: boolean;
+};
 
-  return API_URL;
-}
+type ResumeDownloadUrlResponse = {
+  downloadUrl: string;
+};
 
 export async function getResumes(accessToken: string) {
   const response = await fetch(`${getApiUrl()}/api/resumes`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
+    headers: createAuthHeaders(accessToken),
   });
 
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || "Failed to fetch resumes");
-  }
-
-  return data as ResumesResponse;
+  return parseApiResponse<ResumesResponse>(
+    response,
+    "Failed to fetch resumes"
+  );
 }
 
 export async function uploadResume(file: File, accessToken: string) {
@@ -58,36 +58,26 @@ export async function uploadResume(file: File, accessToken: string) {
 
   const response = await fetch(`${getApiUrl()}/api/resumes/upload`, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
+    headers: createAuthHeaders(accessToken),
     body: formData,
   });
 
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || "Failed to upload resume");
-  }
-
-  return data as UploadResumeResponse;
+  return parseApiResponse<UploadResumeResponse>(
+    response,
+    "Failed to upload resume"
+  );
 }
 
 export async function deleteResume(resumeId: string, accessToken: string) {
   const response = await fetch(`${getApiUrl()}/api/resumes/${resumeId}`, {
     method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
+    headers: createAuthHeaders(accessToken),
   });
 
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || "Failed to delete resume");
-  }
-
-  return data as { success: boolean };
+  return parseApiResponse<DeleteResumeResponse>(
+    response,
+    "Failed to delete resume"
+  );
 }
 
 export async function getResumeDownloadUrl(
@@ -97,34 +87,20 @@ export async function getResumeDownloadUrl(
   const response = await fetch(
     `${getApiUrl()}/api/resumes/${resumeId}/download-url`,
     {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
+      headers: createAuthHeaders(accessToken),
     }
   );
 
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || "Failed to get resume download url");
-  }
-
-  return data as { downloadUrl: string };
+  return parseApiResponse<ResumeDownloadUrlResponse>(
+    response,
+    "Failed to get resume download url"
+  );
 }
-
 
 export async function getResumeById(resumeId: string, accessToken: string) {
   const response = await fetch(`${getApiUrl()}/api/resumes/${resumeId}`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
+    headers: createAuthHeaders(accessToken),
   });
 
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || "Failed to fetch resume");
-  }
-
-  return data as ResumeResponse;
+  return parseApiResponse<ResumeResponse>(response, "Failed to fetch resume");
 }

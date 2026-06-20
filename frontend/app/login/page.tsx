@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { BackArrow } from "@/src/shared";
 import { supabase } from "@/src/shared/lib/supabase/client";
@@ -9,12 +9,26 @@ function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
+function getSafeNextPath(value: string | null) {
+  if (value && value.startsWith("/") && !value.startsWith("//")) {
+    return value;
+  }
+
+  return "/dashboard";
+}
+
 export default function LoginPage() {
   const [email, setEmail] = useState("");
+  const [nextPath, setNextPath] = useState("/dashboard");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">(
     "idle"
   );
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    setNextPath(getSafeNextPath(searchParams.get("next")));
+  }, []);
 
   const normalizedEmail = useMemo(() => email.trim().toLowerCase(), [email]);
   const canSubmit =
@@ -22,8 +36,8 @@ export default function LoginPage() {
     isValidEmail(normalizedEmail) &&
     status !== "loading";
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
 
     setMessage("");
 
@@ -41,12 +55,13 @@ export default function LoginPage() {
 
     setStatus("loading");
 
-    const redirectTo = `${window.location.origin}/auth/callback`;
+    const callbackUrl = new URL("/auth/callback", window.location.origin);
+    callbackUrl.searchParams.set("next", nextPath);
 
     const { error } = await supabase.auth.signInWithOtp({
       email: normalizedEmail,
       options: {
-        emailRedirectTo: redirectTo,
+        emailRedirectTo: callbackUrl.toString(),
       },
     });
 
@@ -84,8 +99,8 @@ export default function LoginPage() {
             </p>
 
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              Откройте письмо и перейдите по ссылке, чтобы войти в личный
-              кабинет.
+              Откройте письмо и перейдите по ссылке. После входа мы вернём вас в
+              нужный раздел личного кабинета.
             </p>
 
             <button
@@ -137,8 +152,9 @@ export default function LoginPage() {
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
+                onChange={(event) => {
+                  setEmail(event.target.value);
+
                   if (status === "error") {
                     setStatus("idle");
                     setMessage("");

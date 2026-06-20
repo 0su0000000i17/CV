@@ -2,23 +2,67 @@ import type { Request, Response } from "express";
 
 import { supabaseAdmin } from "../lib/supabase.js";
 import { getUserFromRequest } from "../utils/auth.js";
+import { sendError, sendServerError } from "../utils/apiResponses.js";
+
+const forbiddenNamePattern =
+  /(еблан|дебил|идиот|мудак|пидор|пидр|хуй|хуе|бля|сука|сучка|шлюха|мразь|гандон|гондон|чмо|уеб|уёб)/i;
+
+function validateFullName(value: string) {
+  const normalizedValue = value.trim();
+
+  if (!normalizedValue) {
+    return "Full name is required";
+  }
+
+  if (normalizedValue.length > 100) {
+    return "Full name must be 100 characters or fewer";
+  }
+
+  if (forbiddenNamePattern.test(normalizedValue)) {
+    return "Please enter a valid full name";
+  }
+
+  return "";
+}
 
 export async function getProfile(req: Request, res: Response) {
   try {
-    const { user, errorMessage } = await getUserFromRequest(req);
+    const { user } = await getUserFromRequest(req);
 
     if (!user) {
-      return res.status(401).json({ message: errorMessage });
+      return sendError(res, 401, "Unauthorized");
     }
 
     const { data, error } = await supabaseAdmin
       .from("profiles")
       .select("id, full_name, created_at, updated_at")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
     if (error) {
-      return res.status(500).json({ message: error.message });
+      return sendServerError(res, "Failed to fetch profile", error);
+    }
+
+    if (!data) {
+      const { data: createdProfile, error: createError } = await supabaseAdmin
+        .from("profiles")
+        .insert({
+          id: user.id,
+          full_name: "",
+        })
+        .select("id, full_name, created_at, updated_at")
+        .single();
+
+      if (createError) {
+        return sendServerError(res, "Failed to create profile", createError);
+      }
+
+      return res.json({
+        profile: {
+          ...createdProfile,
+          email: user.email ?? "",
+        },
+      });
     }
 
     return res.json({
@@ -27,32 +71,26 @@ export async function getProfile(req: Request, res: Response) {
         email: user.email ?? "",
       },
     });
-  } catch {
-    return res.status(500).json({
-      message: "Unexpected profile fetch error",
-    });
+  } catch (error) {
+    return sendServerError(res, "Unexpected profile fetch error", error);
   }
 }
 
 export async function updateProfile(req: Request, res: Response) {
   try {
-    const { user, errorMessage } = await getUserFromRequest(req);
+    const { user } = await getUserFromRequest(req);
 
     if (!user) {
-      return res.status(401).json({ message: errorMessage });
+      return sendError(res, 401, "Unauthorized");
     }
 
     const fullName =
       typeof req.body.full_name === "string" ? req.body.full_name.trim() : "";
 
-    if (!fullName) {
-      return res.status(400).json({ message: "Full name is required" });
-    }
+    const validationMessage = validateFullName(fullName);
 
-    if (fullName.length > 100) {
-      return res.status(400).json({
-        message: "Full name must be 100 characters or fewer",
-      });
+    if (validationMessage) {
+      return sendError(res, 400, validationMessage);
     }
 
     const { data, error } = await supabaseAdmin
@@ -69,7 +107,7 @@ export async function updateProfile(req: Request, res: Response) {
       .single();
 
     if (error) {
-      return res.status(500).json({ message: error.message });
+      return sendServerError(res, "Failed to update profile", error);
     }
 
     return res.json({
@@ -78,9 +116,7 @@ export async function updateProfile(req: Request, res: Response) {
         email: user.email ?? "",
       },
     });
-  } catch {
-    return res.status(500).json({
-      message: "Unexpected profile update error",
-    });
+  } catch (error) {
+    return sendServerError(res, "Unexpected profile update error", error);
   }
 }

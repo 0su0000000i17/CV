@@ -3,6 +3,11 @@ import type { Request, Response } from "express";
 import { supabaseAdmin } from "../lib/supabase.js";
 import { getUserFromRequest } from "../utils/auth.js";
 import {
+  sendError,
+  sendServerError,
+  isValidUuid,
+} from "../utils/apiResponses.js";
+import {
   allowedResumeMimeTypes,
   createResumeStorageFilePath,
   decodeFileName,
@@ -10,10 +15,10 @@ import {
 
 export async function getResumes(req: Request, res: Response) {
   try {
-    const { user, errorMessage } = await getUserFromRequest(req);
+    const { user } = await getUserFromRequest(req);
 
     if (!user) {
-      return res.status(401).json({ message: errorMessage });
+      return sendError(res, 401, "Unauthorized");
     }
 
     const { data, error } = await supabaseAdmin
@@ -23,34 +28,32 @@ export async function getResumes(req: Request, res: Response) {
       .order("created_at", { ascending: false });
 
     if (error) {
-      return res.status(500).json({ message: error.message });
+      return sendServerError(res, "Failed to fetch resumes", error);
     }
 
     return res.json({
       resumes: data,
     });
-  } catch {
-    return res.status(500).json({
-      message: "Unexpected resumes fetch error",
-    });
+  } catch (error) {
+    return sendServerError(res, "Unexpected resumes fetch error", error);
   }
 }
 
 export async function uploadResume(req: Request, res: Response) {
   try {
-    const { user, errorMessage } = await getUserFromRequest(req);
+    const { user } = await getUserFromRequest(req);
     const file = req.file;
 
     if (!user) {
-      return res.status(401).json({ message: errorMessage });
+      return sendError(res, 401, "Unauthorized");
     }
 
     if (!file) {
-      return res.status(400).json({ message: "Resume file is required" });
+      return sendError(res, 400, "Resume file is required");
     }
 
     if (!allowedResumeMimeTypes.includes(file.mimetype)) {
-      return res.status(400).json({ message: "Unsupported file type" });
+      return sendError(res, 400, "Unsupported file type");
     }
 
     const decodedFileName = decodeFileName(file.originalname);
@@ -68,7 +71,7 @@ export async function uploadResume(req: Request, res: Response) {
       });
 
     if (uploadError) {
-      return res.status(500).json({ message: uploadError.message });
+      return sendServerError(res, "Failed to upload resume file", uploadError);
     }
 
     const { data, error: insertError } = await supabaseAdmin
@@ -85,28 +88,36 @@ export async function uploadResume(req: Request, res: Response) {
       .single();
 
     if (insertError) {
-      await supabaseAdmin.storage.from("resumes").remove([filePath]);
+      const { error: cleanupError } = await supabaseAdmin.storage
+        .from("resumes")
+        .remove([filePath]);
 
-      return res.status(500).json({ message: insertError.message });
+      if (cleanupError) {
+        console.error(cleanupError);
+      }
+
+      return sendServerError(res, "Failed to save resume", insertError);
     }
 
     return res.status(201).json({
       resume: data,
     });
-  } catch {
-    return res.status(500).json({
-      message: "Unexpected upload error",
-    });
+  } catch (error) {
+    return sendServerError(res, "Unexpected upload error", error);
   }
 }
 
 export async function deleteResume(req: Request, res: Response) {
   try {
-    const { user, errorMessage } = await getUserFromRequest(req);
+    const { user } = await getUserFromRequest(req);
     const { resumeId } = req.params;
 
     if (!user) {
-      return res.status(401).json({ message: errorMessage });
+      return sendError(res, 401, "Unauthorized");
+    }
+
+    if (!isValidUuid(resumeId)) {
+      return sendError(res, 400, "Invalid resume id");
     }
 
     const { data: resume, error: findError } = await supabaseAdmin
@@ -114,10 +125,14 @@ export async function deleteResume(req: Request, res: Response) {
       .select("id, file_path")
       .eq("id", resumeId)
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
-    if (findError || !resume) {
-      return res.status(404).json({ message: "Resume not found" });
+    if (findError) {
+      return sendServerError(res, "Failed to find resume", findError);
+    }
+
+    if (!resume) {
+      return sendError(res, 404, "Resume not found");
     }
 
     const { error: storageError } = await supabaseAdmin.storage
@@ -125,7 +140,7 @@ export async function deleteResume(req: Request, res: Response) {
       .remove([resume.file_path]);
 
     if (storageError) {
-      return res.status(500).json({ message: storageError.message });
+      return sendServerError(res, "Failed to delete resume file", storageError);
     }
 
     const { error: deleteError } = await supabaseAdmin
@@ -135,26 +150,28 @@ export async function deleteResume(req: Request, res: Response) {
       .eq("user_id", user.id);
 
     if (deleteError) {
-      return res.status(500).json({ message: deleteError.message });
+      return sendServerError(res, "Failed to delete resume", deleteError);
     }
 
     return res.json({
       success: true,
     });
-  } catch {
-    return res.status(500).json({
-      message: "Unexpected resume delete error",
-    });
+  } catch (error) {
+    return sendServerError(res, "Unexpected resume delete error", error);
   }
 }
 
 export async function getResumeById(req: Request, res: Response) {
   try {
-    const { user, errorMessage } = await getUserFromRequest(req);
+    const { user } = await getUserFromRequest(req);
     const { resumeId } = req.params;
 
     if (!user) {
-      return res.status(401).json({ message: errorMessage });
+      return sendError(res, 401, "Unauthorized");
+    }
+
+    if (!isValidUuid(resumeId)) {
+      return sendError(res, 400, "Invalid resume id");
     }
 
     const { data, error } = await supabaseAdmin
@@ -162,31 +179,35 @@ export async function getResumeById(req: Request, res: Response) {
       .select("*")
       .eq("id", resumeId)
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
-    if (error || !data) {
-      return res.status(404).json({ message: "Resume not found" });
+    if (error) {
+      return sendServerError(res, "Failed to fetch resume", error);
+    }
+
+    if (!data) {
+      return sendError(res, 404, "Resume not found");
     }
 
     return res.json({
       resume: data,
     });
-  } catch {
-    return res.status(500).json({
-      message: "Unexpected resume fetch error",
-    });
+  } catch (error) {
+    return sendServerError(res, "Unexpected resume fetch error", error);
   }
 }
 
 export async function getResumeDownloadUrl(req: Request, res: Response) {
   try {
-    const { user, errorMessage } = await getUserFromRequest(req);
+    const { user } = await getUserFromRequest(req);
     const { resumeId } = req.params;
 
     if (!user) {
-      return res.status(401).json({
-        message: errorMessage,
-      });
+      return sendError(res, 401, "Unauthorized");
+    }
+
+    if (!isValidUuid(resumeId)) {
+      return sendError(res, 400, "Invalid resume id");
     }
 
     const { data: resume, error: findError } = await supabaseAdmin
@@ -194,12 +215,14 @@ export async function getResumeDownloadUrl(req: Request, res: Response) {
       .select("file_path")
       .eq("id", resumeId)
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
-    if (findError || !resume) {
-      return res.status(404).json({
-        message: "Resume not found",
-      });
+    if (findError) {
+      return sendServerError(res, "Failed to find resume", findError);
+    }
+
+    if (!resume) {
+      return sendError(res, 404, "Resume not found");
     }
 
     const { data, error } = await supabaseAdmin.storage
@@ -207,17 +230,13 @@ export async function getResumeDownloadUrl(req: Request, res: Response) {
       .createSignedUrl(resume.file_path, 60);
 
     if (error) {
-      return res.status(500).json({
-        message: error.message,
-      });
+      return sendServerError(res, "Failed to create download url", error);
     }
 
     return res.json({
       downloadUrl: data.signedUrl,
     });
-  } catch {
-    return res.status(500).json({
-      message: "Unexpected download url error",
-    });
+  } catch (error) {
+    return sendServerError(res, "Unexpected download url error", error);
   }
 }

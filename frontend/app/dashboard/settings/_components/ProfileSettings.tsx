@@ -8,8 +8,29 @@ import { useProfileQuery } from "@/src/shared/hooks/useProfileQuery";
 import { useUpdateProfileMutation } from "@/src/shared/hooks/useUpdateProfileMutation";
 import { supabase } from "@/src/shared/lib/supabase/client";
 
+const forbiddenNamePattern =
+  /(еблан|дебил|идиот|мудак|пидор|пидр|хуй|хуе|бля|сука|сучка|шлюха|мразь|гандон|гондон|чмо|уеб|уёб)/i;
+
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function validateFullName(value: string) {
+  const normalizedValue = value.trim();
+
+  if (!normalizedValue) {
+    return "Введите имя.";
+  }
+
+  if (normalizedValue.length > 100) {
+    return "Имя не должно превышать 100 символов.";
+  }
+
+  if (forbiddenNamePattern.test(normalizedValue)) {
+    return "Введите корректное имя.";
+  }
+
+  return "";
 }
 
 export function ProfileSettings() {
@@ -107,13 +128,14 @@ function ProfileForms({ profile, accessToken }: ProfileFormsProps) {
   const normalizedCurrentEmail = profile.email.trim().toLowerCase();
   const normalizedDraftEmail = email.trim().toLowerCase();
 
+  const draftNameValidationMessage = validateFullName(normalizedDraftName);
+
   const hasNameChanges = normalizedDraftName !== normalizedCurrentName;
   const hasEmailChanges = normalizedDraftEmail !== normalizedCurrentEmail;
 
   const canSubmitName =
     hasNameChanges &&
-    normalizedDraftName.length > 0 &&
-    normalizedDraftName.length <= 100 &&
+    !draftNameValidationMessage &&
     !updateProfileMutation.isPending;
 
   const canSubmitEmail =
@@ -131,13 +153,10 @@ function ProfileForms({ profile, accessToken }: ProfileFormsProps) {
       return;
     }
 
-    if (!normalizedDraftName) {
-      setNameError("Введите имя.");
-      return;
-    }
+    const validationMessage = validateFullName(normalizedDraftName);
 
-    if (normalizedDraftName.length > 100) {
-      setNameError("Имя не должно превышать 100 символов.");
+    if (validationMessage) {
+      setNameError(validationMessage);
       return;
     }
 
