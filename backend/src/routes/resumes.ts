@@ -228,4 +228,48 @@ router.delete("/:resumeId", async (req, res) => {
   }
 });
 
+router.get("/:resumeId/download-url", async (req, res) => {
+  try {
+    const { user, errorMessage } = await getUserFromRequest(req);
+    const { resumeId } = req.params;
+
+    if (!user) {
+      return res.status(401).json({
+        message: errorMessage,
+      });
+    }
+
+    const { data: resume, error: findError } = await supabaseAdmin
+      .from("resumes")
+      .select("file_path")
+      .eq("id", resumeId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (findError || !resume) {
+      return res.status(404).json({
+        message: "Resume not found",
+      });
+    }
+
+    const { data, error } = await supabaseAdmin.storage
+      .from("resumes")
+      .createSignedUrl(resume.file_path, 60);
+
+    if (error) {
+      return res.status(500).json({
+        message: error.message,
+      });
+    }
+
+    return res.json({
+      downloadUrl: data.signedUrl,
+    });
+  } catch {
+    return res.status(500).json({
+      message: "Unexpected download url error",
+    });
+  }
+});
+
 export { router as resumesRouter };

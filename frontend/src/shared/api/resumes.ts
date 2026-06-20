@@ -86,3 +86,25 @@ export async function deleteResume(resumeId: string, accessToken: string) {
 
   return data as { success: boolean };
 }
+
+export async function getResumeDownloadUrl(
+  resumeId: string,
+  accessToken: string
+) {
+  const response = await fetch(
+    `${getApiUrl()}/api/resumes/${resumeId}/download-url`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Failed to get resume download url");
+  }
+
+  return data as { downloadUrl: string };
+}

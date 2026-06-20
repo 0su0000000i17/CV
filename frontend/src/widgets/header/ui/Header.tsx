@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Moon, Sun } from "lucide-react";
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
+
 import { supabase } from "@/src/shared/lib/supabase/client";
 import { useAuth } from "@/src/shared/hooks/useAuth";
 
@@ -16,16 +17,28 @@ export function Header() {
   const router = useRouter();
 
   const { theme, setTheme, resolvedTheme } = useTheme();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const isMounted = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false
-  );
+  const [isMounted, setIsMounted] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const isLoginPage = pathname === "/login";
   const isDashboard = pathname.startsWith("/dashboard");
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [pathname]);
+
+  const handleToggleTheme = () => {
+    setTheme(resolvedTheme === "dark" ? "light" : "dark");
+  };
+
+  const handleToggleMenu = () => {
+    setIsMenuOpen((currentValue) => !currentValue);
+  };
 
   async function handleLogout() {
     if (isDevAuth) {
@@ -34,6 +47,7 @@ export function Header() {
     }
 
     await supabase.auth.signOut();
+
     setIsMenuOpen(false);
     router.push("/");
     router.refresh();
@@ -47,179 +61,229 @@ export function Header() {
         </Link>
 
         <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
-          <Link
-            href="/about"
-            className="text-muted-foreground transition-colors hover:text-foreground"
-          >
-            О проекте
-          </Link>
-
-          <Link
-            href="/how-it-works"
-            className="text-muted-foreground transition-colors hover:text-foreground"
-          >
-            Как это работает
-          </Link>
-
-          <Link
-            href="/contacts"
-            className="text-muted-foreground transition-colors hover:text-foreground"
-          >
-            Контакты
-          </Link>
-
-          {!loading && user && (
-            <Link
-              href="/dashboard"
-              className={`transition-colors ${
-                isDashboard
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Личный кабинет
-            </Link>
-          )}
+          <HeaderNavLinks isDashboard={isDashboard} showDashboard={!loading && Boolean(user)} />
         </nav>
 
         <div className="flex items-center gap-2 md:gap-3">
-          <button
-            type="button"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="rounded-full p-2 transition-colors hover:bg-muted"
-            aria-label="Переключить тему"
-          >
-            {isMounted ? (
-              resolvedTheme === "dark" ? (
-                <Sun className="h-5 w-5 text-foreground" />
-              ) : (
-                <Moon className="h-5 w-5 text-foreground" />
-              )
-            ) : (
-              <div className="h-5 w-5" />
-            )}
-          </button>
+          <ThemeToggleButton
+            isMounted={isMounted}
+            resolvedTheme={resolvedTheme}
+            onToggle={handleToggleTheme}
+          />
 
           <div className="hidden min-w-[76px] md:block">
-            {isLoginPage ? (
-              <div className="h-[38px] w-full" />
-            ) : loading ? (
-              <div className="h-[38px] w-full animate-pulse rounded-lg bg-muted" />
-            ) : !user ? (
-              <Link
-                href="/login"
-                className="inline-block w-full rounded-lg bg-foreground px-4 py-2 text-center text-sm font-medium text-background transition-colors hover:bg-foreground/80"
-              >
-                Войти
-              </Link>
-            ) : (
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="inline-block w-full rounded-lg bg-foreground px-4 py-2 text-center text-sm font-medium text-background transition-colors hover:bg-foreground/80"
-              >
-                Выйти
-              </button>
-            )}
+            <AuthButton
+              isLoginPage={isLoginPage}
+              loading={loading}
+              user={user}
+              onLogout={handleLogout}
+            />
           </div>
 
-
-          <button
-            type="button"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="relative flex h-8 w-8 flex-col items-center justify-center gap-1.5 md:hidden"
-            aria-label="Открыть меню"
-          >
-            <span
-              className={`block h-0.5 w-6 rounded-full bg-foreground transition-all duration-300 ease-in-out ${
-                isMenuOpen ? "translate-y-2 rotate-45" : ""
-              }`}
-            />
-            <span
-              className={`block h-0.5 w-6 rounded-full bg-foreground transition-all duration-300 ease-in-out ${
-                isMenuOpen ? "opacity-0" : ""
-              }`}
-            />
-            <span
-              className={`block h-0.5 w-6 rounded-full bg-foreground transition-all duration-300 ease-in-out ${
-                isMenuOpen ? "-translate-y-2 -rotate-45" : ""
-              }`}
-            />
-          </button>
+          <MobileMenuButton isOpen={isMenuOpen} onClick={handleToggleMenu} />
         </div>
       </div>
 
-
-      <div
-        className={`overflow-hidden transition-all duration-300 ease-in-out md:hidden ${
-          isMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-        }`}
-      >
-        <div className="border-t border-border bg-background/95 px-4 py-6 backdrop-blur">
-          <nav className="flex flex-col items-center gap-4 text-sm font-medium">
-            <Link
-              href="/about"
-              className="text-muted-foreground transition-colors hover:text-foreground"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              О проекте
-            </Link>
-            <Link
-              href="/how-it-works"
-              className="text-muted-foreground transition-colors hover:text-foreground"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Как это работает
-            </Link>
-            <Link
-              href="/contacts"
-              className="text-muted-foreground transition-colors hover:text-foreground"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Контакты
-            </Link>
-
-            {!loading && user && (
-              <Link
-                href="/dashboard"
-                className={`transition-colors ${
-                  isDashboard
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Личный кабинет
-              </Link>
-            )}
-
-            {/* ===== Кнопка в мобильном меню ===== */}
-            <div className="w-full max-w-[200px]">
-              {isLoginPage ? (
-                <div className="h-[38px] w-full" />
-              ) : loading ? (
-                <div className="h-[38px] w-full animate-pulse rounded-lg bg-muted" />
-              ) : !user ? (
-                <Link
-                  href="/login"
-                  className="block w-full rounded-lg bg-foreground px-4 py-2 text-center text-sm font-medium text-background transition-colors hover:bg-foreground/80"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Войти
-                </Link>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="block w-full rounded-lg bg-foreground px-4 py-2 text-center text-sm font-medium text-background transition-colors hover:bg-foreground/80"
-                >
-                  Выйти
-                </button>
-              )}
-            </div>
-          </nav>
-        </div>
-      </div>
+      <MobileMenu
+        isOpen={isMenuOpen}
+        isDashboard={isDashboard}
+        showDashboard={!loading && Boolean(user)}
+        isLoginPage={isLoginPage}
+        loading={loading}
+        user={user}
+        onLogout={handleLogout}
+      />
     </header>
+  );
+}
+
+function HeaderNavLinks({
+  isDashboard,
+  showDashboard,
+}: {
+  isDashboard: boolean;
+  showDashboard: boolean;
+}) {
+  return (
+    <>
+      <Link
+        href="/about"
+        className="text-muted-foreground transition-colors hover:text-foreground"
+      >
+        О проекте
+      </Link>
+
+      <Link
+        href="/how-it-works"
+        className="text-muted-foreground transition-colors hover:text-foreground"
+      >
+        Как это работает
+      </Link>
+
+      <Link
+        href="/contacts"
+        className="text-muted-foreground transition-colors hover:text-foreground"
+      >
+        Контакты
+      </Link>
+
+      {showDashboard ? (
+        <Link
+          href="/dashboard"
+          className={`transition-colors ${
+            isDashboard
+              ? "text-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Личный кабинет
+        </Link>
+      ) : null}
+    </>
+  );
+}
+
+function ThemeToggleButton({
+  isMounted,
+  resolvedTheme,
+  onToggle,
+}: {
+  isMounted: boolean;
+  resolvedTheme?: string;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="rounded-full p-2 transition-colors hover:bg-muted"
+      aria-label="Переключить тему"
+    >
+      {isMounted ? (
+        resolvedTheme === "dark" ? (
+          <Sun className="h-5 w-5 text-foreground" />
+        ) : (
+          <Moon className="h-5 w-5 text-foreground" />
+        )
+      ) : (
+        <div className="h-5 w-5" />
+      )}
+    </button>
+  );
+}
+
+function AuthButton({
+  isLoginPage,
+  loading,
+  user,
+  onLogout,
+}: {
+  isLoginPage: boolean;
+  loading: boolean;
+  user: unknown;
+  onLogout: () => void;
+}) {
+  if (isLoginPage) {
+    return <div className="h-[38px] w-full" />;
+  }
+
+  if (loading) {
+    return <div className="h-[38px] w-full animate-pulse rounded-lg bg-muted" />;
+  }
+
+  if (!user) {
+    return (
+      <Link
+        href="/login"
+        className="inline-block w-full rounded-lg bg-foreground px-4 py-2 text-center text-sm font-medium text-background transition-colors hover:bg-foreground/80"
+      >
+        Войти
+      </Link>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onLogout}
+      className="inline-block w-full rounded-lg bg-foreground px-4 py-2 text-center text-sm font-medium text-background transition-colors hover:bg-foreground/80"
+    >
+      Выйти
+    </button>
+  );
+}
+
+function MobileMenuButton({
+  isOpen,
+  onClick,
+}: {
+  isOpen: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="relative flex h-8 w-8 flex-col items-center justify-center gap-1.5 md:hidden"
+      aria-label={isOpen ? "Закрыть меню" : "Открыть меню"}
+      aria-expanded={isOpen}
+    >
+      <span
+        className={`block h-0.5 w-6 rounded-full bg-foreground transition-all duration-300 ease-in-out ${
+          isOpen ? "translate-y-2 rotate-45" : ""
+        }`}
+      />
+      <span
+        className={`block h-0.5 w-6 rounded-full bg-foreground transition-all duration-300 ease-in-out ${
+          isOpen ? "opacity-0" : ""
+        }`}
+      />
+      <span
+        className={`block h-0.5 w-6 rounded-full bg-foreground transition-all duration-300 ease-in-out ${
+          isOpen ? "-translate-y-2 -rotate-45" : ""
+        }`}
+      />
+    </button>
+  );
+}
+
+function MobileMenu({
+  isOpen,
+  isDashboard,
+  showDashboard,
+  isLoginPage,
+  loading,
+  user,
+  onLogout,
+}: {
+  isOpen: boolean;
+  isDashboard: boolean;
+  showDashboard: boolean;
+  isLoginPage: boolean;
+  loading: boolean;
+  user: unknown;
+  onLogout: () => void;
+}) {
+  return (
+    <div
+      className={`overflow-hidden transition-all duration-300 ease-in-out md:hidden ${
+        isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+      }`}
+    >
+      <div className="border-t border-border bg-background/95 px-4 py-6 backdrop-blur">
+        <nav className="flex flex-col items-center gap-4 text-sm font-medium">
+          <HeaderNavLinks isDashboard={isDashboard} showDashboard={showDashboard} />
+
+          <div className="w-full max-w-[200px]">
+            <AuthButton
+              isLoginPage={isLoginPage}
+              loading={loading}
+              user={user}
+              onLogout={onLogout}
+            />
+          </div>
+        </nav>
+      </div>
+    </div>
   );
 }
