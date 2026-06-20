@@ -1,36 +1,36 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
-import { Moon, Sun } from "lucide-react";
-import { useEffect, useState } from "react";
+import { CircleUserRound, Moon, Sun } from "lucide-react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
-import { supabase } from "@/src/shared/lib/supabase/client";
 import { useAuth } from "@/src/shared/hooks/useAuth";
-
-const isDevAuth = process.env.NEXT_PUBLIC_DEV_AUTH === "true";
+import { useProfileQuery } from "@/src/shared/hooks/useProfileQuery";
 
 export function Header() {
-  const { user, loading } = useAuth();
+  const { user, accessToken, loading } = useAuth();
+  const profileQuery = useProfileQuery(accessToken);
   const pathname = usePathname();
-  const router = useRouter();
-
-  const { theme, setTheme, resolvedTheme } = useTheme();
-
-  const [isMounted, setIsMounted] = useState(false);
+  const { setTheme, resolvedTheme } = useTheme();
+  const isMounted = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false
+  );
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const isLoginPage = pathname === "/login";
   const isDashboard = pathname.startsWith("/dashboard");
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  useEffect(() => {
-    setIsMenuOpen(false);
-  }, [pathname]);
+  const profile = profileQuery.data?.profile;
+  const email = profile?.email || user?.email || "";
+  const fullName = profile?.full_name || email.split("@")[0] || "Пользователь";
 
   const handleToggleTheme = () => {
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
@@ -40,18 +40,9 @@ export function Header() {
     setIsMenuOpen((currentValue) => !currentValue);
   };
 
-  async function handleLogout() {
-    if (isDevAuth) {
-      setIsMenuOpen(false);
-      return;
-    }
-
-    await supabase.auth.signOut();
-
+  const handleNavigate = () => {
     setIsMenuOpen(false);
-    router.push("/");
-    router.refresh();
-  }
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -61,7 +52,10 @@ export function Header() {
         </Link>
 
         <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
-          <HeaderNavLinks isDashboard={isDashboard} showDashboard={!loading && Boolean(user)} />
+          <HeaderNavLinks
+            isDashboard={isDashboard}
+            showDashboard={!loading && Boolean(user)}
+          />
         </nav>
 
         <div className="flex items-center gap-2 md:gap-3">
@@ -71,12 +65,14 @@ export function Header() {
             onToggle={handleToggleTheme}
           />
 
-          <div className="hidden min-w-[76px] md:block">
-            <AuthButton
+          <div className="hidden min-w-[42px] md:block">
+            <DesktopAuthControl
               isLoginPage={isLoginPage}
               loading={loading}
-              user={user}
-              onLogout={handleLogout}
+              authenticated={Boolean(user)}
+              fullName={fullName}
+              email={email}
+              profileLoading={profileQuery.isLoading}
             />
           </div>
 
@@ -90,8 +86,10 @@ export function Header() {
         showDashboard={!loading && Boolean(user)}
         isLoginPage={isLoginPage}
         loading={loading}
-        user={user}
-        onLogout={handleLogout}
+        authenticated={Boolean(user)}
+        fullName={fullName}
+        email={email}
+        onNavigate={handleNavigate}
       />
     </header>
   );
@@ -100,14 +98,17 @@ export function Header() {
 function HeaderNavLinks({
   isDashboard,
   showDashboard,
+  onNavigate,
 }: {
   isDashboard: boolean;
   showDashboard: boolean;
+  onNavigate?: () => void;
 }) {
   return (
     <>
       <Link
         href="/about"
+        onClick={onNavigate}
         className="text-muted-foreground transition-colors hover:text-foreground"
       >
         О проекте
@@ -115,6 +116,7 @@ function HeaderNavLinks({
 
       <Link
         href="/how-it-works"
+        onClick={onNavigate}
         className="text-muted-foreground transition-colors hover:text-foreground"
       >
         Как это работает
@@ -122,6 +124,7 @@ function HeaderNavLinks({
 
       <Link
         href="/contacts"
+        onClick={onNavigate}
         className="text-muted-foreground transition-colors hover:text-foreground"
       >
         Контакты
@@ -130,6 +133,7 @@ function HeaderNavLinks({
       {showDashboard ? (
         <Link
           href="/dashboard"
+          onClick={onNavigate}
           className={`transition-colors ${
             isDashboard
               ? "text-foreground"
@@ -172,30 +176,34 @@ function ThemeToggleButton({
   );
 }
 
-function AuthButton({
+function DesktopAuthControl({
   isLoginPage,
   loading,
-  user,
-  onLogout,
+  authenticated,
+  fullName,
+  email,
+  profileLoading,
 }: {
   isLoginPage: boolean;
   loading: boolean;
-  user: unknown;
-  onLogout: () => void;
+  authenticated: boolean;
+  fullName: string;
+  email: string;
+  profileLoading: boolean;
 }) {
   if (isLoginPage) {
     return <div className="h-[38px] w-full" />;
   }
 
   if (loading) {
-    return <div className="h-[38px] w-full animate-pulse rounded-lg bg-muted" />;
+    return <div className="h-[38px] w-[76px] animate-pulse rounded-lg bg-muted" />;
   }
 
-  if (!user) {
+  if (!authenticated) {
     return (
       <Link
         href="/login"
-        className="inline-block w-full rounded-lg bg-foreground px-4 py-2 text-center text-sm font-medium text-background transition-colors hover:bg-foreground/80"
+        className="inline-block rounded-lg bg-foreground px-4 py-2 text-center text-sm font-medium text-background transition-colors hover:bg-foreground/80"
       >
         Войти
       </Link>
@@ -203,13 +211,100 @@ function AuthButton({
   }
 
   return (
-    <button
-      type="button"
-      onClick={onLogout}
-      className="inline-block w-full rounded-lg bg-foreground px-4 py-2 text-center text-sm font-medium text-background transition-colors hover:bg-foreground/80"
-    >
-      Выйти
-    </button>
+    <ProfilePopover
+      fullName={fullName}
+      email={email}
+      loading={profileLoading}
+    />
+  );
+}
+
+function ProfilePopover({
+  fullName,
+  email,
+  loading,
+}: {
+  fullName: string;
+  email: string;
+  loading: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen((currentValue) => !currentValue)}
+        className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:bg-muted"
+        aria-label="Открыть профиль"
+        aria-expanded={isOpen}
+        aria-haspopup="menu"
+      >
+        <CircleUserRound className="h-6 w-6" />
+      </button>
+
+      {isOpen ? (
+        <div
+          role="menu"
+          className="absolute right-0 top-12 w-72 rounded-2xl border border-border bg-card p-4 shadow-xl"
+        >
+          {loading ? (
+            <div className="space-y-3">
+              <div className="h-5 w-32 animate-pulse rounded bg-muted" />
+              <div className="h-4 w-48 animate-pulse rounded bg-muted" />
+            </div>
+          ) : (
+            <>
+              <p className="truncate font-medium text-foreground">{fullName}</p>
+              <p className="mt-1 truncate text-sm text-muted-foreground">
+                {email}
+              </p>
+            </>
+          )}
+
+          <div className="mt-4 flex items-center justify-between rounded-xl bg-muted px-3 py-2.5">
+            <span className="text-xs text-muted-foreground">Текущий тариф</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-foreground">
+              Free
+            </span>
+          </div>
+
+          <Link
+            href="/dashboard/settings"
+            role="menuitem"
+            onClick={() => setIsOpen(false)}
+            className="mt-3 block rounded-xl border border-border px-4 py-2.5 text-center text-sm font-medium text-foreground transition-colors hover:bg-muted"
+          >
+            Настройки профиля
+          </Link>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -253,35 +348,66 @@ function MobileMenu({
   showDashboard,
   isLoginPage,
   loading,
-  user,
-  onLogout,
+  authenticated,
+  fullName,
+  email,
+  onNavigate,
 }: {
   isOpen: boolean;
   isDashboard: boolean;
   showDashboard: boolean;
   isLoginPage: boolean;
   loading: boolean;
-  user: unknown;
-  onLogout: () => void;
+  authenticated: boolean;
+  fullName: string;
+  email: string;
+  onNavigate: () => void;
 }) {
   return (
     <div
       className={`overflow-hidden transition-all duration-300 ease-in-out md:hidden ${
-        isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+        isOpen ? "max-h-[520px] opacity-100" : "max-h-0 opacity-0"
       }`}
     >
       <div className="border-t border-border bg-background/95 px-4 py-6 backdrop-blur">
         <nav className="flex flex-col items-center gap-4 text-sm font-medium">
-          <HeaderNavLinks isDashboard={isDashboard} showDashboard={showDashboard} />
+          <HeaderNavLinks
+            isDashboard={isDashboard}
+            showDashboard={showDashboard}
+            onNavigate={onNavigate}
+          />
 
-          <div className="w-full max-w-[200px]">
-            <AuthButton
-              isLoginPage={isLoginPage}
-              loading={loading}
-              user={user}
-              onLogout={onLogout}
-            />
-          </div>
+          {!isLoginPage && !loading ? (
+            authenticated ? (
+              <div className="mt-2 w-full max-w-sm rounded-2xl border border-border bg-card p-4">
+                <p className="truncate font-medium text-foreground">{fullName}</p>
+                <p className="mt-1 truncate text-xs text-muted-foreground">
+                  {email}
+                </p>
+                <div className="mt-3 flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Тариф</span>
+                  <span className="font-semibold uppercase text-foreground">
+                    Free
+                  </span>
+                </div>
+                <Link
+                  href="/dashboard/settings"
+                  onClick={onNavigate}
+                  className="mt-4 block rounded-xl border border-border px-4 py-2.5 text-center text-sm text-foreground"
+                >
+                  Настройки профиля
+                </Link>
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                onClick={onNavigate}
+                className="mt-2 w-full max-w-[200px] rounded-lg bg-foreground px-4 py-2 text-center text-sm font-medium text-background"
+              >
+                Войти
+              </Link>
+            )
+          ) : null}
         </nav>
       </div>
     </div>

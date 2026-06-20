@@ -2,6 +2,7 @@ import 'dotenv/config';
 
 import express from 'express';
 import cors from 'cors';
+import { profileRouter } from "./routes/profile.js";
 import { resumesRouter } from "./routes/resumes.js";
 
 const app = express();
@@ -17,6 +18,7 @@ app.use(
 
 app.use(express.json());
 
+app.use("/api/profile", profileRouter);
 app.use("/api/resumes", resumesRouter);
 
 app.get('/api/health', (_, res) => {
