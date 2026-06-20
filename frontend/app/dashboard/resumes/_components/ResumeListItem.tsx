@@ -1,0 +1,135 @@
+import Link from "next/link";
+import { Download, FileText, MoreHorizontal, Trash2 } from "lucide-react";
+
+import type { UploadedResume } from "@/src/shared/api/resumes";
+
+type ResumeListItemProps = {
+  resume: UploadedResume;
+  isDeleting: boolean;
+  onDelete: (resume: UploadedResume) => void;
+};
+
+function getAnalysisData(resume: UploadedResume) {
+  switch (resume.analysis_status) {
+    case "not_started":
+      return {
+        title: "Не пройдена",
+        subtitle: "Запустите анализ",
+      };
+
+    case "completed":
+      return {
+        title: `${resume.last_score}/100`,
+        subtitle: "Актуальна",
+      };
+
+    case "needs_update":
+      return {
+        title: "Требует обновления",
+        subtitle: "Резюме изменилось",
+      };
+
+    default:
+      return {
+        title: "Неизвестно",
+        subtitle: "",
+      };
+  }
+}
+
+function formatDate(date: string) {
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(date));
+}
+
+export function ResumeListItem({
+  resume,
+  isDeleting,
+  onDelete,
+}: ResumeListItemProps) {
+  const analysis = getAnalysisData(resume);
+
+  return (
+    <div className="grid grid-cols-1 gap-5 px-6 py-5 transition-colors hover:bg-muted/40 xl:grid-cols-[1fr_220px_220px]">
+      <div className="flex min-w-0 items-start gap-4">
+        <div className="rounded-xl bg-muted p-3">
+          <FileText className="h-5 w-5 text-foreground" />
+        </div>
+
+        <div className="min-w-0">
+          <Link
+            href={`/dashboard/resumes/${resume.id}`}
+            className="truncate text-base font-medium text-foreground hover:underline"
+          >
+            {resume.title}
+          </Link>
+
+          <p className="mt-1 text-sm text-muted-foreground">
+            {resume.role || "Роль не указана"}
+          </p>
+
+          <div className="mt-3 flex flex-wrap gap-2 text-xs">
+            <span className="rounded-full border border-border px-3 py-1 text-muted-foreground">
+              Загружено {formatDate(resume.created_at)}
+            </span>
+
+            <span className="rounded-full border border-border px-3 py-1 text-muted-foreground">
+              0 адаптаций
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p className="text-xs uppercase tracking-widest text-muted-foreground">
+          Статус анализа
+        </p>
+
+        <div className="mt-3">
+          <p className="text-xl font-semibold text-foreground">
+            {analysis.title}
+          </p>
+
+          <p className="mt-1 text-xs text-muted-foreground">
+            {analysis.subtitle}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 xl:justify-end">
+        <Link
+          href={`/dashboard/resumes/${resume.id}`}
+          className="rounded-xl border border-border px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-muted"
+        >
+          Открыть
+        </Link>
+
+        <button
+          type="button"
+          className="rounded-xl border border-border p-2.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <Download className="h-4 w-4" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onDelete(resume)}
+          disabled={isDeleting}
+          className="rounded-xl border border-border p-2.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+
+        <button
+          type="button"
+          className="rounded-xl border border-border p-2.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <MoreHorizontal className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+}

@@ -1,16 +1,24 @@
-'use client';
+"use client";
 
-import { ThemeProvider as NextThemesProvider } from 'next-themes';
+import { ThemeProvider as NextThemesProvider } from "next-themes";
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
+import { QueryProvider } from "@/src/shared/providers/QueryProvider";
+
+export function ThemeProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <NextThemesProvider
-      attribute="class"
-      defaultTheme="dark"
-      enableSystem={true}
-      disableTransitionOnChange={false}
-    >
-      {children}
-    </NextThemesProvider>
+    <QueryProvider>
+      <NextThemesProvider
+        attribute="class"
+        defaultTheme="dark"
+        enableSystem
+        disableTransitionOnChange={false}
+      >
+        {children}
+      </NextThemesProvider>
+    </QueryProvider>
   );
 }
