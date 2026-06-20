@@ -1,24 +1,15 @@
-import { FutureSettings } from "./_components/FutureSettings";
-import { PreferenceSettings } from "./_components/PreferenceSettings";
+import { AccountSettings } from "./_components/AccountSettings";
 import { ProfileSettings } from "./_components/ProfileSettings";
-import { SecuritySettings } from "./_components/SecuritySettings";
 import { SettingsHeader } from "./_components/SettingsHeader";
 
 export default function SettingsPage() {
   return (
-    <div>
+    <div className="pb-10">
       <SettingsHeader />
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
-        <div className="space-y-6">
-          <ProfileSettings />
-          <PreferenceSettings />
-        </div>
-
-        <aside className="space-y-6">
-          <SecuritySettings />
-          <FutureSettings />
-        </aside>
+      <div className="mt-10 max-w-4xl space-y-6">
+        <ProfileSettings />
+        <AccountSettings />
       </div>
     </div>
   );
