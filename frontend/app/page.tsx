@@ -1,4 +1,4 @@
-import { BackArrow } from "@/src/shared";
+import { BackArrow } from '@/src/shared';
 
 export default function Home() {
   return (

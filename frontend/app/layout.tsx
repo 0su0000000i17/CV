@@ -1,17 +1,17 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-import { ThemeProvider } from "./providers";
-import { Header } from "@/src/widgets";
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
+import { ThemeProvider } from './providers';
+import { Header } from '@/src/widgets';
 
 const inter = Inter({
-  subsets: ["latin", "cyrillic"],
-  variable: "--font-sans",
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-sans',
 });
 
 export const metadata: Metadata = {
-  title: "CV Prophet",
-  description: "AI-сервис для анализа и адаптации резюме",
+  title: 'CV Prophet',
+  description: 'AI-сервис для анализа и адаптации резюме',
 };
 
 export default function RootLayout({

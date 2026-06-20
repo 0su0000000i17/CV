@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { Menu, Moon, Sun, X } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { useState, useSyncExternalStore } from "react";
 import { supabase } from "@/src/shared/lib/supabase/client";
 import { useAuth } from "@/src/shared/hooks/useAuth";
@@ -52,6 +52,13 @@ export function Header() {
             className="text-muted-foreground transition-colors hover:text-foreground"
           >
             О проекте
+          </Link>
+
+          <Link
+            href="/how-it-works"
+            className="text-muted-foreground transition-colors hover:text-foreground"
+          >
+            Как это работает
           </Link>
 
           <Link
@@ -115,20 +122,34 @@ export function Header() {
           <button
             type="button"
             onClick={() => setIsMenuOpen((value) => !value)}
-            className="rounded-lg p-2 transition-colors hover:bg-muted md:hidden"
+            className="group relative flex h-8 w-8 flex-col items-center justify-center gap-1.5 md:hidden"
             aria-label="Открыть меню"
           >
-            {isMenuOpen ? (
-              <X className="h-6 w-6 text-foreground" />
-            ) : (
-              <Menu className="h-6 w-6 text-foreground" />
-            )}
+            <span
+              className={`block h-0.5 w-6 rounded-full bg-foreground transition-all duration-300 ease-in-out ${
+                isMenuOpen ? "translate-y-2 rotate-45" : ""
+              }`}
+            />
+            <span
+              className={`block h-0.5 w-6 rounded-full bg-foreground transition-all duration-300 ease-in-out ${
+                isMenuOpen ? "opacity-0" : ""
+              }`}
+            />
+            <span
+              className={`block h-0.5 w-6 rounded-full bg-foreground transition-all duration-300 ease-in-out ${
+                isMenuOpen ? "-translate-y-2 -rotate-45" : ""
+              }`}
+            />
           </button>
         </div>
       </div>
 
-      {isMenuOpen && (
-        <div className="border-t border-border bg-background/95 px-4 py-6 backdrop-blur md:hidden">
+      <div
+        className={`overflow-hidden transition-all duration-300 ease-in-out md:hidden ${
+          isMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+        }`}
+      >
+        <div className="border-t border-border bg-background/95 px-4 py-6 backdrop-blur">
           <nav className="flex flex-col items-center gap-4 text-sm font-medium">
             <Link
               href="/about"
@@ -136,6 +157,14 @@ export function Header() {
               onClick={() => setIsMenuOpen(false)}
             >
               О проекте
+            </Link>
+
+            <Link
+              href="/how-it-works"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Как это работает
             </Link>
 
             <Link
@@ -181,7 +210,7 @@ export function Header() {
             )}
           </nav>
         </div>
-      )}
+      </div>
     </header>
   );
 }

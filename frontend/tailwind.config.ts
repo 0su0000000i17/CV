@@ -1,12 +1,12 @@
-import type { Config } from "tailwindcss"
+import type { Config } from 'tailwindcss';
 
 const config: Config = {
-  darkMode: "class",
+  darkMode: 'class',
   content: [
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
-    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/**/*.{js,ts,jsx,tsx,mdx}", // Важно, так как у тебя здесь лежат widgets и shared
+    './app/**/*.{js,ts,jsx,tsx,mdx}',
+    './pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/**/*.{js,ts,jsx,tsx,mdx}', // Важно, так как у тебя здесь лежат widgets и shared
   ],
   theme: {
     extend: {
@@ -21,19 +21,19 @@ const config: Config = {
         ring: 'var(--ring)',
         primary: {
           DEFAULT: 'var(--primary)',
-          foreground: 'var(--primary-foreground)'
+          foreground: 'var(--primary-foreground)',
         },
         muted: {
           DEFAULT: 'var(--muted)',
-          foreground: 'var(--muted-foreground)'
+          foreground: 'var(--muted-foreground)',
         },
         accent: {
           DEFAULT: 'var(--accent)',
-          foreground: 'var(--accent-foreground)'
-        }
-      }
-    }
+          foreground: 'var(--accent-foreground)',
+        },
+      },
+    },
   },
-  plugins: [require("tailwindcss-animate")],
-}
-export default config
+  plugins: [require('tailwindcss-animate')],
+};
+export default config;
