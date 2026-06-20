@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { LogOut } from "lucide-react";
+import { LogOut, ShieldAlert } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 
@@ -33,15 +33,22 @@ export function AccountSettings() {
 
   return (
     <>
-      <section className="mt-6 rounded-2xl border border-red-500/25 bg-card/60 p-6">
+      <section className="rounded-2xl border border-border bg-card/60 p-6">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-lg font-medium text-foreground">
-              Выход из аккаунта
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Текущая сессия на этом устройстве будет завершена.
-            </p>
+          <div className="flex items-start gap-4">
+            <div className="rounded-xl bg-red-500/10 p-3">
+              <ShieldAlert className="h-5 w-5 text-red-500" />
+            </div>
+
+            <div>
+              <h2 className="text-xl font-medium text-foreground">
+                Выход из аккаунта
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Текущая сессия на этом устройстве будет завершена. Данные
+                профиля и резюме останутся сохранены.
+              </p>
+            </div>
           </div>
 
           <button
@@ -50,10 +57,10 @@ export function AccountSettings() {
               setErrorMessage("");
               setDialogOpen(true);
             }}
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-red-500 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-600"
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-red-500/30 px-5 py-2.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-500 hover:text-white"
           >
             <LogOut className="h-4 w-4" />
-            Выйти из профиля
+            Выйти
           </button>
         </div>
       </section>
@@ -95,12 +102,13 @@ function LogoutDialog({
     };
 
     document.addEventListener("keydown", handleKeyDown);
+
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isLoggingOut, onCancel]);
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 px-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[80] flex items-center justify-center bg-background/80 px-4 backdrop-blur-sm"
       onPointerDown={(event) => {
         if (event.target === event.currentTarget && !isLoggingOut) {
           onCancel();
@@ -112,7 +120,7 @@ function LogoutDialog({
         aria-modal="true"
         aria-labelledby="logout-dialog-title"
         aria-describedby="logout-dialog-description"
-        className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl"
+        className="w-full max-w-md rounded-2xl border border-border bg-background p-6 shadow-2xl"
       >
         <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
           Подтверждение выхода
@@ -154,8 +162,9 @@ function LogoutDialog({
             type="button"
             onClick={onConfirm}
             disabled={isLoggingOut}
-            className="rounded-xl bg-red-500 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-500 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
+            <LogOut className="h-4 w-4" />
             {isLoggingOut ? "Выходим..." : "Да, выйти"}
           </button>
         </div>

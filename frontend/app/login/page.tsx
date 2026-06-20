@@ -1,8 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+
 import { BackArrow } from "@/src/shared";
 import { supabase } from "@/src/shared/lib/supabase/client";
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -11,16 +16,35 @@ export default function LoginPage() {
   );
   const [message, setMessage] = useState("");
 
+  const normalizedEmail = useMemo(() => email.trim().toLowerCase(), [email]);
+  const canSubmit =
+    normalizedEmail.length > 0 &&
+    isValidEmail(normalizedEmail) &&
+    status !== "loading";
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    setStatus("loading");
     setMessage("");
+
+    if (!normalizedEmail) {
+      setStatus("error");
+      setMessage("Введите email.");
+      return;
+    }
+
+    if (!isValidEmail(normalizedEmail)) {
+      setStatus("error");
+      setMessage("Введите корректный email.");
+      return;
+    }
+
+    setStatus("loading");
 
     const redirectTo = `${window.location.origin}/auth/callback`;
 
     const { error } = await supabase.auth.signInWithOtp({
-      email,
+      email: normalizedEmail,
       options: {
         emailRedirectTo: redirectTo,
       },
@@ -32,6 +56,7 @@ export default function LoginPage() {
       return;
     }
 
+    setEmail(normalizedEmail);
     setStatus("success");
     setMessage("");
   };
@@ -99,7 +124,7 @@ export default function LoginPage() {
             Введите email — мы отправим ссылку для входа.
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             <div>
               <label
                 htmlFor="email"
@@ -112,7 +137,13 @@ export default function LoginPage() {
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (status === "error") {
+                    setStatus("idle");
+                    setMessage("");
+                  }
+                }}
                 placeholder="your@email.com"
                 className="w-full rounded-lg border border-border bg-muted px-4 py-2 text-foreground transition-colors placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20"
                 required
@@ -121,7 +152,7 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={status === "loading"}
+              disabled={!canSubmit}
               className="w-full rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-foreground/80 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {status === "loading" ? "Отправляем..." : "Получить ссылку"}

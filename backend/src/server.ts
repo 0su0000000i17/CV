@@ -1,7 +1,8 @@
-import 'dotenv/config';
+import "dotenv/config";
 
-import express from 'express';
-import cors from 'cors';
+import cors from "cors";
+import express from "express";
+
 import { profileRouter } from "./routes/profile.js";
 import { resumesRouter } from "./routes/resumes.js";
 
@@ -21,17 +22,32 @@ app.use(express.json());
 app.use("/api/profile", profileRouter);
 app.use("/api/resumes", resumesRouter);
 
-app.get('/api/health', (_, res) => {
+app.get("/api/health", (_, res) => {
   res.json({
-    status: 'ok',
+    status: "ok",
   });
 });
 
-app.get('/api/test', (_, res) => {
-  res.json({
-    message: 'Backend works 🚀',
+app.use("/api", (_, res) => {
+  res.status(404).json({
+    message: "API route not found",
   });
 });
+
+app.use(
+  (
+    error: unknown,
+    _req: express.Request,
+    res: express.Response,
+    _next: express.NextFunction
+  ) => {
+    console.error(error);
+
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+);
 
 app.listen(PORT, () => {
   console.log(`🚀 Backend started on http://localhost:${PORT}`);

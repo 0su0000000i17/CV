@@ -4,10 +4,10 @@ import { SettingsHeader } from "./_components/SettingsHeader";
 
 export default function SettingsPage() {
   return (
-    <div>
+    <div className="pb-10">
       <SettingsHeader />
 
-      <div className="max-w-3xl">
+      <div className="mt-10 max-w-4xl space-y-6">
         <ProfileSettings />
         <AccountSettings />
       </div>

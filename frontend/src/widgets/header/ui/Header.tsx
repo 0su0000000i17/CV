@@ -1,33 +1,32 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { CircleUserRound, Moon, Sun } from "lucide-react";
-import {
-  useEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { CircleUserRound, LogOut, Moon, Sun } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 import { useAuth } from "@/src/shared/hooks/useAuth";
 import { useProfileQuery } from "@/src/shared/hooks/useProfileQuery";
+import { supabase } from "@/src/shared/lib/supabase/client";
 
 export function Header() {
   const { user, accessToken, loading } = useAuth();
   const profileQuery = useProfileQuery(accessToken);
   const pathname = usePathname();
   const { setTheme, resolvedTheme } = useTheme();
-  const isMounted = useSyncExternalStore(
-    () => () => undefined,
-    () => true,
-    () => false
-  );
+
+  const [mounted, setMounted] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const isLoginPage = pathname === "/login";
   const isDashboard = pathname.startsWith("/dashboard");
+
   const profile = profileQuery.data?.profile;
   const email = profile?.email || user?.email || "";
   const fullName = profile?.full_name || email.split("@")[0] || "Пользователь";
@@ -60,12 +59,12 @@ export function Header() {
 
         <div className="flex items-center gap-2 md:gap-3">
           <ThemeToggleButton
-            isMounted={isMounted}
+            mounted={mounted}
             resolvedTheme={resolvedTheme}
             onToggle={handleToggleTheme}
           />
 
-          <div className="hidden min-w-[42px] md:block">
+          <div className="hidden min-w-[76px] md:block">
             <DesktopAuthControl
               isLoginPage={isLoginPage}
               loading={loading}
@@ -148,11 +147,11 @@ function HeaderNavLinks({
 }
 
 function ThemeToggleButton({
-  isMounted,
+  mounted,
   resolvedTheme,
   onToggle,
 }: {
-  isMounted: boolean;
+  mounted: boolean;
   resolvedTheme?: string;
   onToggle: () => void;
 }) {
@@ -163,7 +162,7 @@ function ThemeToggleButton({
       className="rounded-full p-2 transition-colors hover:bg-muted"
       aria-label="Переключить тему"
     >
-      {isMounted ? (
+      {mounted ? (
         resolvedTheme === "dark" ? (
           <Sun className="h-5 w-5 text-foreground" />
         ) : (
@@ -196,14 +195,16 @@ function DesktopAuthControl({
   }
 
   if (loading) {
-    return <div className="h-[38px] w-[76px] animate-pulse rounded-lg bg-muted" />;
+    return (
+      <div className="ml-auto h-[38px] w-[76px] animate-pulse rounded-lg bg-muted" />
+    );
   }
 
   if (!authenticated) {
     return (
       <Link
         href="/login"
-        className="inline-block rounded-lg bg-foreground px-4 py-2 text-center text-sm font-medium text-background transition-colors hover:bg-foreground/80"
+        className="ml-auto inline-block rounded-lg bg-foreground px-4 py-2 text-center text-sm font-medium text-background transition-colors hover:bg-foreground/80"
       >
         Войти
       </Link>
@@ -211,11 +212,13 @@ function DesktopAuthControl({
   }
 
   return (
-    <ProfilePopover
-      fullName={fullName}
-      email={email}
-      loading={profileLoading}
-    />
+    <div className="flex justify-end">
+      <ProfilePopover
+        fullName={fullName}
+        email={email}
+        loading={profileLoading}
+      />
+    </div>
   );
 }
 
@@ -228,6 +231,9 @@ function ProfilePopover({
   email: string;
   loading: boolean;
 }) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -255,28 +261,43 @@ function ProfilePopover({
     };
   }, [isOpen]);
 
+  const handleSignOut = async () => {
+    setIsOpen(false);
+
+    const { error } = await supabase.auth.signOut({ scope: "local" });
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    queryClient.clear();
+    router.replace("/");
+    router.refresh();
+  };
+
   return (
     <div ref={containerRef} className="relative">
       <button
         type="button"
         onClick={() => setIsOpen((currentValue) => !currentValue)}
-        className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:bg-muted"
+        className="flex h-10 w-10 items-center justify-center text-foreground transition-colors hover:text-muted-foreground"
         aria-label="Открыть профиль"
         aria-expanded={isOpen}
         aria-haspopup="menu"
       >
-        <CircleUserRound className="h-6 w-6" />
+        <CircleUserRound className="h-7 w-7" strokeWidth={1.7} />
       </button>
 
       {isOpen ? (
         <div
           role="menu"
-          className="absolute right-0 top-12 w-72 rounded-2xl border border-border bg-card p-4 shadow-xl"
+          className="absolute right-0 top-full z-[70] mt-2 w-60 rounded-2xl border border-border bg-background p-4 shadow-2xl"
         >
           {loading ? (
             <div className="space-y-3">
-              <div className="h-5 w-32 animate-pulse rounded bg-muted" />
-              <div className="h-4 w-48 animate-pulse rounded bg-muted" />
+              <div className="h-5 w-28 animate-pulse rounded bg-muted" />
+              <div className="h-4 w-40 animate-pulse rounded bg-muted" />
             </div>
           ) : (
             <>
@@ -289,7 +310,7 @@ function ProfilePopover({
 
           <div className="mt-4 flex items-center justify-between rounded-xl bg-muted px-3 py-2.5">
             <span className="text-xs text-muted-foreground">Текущий тариф</span>
-            <span className="text-xs font-semibold uppercase tracking-wide text-foreground">
+            <span className="text-xs font-semibold uppercase tracking-wide text-emerald-500">
               Free
             </span>
           </div>
@@ -302,6 +323,16 @@ function ProfilePopover({
           >
             Настройки профиля
           </Link>
+
+          <button
+            type="button"
+            role="menuitem"
+            onClick={handleSignOut}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <LogOut className="h-4 w-4" />
+            Выйти
+          </button>
         </div>
       ) : null}
     </div>
@@ -363,10 +394,28 @@ function MobileMenu({
   email: string;
   onNavigate: () => void;
 }) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
+  const handleSignOut = async () => {
+    onNavigate();
+
+    const { error } = await supabase.auth.signOut({ scope: "local" });
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    queryClient.clear();
+    router.replace("/");
+    router.refresh();
+  };
+
   return (
     <div
       className={`overflow-hidden transition-all duration-300 ease-in-out md:hidden ${
-        isOpen ? "max-h-[520px] opacity-100" : "max-h-0 opacity-0"
+        isOpen ? "max-h-[620px] opacity-100" : "max-h-0 opacity-0"
       }`}
     >
       <div className="border-t border-border bg-background/95 px-4 py-6 backdrop-blur">
@@ -379,24 +428,35 @@ function MobileMenu({
 
           {!isLoginPage && !loading ? (
             authenticated ? (
-              <div className="mt-2 w-full max-w-sm rounded-2xl border border-border bg-card p-4">
+              <div className="mt-2 w-full max-w-sm rounded-2xl border border-border bg-background p-4">
                 <p className="truncate font-medium text-foreground">{fullName}</p>
                 <p className="mt-1 truncate text-xs text-muted-foreground">
                   {email}
                 </p>
-                <div className="mt-3 flex items-center justify-between text-xs">
+
+                <div className="mt-3 flex items-center justify-between rounded-xl bg-muted px-3 py-2.5 text-xs">
                   <span className="text-muted-foreground">Тариф</span>
-                  <span className="font-semibold uppercase text-foreground">
+                  <span className="font-semibold uppercase text-emerald-500">
                     Free
                   </span>
                 </div>
+
                 <Link
                   href="/dashboard/settings"
                   onClick={onNavigate}
-                  className="mt-4 block rounded-xl border border-border px-4 py-2.5 text-center text-sm text-foreground"
+                  className="mt-4 block rounded-xl border border-border px-4 py-2.5 text-center text-sm font-medium text-foreground transition-colors hover:bg-muted"
                 >
                   Настройки профиля
                 </Link>
+
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Выйти
+                </button>
               </div>
             ) : (
               <Link
