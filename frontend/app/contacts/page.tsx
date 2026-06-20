@@ -1,7 +1,7 @@
-import Image from "next/image";
-import { BackArrow } from "@/src/shared";
-import { TelegramLogo } from "@/src/shared";
-import { GmailLogo } from "@/src/shared";
+import Image from 'next/image';
+import { BackArrow } from '@/src/shared';
+import { TelegramLogo } from '@/src/shared';
+import { GmailLogo } from '@/src/shared';
 
 export default function ContactsPage() {
   return (
@@ -19,11 +19,7 @@ export default function ContactsPage() {
 
             <div className="space-y-3 pt-4">
               <div className="flex items-center gap-3">
-                <Image
-                  src={TelegramLogo}
-                  alt="Telegram"
-                  className="h-7 w-7"
-                />
+                <Image src={TelegramLogo} alt="Telegram" className="h-7 w-7" />
 
                 <span className="text-lg text-muted-foreground">/</span>
 
@@ -38,11 +34,7 @@ export default function ContactsPage() {
               </div>
 
               <div className="flex items-center gap-3">
-                <Image
-                  src={GmailLogo}
-                  alt="Gmail"
-                  className="h-6 w-6"
-                />
+                <Image src={GmailLogo} alt="Gmail" className="h-6 w-6" />
 
                 <span className="text-lg text-muted-foreground">/</span>
 

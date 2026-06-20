@@ -1,67 +1,62 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { supabase } from "@/src/shared/lib/supabase/client";
+import { useState } from 'react';
+import { BackArrow } from '@/src/shared';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [sent, setSent] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('');
 
-  async function handleLogin(e: React.FormEvent) {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: "http://localhost:3000/auth/callback",
-      },
-    });
-
-    setLoading(false);
-
-    if (error) {
-      alert(error.message);
-      return;
-    }
-
-    setSent(true);
-  }
+    console.log('Email:', email);
+  };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-black px-6 text-white">
-      <div className="w-full max-w-md rounded-2xl border border-neutral-800 bg-neutral-950 p-8">
-        <h1 className="mb-3 text-3xl font-normal">Вход</h1>
+    <div className="flex flex-col flex-1 relative">
+      {/* Стрелка */}
+      <div className="absolute right-0 top-0">
+        <BackArrow />
+      </div>
 
-        <p className="mb-8 text-sm text-neutral-400">
-          Введите email — мы отправим ссылку для входа.
-        </p>
-
-        {sent ? (
-          <p className="text-sm text-neutral-300">
-            Ссылка отправлена. Проверьте почту.
+      <div className="flex-1 flex flex-col items-center justify-center">
+        <div className="w-full max-w-md p-8 rounded-2xl border border-border bg-background/60 backdrop-blur-sm shadow-lg">
+          <p className="text-xs uppercase tracking-widest text-muted-foreground font-medium text-center">
+            Вход / Login
           </p>
-        ) : (
-          <form onSubmit={handleLogin} className="space-y-4">
-            <input
-              type="email"
-              required
-              placeholder="your@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-neutral-800 bg-black px-4 py-3 text-sm text-white outline-none"
-            />
+          <h1 className="text-3xl sm:text-4xl font-normal tracking-tight text-foreground text-center mt-2">
+            Привет!
+          </h1>
+          <p className="text-muted-foreground text-sm text-center mt-2 mb-8">
+            Введите email — мы отправим ссылку для входа.
+          </p>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-foreground mb-1"
+              >
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                className="w-full px-4 py-2 rounded-lg border border-border bg-muted text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20 transition-colors"
+                required
+              />
+            </div>
 
             <button
               type="submit"
-              disabled={loading}
-              className="w-full border border-neutral-700 px-5 py-3 text-xs uppercase tracking-widest text-white hover:bg-white hover:text-black disabled:opacity-50"
+              className="w-full px-4 py-2 text-sm font-medium text-background bg-foreground rounded-lg hover:bg-foreground/80 transition-colors"
             >
-              {loading ? "Отправляем..." : "Получить ссылку"}
+              Получить ссылку
             </button>
           </form>
-        )}
+        </div>
       </div>
     </div>
   );

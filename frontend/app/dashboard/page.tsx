@@ -2,12 +2,11 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-black px-6 py-10 text-white">
       <div className="mx-auto max-w-[1200px]">
-        <h1 className="text-4xl font-normal tracking-tight">
-          Личный кабинет
-        </h1>
+        <h1 className="text-4xl font-normal tracking-tight">Личный кабинет</h1>
 
         <p className="mt-4 text-neutral-400">
-          Вы вошли в аккаунт. Здесь скоро будут ваши резюме, анализ и адаптация под вакансии.
+          Вы вошли в аккаунт. Здесь скоро будут ваши резюме, анализ и адаптация
+          под вакансии.
         </p>
 
         <div className="mt-10 grid gap-5 md:grid-cols-3">
