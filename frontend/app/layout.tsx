@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from './providers';
 import { Header } from '@/src/widgets';
+import { ThemeFavicon } from './ThemeFavicon';
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
@@ -21,8 +22,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru" suppressHydrationWarning>
+      <head>
+        <link rel="icon" href="/favicon-dark.svg" type="image/svg+xml" />
+      </head>
       <body className={`${inter.variable} min-h-screen antialiased`}>
         <ThemeProvider>
+          <ThemeFavicon />
           <div className="flex min-h-screen flex-col bg-background text-foreground">
             <Header />
 
