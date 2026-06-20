@@ -5,7 +5,7 @@ import { getUserFromRequest } from "../utils/auth.js";
 import {
   sendError,
   sendServerError,
-  isValidUuid,
+  getStringParam,
 } from "../utils/apiResponses.js";
 import {
   allowedResumeMimeTypes,
@@ -110,13 +110,13 @@ export async function uploadResume(req: Request, res: Response) {
 export async function deleteResume(req: Request, res: Response) {
   try {
     const { user } = await getUserFromRequest(req);
-    const { resumeId } = req.params;
+    const resumeId = getStringParam(req.params.resumeId);
 
     if (!user) {
       return sendError(res, 401, "Unauthorized");
     }
 
-    if (!isValidUuid(resumeId)) {
+    if (!resumeId) {
       return sendError(res, 400, "Invalid resume id");
     }
 
@@ -164,13 +164,13 @@ export async function deleteResume(req: Request, res: Response) {
 export async function getResumeById(req: Request, res: Response) {
   try {
     const { user } = await getUserFromRequest(req);
-    const { resumeId } = req.params;
+    const resumeId = getStringParam(req.params.resumeId);
 
     if (!user) {
       return sendError(res, 401, "Unauthorized");
     }
 
-    if (!isValidUuid(resumeId)) {
+    if (!resumeId) {
       return sendError(res, 400, "Invalid resume id");
     }
 
@@ -200,13 +200,13 @@ export async function getResumeById(req: Request, res: Response) {
 export async function getResumeDownloadUrl(req: Request, res: Response) {
   try {
     const { user } = await getUserFromRequest(req);
-    const { resumeId } = req.params;
+    const resumeId = getStringParam(req.params.resumeId);
 
     if (!user) {
       return sendError(res, 401, "Unauthorized");
     }
 
-    if (!isValidUuid(resumeId)) {
+    if (!resumeId) {
       return sendError(res, 400, "Invalid resume id");
     }
 

@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
+import { useAuth } from "@/src/shared/hooks/useAuth";
 import { useResumeQuery } from "@/src/shared/hooks/useResumeQuery";
-import { supabase } from "@/src/shared/lib/supabase/client";
 
 import { ResumeActionsPanel } from "./_components/ResumeActionsPanel";
 import { ResumeActivityCard } from "./_components/ResumeActivityCard";
@@ -15,24 +14,27 @@ import { ResumeNotFoundState } from "./_components/ResumeNotFoundState";
 import { ResumeStatsCards } from "./_components/ResumeStatsCards";
 import { ResumeVersionsCard } from "./_components/ResumeVersionsCard";
 
+function getResumeId(value: string | string[] | undefined) {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  return undefined;
+}
+
 export default function ResumeDetailsPage() {
-  const params = useParams<{ id: string }>();
-  const [accessToken, setAccessToken] = useState<string>();
+  const params = useParams<{ id?: string | string[] }>();
+  const { accessToken, loading: authLoading } = useAuth();
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setAccessToken(data.session?.access_token);
-    });
-  }, []);
-
-  const resumeQuery = useResumeQuery(params.id, accessToken);
+  const resumeId = getResumeId(params.id);
+  const resumeQuery = useResumeQuery(resumeId, accessToken);
   const resume = resumeQuery.data?.resume;
 
-  if (resumeQuery.isLoading) {
+  if (authLoading || (resumeId && accessToken && resumeQuery.isPending)) {
     return <ResumeDetailsSkeleton />;
   }
 
-  if (!resume) {
+  if (!resumeId || resumeQuery.isError || !resume) {
     return <ResumeNotFoundState />;
   }
 
