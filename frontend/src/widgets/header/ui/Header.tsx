@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { Sun, Moon, Menu, X } from "lucide-react";
+import { Menu, Moon, Sun, X } from "lucide-react";
 import { useState, useSyncExternalStore } from "react";
 import { supabase } from "@/src/shared/lib/supabase/client";
 import { useAuth } from "@/src/shared/hooks/useAuth";
+
+const isDevAuth = process.env.NEXT_PUBLIC_DEV_AUTH === "true";
 
 export function Header() {
   const { user, loading } = useAuth();
@@ -26,6 +28,11 @@ export function Header() {
   const isDashboard = pathname.startsWith("/dashboard");
 
   async function handleLogout() {
+    if (isDevAuth) {
+      setIsMenuOpen(false);
+      return;
+    }
+
     await supabase.auth.signOut();
     setIsMenuOpen(false);
     router.push("/");
@@ -33,7 +40,7 @@ export function Header() {
   }
 
   return (
-    <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+    <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto flex h-16 w-full max-w-[1400px] items-center justify-between px-4 md:px-6">
         <Link href="/" className="text-xl font-bold text-foreground">
           CV
@@ -42,14 +49,14 @@ export function Header() {
         <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
           <Link
             href="/about"
-            className="text-muted-foreground hover:text-foreground transition-colors"
+            className="text-muted-foreground transition-colors hover:text-foreground"
           >
             О проекте
           </Link>
 
           <Link
             href="/contacts"
-            className="text-muted-foreground hover:text-foreground transition-colors"
+            className="text-muted-foreground transition-colors hover:text-foreground"
           >
             Контакты
           </Link>
@@ -125,7 +132,7 @@ export function Header() {
           <nav className="flex flex-col items-center gap-4 text-sm font-medium">
             <Link
               href="/about"
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              className="text-muted-foreground transition-colors hover:text-foreground"
               onClick={() => setIsMenuOpen(false)}
             >
               О проекте
@@ -133,7 +140,7 @@ export function Header() {
 
             <Link
               href="/contacts"
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              className="text-muted-foreground transition-colors hover:text-foreground"
               onClick={() => setIsMenuOpen(false)}
             >
               Контакты

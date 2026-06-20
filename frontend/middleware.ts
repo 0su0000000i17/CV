@@ -2,6 +2,12 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 export async function middleware(request: NextRequest) {
+  const isDevAuth = process.env.NEXT_PUBLIC_DEV_AUTH === "true";
+
+  if (isDevAuth) {
+    return NextResponse.next();
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
