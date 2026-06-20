@@ -33,4 +33,15 @@ html.light {
     background-color: #000000 !important;
     color: #ffffff !important;
   }
+
+  ::-webkit-scrollbar {
+  width: 0px;
+  height: 0px;
+  background: transparent;
+}
+
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
 }

@@ -68,7 +68,7 @@ export default function DashboardLayout({
   return (
     <div className="grid min-h-[calc(100vh-64px)] grid-cols-1 gap-8 lg:grid-cols-[280px_1fr]">
       <aside className="hidden lg:flex lg:flex-col">
-        <div className="fixed top-24 flex h-[calc(100vh-120px)] w-[280px] flex-col rounded-2xl border border-border bg-card/60 p-4">
+        <div className="sticky top-24 flex h-[calc(100vh-120px)] w-[280px] flex-col rounded-2xl border border-border bg-card/60 p-4">
           <div className="px-3 pb-6 pt-2">
             <p className="text-lg font-semibold tracking-tight text-foreground">
               CV Prophet
