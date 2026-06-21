@@ -201,12 +201,20 @@ async function generateAndParseAnalysis(
     maxTokens,
   });
 
-  const rawAiAnalysis = parseAiResumeAnalysis(generationResult.text);
+  try {
+    const rawAiAnalysis = parseAiResumeAnalysis(generationResult.text);
 
-  return {
-    rawAiAnalysis,
-    generationResult,
-  };
+    return {
+      rawAiAnalysis,
+      generationResult,
+    };
+  } catch (error) {
+    console.warn("\n================ AI RAW RESPONSE START ================\n");
+    console.warn(generationResult.text);
+    console.warn("\n================ AI RAW RESPONSE END ==================\n");
+
+    throw error;
+  }
 }
 
 export async function analyzeResume(params: AnalyzeResumeParams) {
