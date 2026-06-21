@@ -18,26 +18,26 @@ export function Logo() {
           fontFamily:
             "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
           fontSize: '24px',
-          fontWeight: 500,
+          fontWeight: 600,
           letterSpacing: '-0.8px',
         }}
       >
-        CVPr
+        CV
       </text>
 
       <text
-        x="58"
+        x="34"
         y="21"
-        className="fill-emerald-500"
+        className="fill-emerald-500 dark:fill-emerald-400"
         style={{
           fontFamily:
             "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
           fontSize: '24px',
-          fontWeight: 500,
+          fontWeight: 600,
           letterSpacing: '-0.8px',
         }}
       >
-        o
+        Pro
       </text>
     </svg>
   );
