@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { FileText, Plus, Sparkles } from "lucide-react";
+import Link from 'next/link';
+import { FileText, Plus, Sparkles } from 'lucide-react';
 
-import { useAuth } from "@/src/shared/hooks/useAuth";
-import { useProfileQuery } from "@/src/shared/hooks/useProfileQuery";
-import { useResumesQuery } from "@/src/shared/hooks/useResumesQuery";
+import { useAuth } from '@/src/shared/hooks/useAuth';
+import { useProfileQuery } from '@/src/shared/hooks/useProfileQuery';
+import { useResumesQuery } from '@/src/shared/hooks/useResumesQuery';
 
 function getFirstName(fullName?: string, email?: string) {
   const trimmedName = fullName?.trim();
@@ -14,20 +14,20 @@ function getFirstName(fullName?: string, email?: string) {
     return trimmedName.split(/\s+/)[0];
   }
 
-  const emailName = email?.split("@")[0]?.trim();
+  const emailName = email?.split('@')[0]?.trim();
 
   if (emailName) {
     return emailName;
   }
 
-  return "пользователь";
+  return 'пользователь';
 }
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
   }).format(new Date(value));
 }
 
@@ -39,7 +39,10 @@ export default function DashboardPage() {
   const profile = profileQuery.data?.profile;
   const resumes = resumesQuery.data?.resumes ?? [];
   const recentResumes = resumes.slice(0, 3);
-  const firstName = getFirstName(profile?.full_name, profile?.email || user?.email);
+  const firstName = getFirstName(
+    profile?.full_name,
+    profile?.email || user?.email
+  );
 
   return (
     <div>
@@ -77,7 +80,7 @@ export default function DashboardPage() {
           </p>
 
           <h2 className="text-xl font-medium text-foreground">
-            Привет, {profileQuery.isLoading ? "..." : firstName}
+            Привет, {profileQuery.isLoading ? '...' : firstName}
           </h2>
 
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
@@ -144,8 +147,8 @@ export default function DashboardPage() {
               </h2>
 
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                Вставьте текст вакансии или ссылку, чтобы получить версию
-                резюме под конкретный отклик.
+                Вставьте текст вакансии или ссылку, чтобы получить версию резюме
+                под конкретный отклик.
               </p>
             </div>
           </div>

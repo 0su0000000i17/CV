@@ -1,4 +1,4 @@
-import type { UploadedResume } from "@/src/shared/api/resumes";
+import type { UploadedResume } from '@/src/shared/api/resumes';
 
 type Props = {
   resume: UploadedResume;

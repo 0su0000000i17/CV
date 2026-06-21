@@ -2,7 +2,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export function getApiUrl() {
   if (!API_URL) {
-    throw new Error("NEXT_PUBLIC_API_URL is not configured");
+    throw new Error('NEXT_PUBLIC_API_URL is not configured');
   }
 
   return API_URL;
@@ -13,7 +13,7 @@ type ApiErrorResponse = {
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
+  return typeof value === 'object' && value !== null;
 }
 
 async function readJsonSafely(response: Response): Promise<unknown> {
@@ -37,7 +37,7 @@ function getResponseErrorMessage(data: unknown, fallbackMessage: string) {
 
   const errorData = data as ApiErrorResponse;
 
-  if (typeof errorData.message === "string" && errorData.message.trim()) {
+  if (typeof errorData.message === 'string' && errorData.message.trim()) {
     return errorData.message;
   }
 

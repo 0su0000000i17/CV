@@ -1,6 +1,6 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { deleteResume } from "@/src/shared/api/resumes";
+import { deleteResume } from '@/src/shared/api/resumes';
 
 type DeleteResumeVariables = {
   resumeId: string;
@@ -16,7 +16,7 @@ export function useDeleteResumeMutation() {
 
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["resumes"],
+        queryKey: ['resumes'],
       });
     },
   });

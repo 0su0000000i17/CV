@@ -8,3 +8,6 @@ build
 .env
 .env.local
 .env.*
+
+backend/.venv/
+backend/tmp/

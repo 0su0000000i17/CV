@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { useRef, useState } from "react";
-import { Plus } from "lucide-react";
+import { useRef, useState } from 'react';
+import { Plus } from 'lucide-react';
 
-import { supabase } from "@/src/shared/lib/supabase/client";
-import { useUploadResumeMutation } from "@/src/shared/hooks/useUploadResumeMutation";
+import { supabase } from '@/src/shared/lib/supabase/client';
+import { useUploadResumeMutation } from '@/src/shared/hooks/useUploadResumeMutation';
 
 export function UploadResumeButton() {
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const [errorMessage, setErrorMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState('');
 
   const uploadResumeMutation = useUploadResumeMutation();
 
   const handleSelectFile = () => {
-    setErrorMessage("");
+    setErrorMessage('');
     inputRef.current?.click();
   };
 
@@ -29,7 +29,7 @@ export function UploadResumeButton() {
     } = await supabase.auth.getSession();
 
     if (!session?.access_token) {
-      setErrorMessage("Нужно войти в аккаунт.");
+      setErrorMessage('Нужно войти в аккаунт.');
       return;
     }
 
@@ -40,11 +40,11 @@ export function UploadResumeButton() {
       },
       {
         onSuccess: () => {
-          event.target.value = "";
+          event.target.value = '';
         },
         onError: (error) => {
           setErrorMessage(
-            error instanceof Error ? error.message : "Ошибка загрузки резюме"
+            error instanceof Error ? error.message : 'Ошибка загрузки резюме'
           );
         },
       }
@@ -68,7 +68,7 @@ export function UploadResumeButton() {
         className="inline-flex items-center justify-center gap-2 rounded-xl bg-foreground px-5 py-3 text-sm font-medium text-background transition-colors hover:bg-foreground/80 disabled:cursor-not-allowed disabled:opacity-60"
       >
         <Plus className="h-4 w-4" />
-        {uploadResumeMutation.isPending ? "Загружаем..." : "Загрузить резюме"}
+        {uploadResumeMutation.isPending ? 'Загружаем...' : 'Загрузить резюме'}
       </button>
 
       {errorMessage ? (

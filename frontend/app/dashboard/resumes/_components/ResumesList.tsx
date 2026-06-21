@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import type { UploadedResume } from "@/src/shared/api/resumes";
-import { supabase } from "@/src/shared/lib/supabase/client";
-import { useDeleteResumeMutation } from "@/src/shared/hooks/useDeleteResumeMutation";
+import type { UploadedResume } from '@/src/shared/api/resumes';
+import { supabase } from '@/src/shared/lib/supabase/client';
+import { useDeleteResumeMutation } from '@/src/shared/hooks/useDeleteResumeMutation';
 
-import { DeleteResumeDialog } from "./DeleteResumeDialog";
-import { ResumeEmptyState } from "./ResumeEmptyState";
-import { ResumeListItem } from "./ResumeListItem";
-import { ResumeListSkeleton } from "./ResumeListSkeleton";
+import { DeleteResumeDialog } from './DeleteResumeDialog';
+import { ResumeEmptyState } from './ResumeEmptyState';
+import { ResumeListItem } from './ResumeListItem';
+import { ResumeListSkeleton } from './ResumeListSkeleton';
 
 type ResumesListProps = {
   resumes: UploadedResume[];

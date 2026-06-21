@@ -1,32 +1,32 @@
-import { Download, SearchCheck, Sparkles, Upload } from "lucide-react";
+import { Download, SearchCheck, Sparkles, Upload } from 'lucide-react';
 
 const events = [
   {
-    id: "1",
-    title: "Загружено резюме",
-    description: "Frontend Developer Resume.pdf",
-    date: "Сегодня, 14:20",
+    id: '1',
+    title: 'Загружено резюме',
+    description: 'Frontend Developer Resume.pdf',
+    date: 'Сегодня, 14:20',
     icon: Upload,
   },
   {
-    id: "2",
-    title: "Запущена оценка резюме",
-    description: "Product Manager Resume.pdf получил оценку 78/100",
-    date: "Вчера, 18:10",
+    id: '2',
+    title: 'Запущена оценка резюме',
+    description: 'Product Manager Resume.pdf получил оценку 78/100',
+    date: 'Вчера, 18:10',
     icon: SearchCheck,
   },
   {
-    id: "3",
-    title: "Создана адаптация",
-    description: "Версия под вакансию Middle Frontend Developer",
-    date: "15 июня, 11:45",
+    id: '3',
+    title: 'Создана адаптация',
+    description: 'Версия под вакансию Middle Frontend Developer',
+    date: '15 июня, 11:45',
     icon: Sparkles,
   },
   {
-    id: "4",
-    title: "Скачан файл",
-    description: "Frontend Developer Resume — React Version.docx",
-    date: "14 июня, 09:32",
+    id: '4',
+    title: 'Скачан файл',
+    description: 'Frontend Developer Resume — React Version.docx',
+    date: '14 июня, 09:32',
     icon: Download,
   },
 ];
@@ -58,9 +58,7 @@ export function EventsList() {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-col justify-between gap-2 md:flex-row md:items-start">
                   <div>
-                    <p className="font-medium text-foreground">
-                      {event.title}
-                    </p>
+                    <p className="font-medium text-foreground">{event.title}</p>
 
                     <p className="mt-1 text-sm text-muted-foreground">
                       {event.description}

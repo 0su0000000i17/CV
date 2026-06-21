@@ -1,6 +1,6 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation } from '@tanstack/react-query';
 
-import { getResumeDownloadUrl } from "@/src/shared/api/resumes";
+import { getResumeDownloadUrl } from '@/src/shared/api/resumes';
 
 type DownloadResumeVariables = {
   resumeId: string;
@@ -12,13 +12,13 @@ async function downloadFile(downloadUrl: string, fileName: string) {
   const response = await fetch(downloadUrl);
 
   if (!response.ok) {
-    throw new Error("Failed to download file");
+    throw new Error('Failed to download file');
   }
 
   const blob = await response.blob();
   const objectUrl = window.URL.createObjectURL(blob);
 
-  const link = document.createElement("a");
+  const link = document.createElement('a');
   link.href = objectUrl;
   link.download = fileName;
 

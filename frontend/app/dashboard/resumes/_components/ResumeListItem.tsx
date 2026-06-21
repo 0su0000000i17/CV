@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { Download, FileText, MoreHorizontal, Trash2 } from "lucide-react";
+import Link from 'next/link';
+import { Download, FileText, MoreHorizontal, Trash2 } from 'lucide-react';
 
-import type { UploadedResume } from "@/src/shared/api/resumes";
-import { supabase } from "@/src/shared/lib/supabase/client";
-import { useDownloadResumeMutation } from "@/src/shared/hooks/useDownloadResumeMutation";
+import type { UploadedResume } from '@/src/shared/api/resumes';
+import { supabase } from '@/src/shared/lib/supabase/client';
+import { useDownloadResumeMutation } from '@/src/shared/hooks/useDownloadResumeMutation';
 
 type ResumeListItemProps = {
   resume: UploadedResume;
@@ -15,37 +15,37 @@ type ResumeListItemProps = {
 
 function getAnalysisData(resume: UploadedResume) {
   switch (resume.analysis_status) {
-    case "not_started":
+    case 'not_started':
       return {
-        title: "Не пройдена",
-        subtitle: "Запустите анализ",
+        title: 'Не пройдена',
+        subtitle: 'Запустите анализ',
       };
 
-    case "completed":
+    case 'completed':
       return {
         title: `${resume.last_score}/100`,
-        subtitle: "Актуальна",
+        subtitle: 'Актуальна',
       };
 
-    case "needs_update":
+    case 'needs_update':
       return {
-        title: "Требует обновления",
-        subtitle: "Резюме изменилось",
+        title: 'Требует обновления',
+        subtitle: 'Резюме изменилось',
       };
 
     default:
       return {
-        title: "Неизвестно",
-        subtitle: "",
+        title: 'Неизвестно',
+        subtitle: '',
       };
   }
 }
 
 function formatDate(date: string) {
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
   }).format(new Date(date));
 }
 
@@ -67,9 +67,9 @@ export function ResumeListItem({
     }
 
     downloadResumeMutation.mutate({
-    resumeId: resume.id,
-    accessToken: session.access_token,
-    fileName: resume.file_name,
+      resumeId: resume.id,
+      accessToken: session.access_token,
+      fileName: resume.file_name,
     });
   };
 
@@ -89,7 +89,7 @@ export function ResumeListItem({
           </Link>
 
           <p className="mt-1 text-sm text-muted-foreground">
-            {resume.role || "Роль не указана"}
+            {resume.role || 'Роль не указана'}
           </p>
 
           <div className="mt-3 flex flex-wrap gap-2 text-xs">

@@ -17,9 +17,9 @@ export function Logo() {
         style={{
           fontFamily:
             "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-          fontSize: "24px",
+          fontSize: '24px',
           fontWeight: 500,
-          letterSpacing: "-0.8px",
+          letterSpacing: '-0.8px',
         }}
       >
         CVPr
@@ -32,9 +32,9 @@ export function Logo() {
         style={{
           fontFamily:
             "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-          fontSize: "24px",
+          fontSize: '24px',
           fontWeight: 500,
-          letterSpacing: "-0.8px",
+          letterSpacing: '-0.8px',
         }}
       >
         o

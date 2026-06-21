@@ -23,8 +23,8 @@ export function DeleteResumeDialog({
         </h2>
 
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-          Резюме{" "}
-          <span className="font-medium text-foreground">{resumeTitle}</span>{" "}
+          Резюме{' '}
+          <span className="font-medium text-foreground">{resumeTitle}</span>{' '}
           будет удалено из личного кабинета и хранилища. Это действие нельзя
           отменить.
         </p>
@@ -45,7 +45,7 @@ export function DeleteResumeDialog({
             disabled={isDeleting}
             className="rounded-xl bg-red-500 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isDeleting ? "Удаляем..." : "Удалить"}
+            {isDeleting ? 'Удаляем...' : 'Удалить'}
           </button>
         </div>
       </div>

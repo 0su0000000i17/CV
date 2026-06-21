@@ -1,11 +1,11 @@
-import Link from "next/link";
-import { FileText } from "lucide-react";
+import Link from 'next/link';
+import { FileText } from 'lucide-react';
 
 const selectedResume = {
-  id: "1",
-  title: "Frontend Developer Resume.pdf",
-  role: "Frontend Developer",
-  status: "Оценка не пройдена",
+  id: '1',
+  title: 'Frontend Developer Resume.pdf',
+  role: 'Frontend Developer',
+  status: 'Оценка не пройдена',
 };
 
 export function SelectedResumeCard() {

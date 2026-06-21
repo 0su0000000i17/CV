@@ -1,4 +1,4 @@
-import type { UploadedResume } from "@/src/shared/api/resumes";
+import type { UploadedResume } from '@/src/shared/api/resumes';
 
 type ResumesStatsProps = {
   resumes: UploadedResume[];
@@ -6,7 +6,7 @@ type ResumesStatsProps = {
 
 export function ResumesStats({ resumes }: ResumesStatsProps) {
   const analyzedCount = resumes.filter(
-    (resume) => resume.analysis_status === "completed"
+    (resume) => resume.analysis_status === 'completed'
   ).length;
 
   return (

@@ -1,8 +1,4 @@
-import {
-  createAuthHeaders,
-  getApiUrl,
-  parseApiResponse,
-} from "./http";
+import { createAuthHeaders, getApiUrl, parseApiResponse } from './http';
 
 export type UploadedResume = {
   id: string;
@@ -45,38 +41,35 @@ export async function getResumes(accessToken: string) {
     headers: createAuthHeaders(accessToken),
   });
 
-  return parseApiResponse<ResumesResponse>(
-    response,
-    "Failed to fetch resumes"
-  );
+  return parseApiResponse<ResumesResponse>(response, 'Failed to fetch resumes');
 }
 
 export async function uploadResume(file: File, accessToken: string) {
   const formData = new FormData();
 
-  formData.append("resume", file);
+  formData.append('resume', file);
 
   const response = await fetch(`${getApiUrl()}/api/resumes/upload`, {
-    method: "POST",
+    method: 'POST',
     headers: createAuthHeaders(accessToken),
     body: formData,
   });
 
   return parseApiResponse<UploadResumeResponse>(
     response,
-    "Failed to upload resume"
+    'Failed to upload resume'
   );
 }
 
 export async function deleteResume(resumeId: string, accessToken: string) {
   const response = await fetch(`${getApiUrl()}/api/resumes/${resumeId}`, {
-    method: "DELETE",
+    method: 'DELETE',
     headers: createAuthHeaders(accessToken),
   });
 
   return parseApiResponse<DeleteResumeResponse>(
     response,
-    "Failed to delete resume"
+    'Failed to delete resume'
   );
 }
 
@@ -93,7 +86,7 @@ export async function getResumeDownloadUrl(
 
   return parseApiResponse<ResumeDownloadUrlResponse>(
     response,
-    "Failed to get resume download url"
+    'Failed to get resume download url'
   );
 }
 
@@ -102,5 +95,5 @@ export async function getResumeById(resumeId: string, accessToken: string) {
     headers: createAuthHeaders(accessToken),
   });
 
-  return parseApiResponse<ResumeResponse>(response, "Failed to fetch resume");
+  return parseApiResponse<ResumeResponse>(response, 'Failed to fetch resume');
 }

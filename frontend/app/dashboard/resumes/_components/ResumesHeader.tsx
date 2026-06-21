@@ -1,4 +1,4 @@
-import { UploadResumeButton } from "./UploadResumeButton";
+import { UploadResumeButton } from './UploadResumeButton';
 
 export function ResumesHeader() {
   return (

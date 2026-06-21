@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import type { User } from "@supabase/supabase-js";
-import { useEffect, useState } from "react";
+import type { User } from '@supabase/supabase-js';
+import { useEffect, useState } from 'react';
 
-import { supabase } from "@/src/shared/lib/supabase/client";
+import { supabase } from '@/src/shared/lib/supabase/client';
 
-const DEV_AUTH = process.env.NEXT_PUBLIC_DEV_AUTH === "true";
+const DEV_AUTH = process.env.NEXT_PUBLIC_DEV_AUTH === 'true';
 
-type AuthUser = Pick<User, "id" | "email">;
+type AuthUser = Pick<User, 'id' | 'email'>;
 
 const devUser: AuthUser = {
-  id: "dev-user",
-  email: "dev@cvprophet.local",
+  id: 'dev-user',
+  email: 'dev@cvprophet.local',
 };
 
 export function useAuth() {

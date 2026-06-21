@@ -1,6 +1,6 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { uploadResume } from "@/src/shared/api/resumes";
+import { uploadResume } from '@/src/shared/api/resumes';
 
 type UploadResumeVariables = {
   file: File;
@@ -16,7 +16,7 @@ export function useUploadResumeMutation() {
 
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["resumes"],
+        queryKey: ['resumes'],
       });
     },
   });

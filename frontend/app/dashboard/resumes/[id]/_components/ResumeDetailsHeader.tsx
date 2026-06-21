@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { ArrowLeft, Download, Trash2 } from "lucide-react";
-import { useState } from "react";
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, Download, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 
-import type { UploadedResume } from "@/src/shared/api/resumes";
-import { supabase } from "@/src/shared/lib/supabase/client";
-import { useDeleteResumeMutation } from "@/src/shared/hooks/useDeleteResumeMutation";
-import { useDownloadResumeMutation } from "@/src/shared/hooks/useDownloadResumeMutation";
-import { DeleteResumeDialog } from "../../_components/DeleteResumeDialog";
+import type { UploadedResume } from '@/src/shared/api/resumes';
+import { supabase } from '@/src/shared/lib/supabase/client';
+import { useDeleteResumeMutation } from '@/src/shared/hooks/useDeleteResumeMutation';
+import { useDownloadResumeMutation } from '@/src/shared/hooks/useDownloadResumeMutation';
+import { DeleteResumeDialog } from '../../_components/DeleteResumeDialog';
 
 type Props = {
   resume: UploadedResume;
@@ -20,12 +20,12 @@ function formatFileSize(size: number) {
 }
 
 function getFileType(mimeType: string) {
-  if (mimeType.includes("pdf")) return "PDF";
-  if (mimeType.includes("wordprocessingml")) return "DOCX";
-  if (mimeType.includes("msword")) return "DOC";
-  if (mimeType.includes("rtf")) return "RTF";
+  if (mimeType.includes('pdf')) return 'PDF';
+  if (mimeType.includes('wordprocessingml')) return 'DOCX';
+  if (mimeType.includes('msword')) return 'DOC';
+  if (mimeType.includes('rtf')) return 'RTF';
 
-  return "Файл";
+  return 'Файл';
 }
 
 export function ResumeDetailsHeader({ resume }: Props) {
@@ -65,7 +65,7 @@ export function ResumeDetailsHeader({ resume }: Props) {
       {
         onSuccess: () => {
           setIsDeleteDialogOpen(false);
-          router.push("/dashboard/resumes");
+          router.push('/dashboard/resumes');
         },
       }
     );
@@ -93,7 +93,8 @@ export function ResumeDetailsHeader({ resume }: Props) {
             </h1>
 
             <p className="mt-4 text-muted-foreground">
-              {resume.role || "Роль не указана"} · {getFileType(resume.file_type)} ·{" "}
+              {resume.role || 'Роль не указана'} ·{' '}
+              {getFileType(resume.file_type)} ·{' '}
               {formatFileSize(resume.file_size)}
             </p>
           </div>

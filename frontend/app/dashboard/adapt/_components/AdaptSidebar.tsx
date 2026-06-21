@@ -1,10 +1,10 @@
-import { ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
+import { ArrowRight, CheckCircle2, Sparkles } from 'lucide-react';
 
 const resultItems = [
-  "Новая версия резюме под вакансию",
-  "Список внесённых изменений",
-  "Рекомендации перед откликом",
-  "Возможность скачать результат",
+  'Новая версия резюме под вакансию',
+  'Список внесённых изменений',
+  'Рекомендации перед откликом',
+  'Возможность скачать результат',
 ];
 
 export function AdaptSidebar() {

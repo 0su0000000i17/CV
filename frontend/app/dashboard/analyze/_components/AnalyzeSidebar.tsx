@@ -1,29 +1,35 @@
-import { AlertCircle, ArrowRight } from "lucide-react";
+import { AlertCircle, ArrowRight } from 'lucide-react';
+
+import type { UploadedResume } from '@/src/shared/api/resumes';
+
+type Props = {
+  selectedResume?: UploadedResume;
+};
 
 const resultPreview = [
   {
-    title: "Структура",
+    title: 'Структура',
     score: 0,
-    status: "Ожидает проверки",
+    status: 'Ожидает проверки',
   },
   {
-    title: "Опыт",
+    title: 'Опыт',
     score: 0,
-    status: "Ожидает проверки",
+    status: 'Ожидает проверки',
   },
   {
-    title: "Навыки",
+    title: 'Навыки',
     score: 0,
-    status: "Ожидает проверки",
+    status: 'Ожидает проверки',
   },
   {
-    title: "ATS",
+    title: 'ATS',
     score: 0,
-    status: "Ожидает проверки",
+    status: 'Ожидает проверки',
   },
 ];
 
-export function AnalyzeSidebar() {
+export function AnalyzeSidebar({ selectedResume }: Props) {
   return (
     <aside className="space-y-6">
       <div className="rounded-2xl border border-border bg-card/60 p-6">
@@ -39,7 +45,11 @@ export function AnalyzeSidebar() {
           проверялось.
         </p>
 
-        <button className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-foreground px-5 py-3 text-sm font-medium text-background transition-colors hover:bg-foreground/80">
+        <button
+          type="button"
+          disabled={!selectedResume}
+          className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-foreground px-5 py-3 text-sm font-medium text-background transition-colors hover:bg-foreground/80 disabled:cursor-not-allowed disabled:opacity-50"
+        >
           Запустить оценку
           <ArrowRight className="h-4 w-4" />
         </button>
