@@ -1,4 +1,4 @@
-import { Briefcase, LinkIcon } from "lucide-react";
+import { Briefcase, LinkIcon } from 'lucide-react';
 
 export function VacancyForm() {
   return (

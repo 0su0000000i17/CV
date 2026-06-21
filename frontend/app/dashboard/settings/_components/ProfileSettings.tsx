@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { type FormEvent, useEffect, useMemo, useState } from "react";
-import { Mail, User, WalletCards } from "lucide-react";
+import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { Mail, User, WalletCards } from 'lucide-react';
 
-import type { Profile } from "@/src/shared/api/profile";
-import { useProfileQuery } from "@/src/shared/hooks/useProfileQuery";
-import { useUpdateProfileMutation } from "@/src/shared/hooks/useUpdateProfileMutation";
-import { supabase } from "@/src/shared/lib/supabase/client";
+import type { Profile } from '@/src/shared/api/profile';
+import { useProfileQuery } from '@/src/shared/hooks/useProfileQuery';
+import { useUpdateProfileMutation } from '@/src/shared/hooks/useUpdateProfileMutation';
+import { supabase } from '@/src/shared/lib/supabase/client';
 
 const forbiddenNamePattern =
   /(еблан|дебил|идиот|мудак|пидор|пидр|хуй|хуе|бля|сука|сучка|шлюха|мразь|гандон|гондон|чмо|уеб|уёб)/i;
@@ -19,18 +19,18 @@ function validateFullName(value: string) {
   const normalizedValue = value.trim();
 
   if (!normalizedValue) {
-    return "Введите имя.";
+    return 'Введите имя.';
   }
 
   if (normalizedValue.length > 100) {
-    return "Имя не должно превышать 100 символов.";
+    return 'Имя не должно превышать 100 символов.';
   }
 
   if (forbiddenNamePattern.test(normalizedValue)) {
-    return "Введите корректное имя.";
+    return 'Введите корректное имя.';
   }
 
-  return "";
+  return '';
 }
 
 export function ProfileSettings() {
@@ -77,7 +77,7 @@ export function ProfileSettings() {
         <p className="text-sm text-red-500">
           {profileQuery.error instanceof Error
             ? profileQuery.error.message
-            : "Не удалось загрузить профиль."}
+            : 'Не удалось загрузить профиль.'}
         </p>
 
         <button
@@ -106,10 +106,10 @@ type ProfileFormsProps = {
 function ProfileForms({ profile, accessToken }: ProfileFormsProps) {
   const [fullName, setFullName] = useState(profile.full_name);
   const [email, setEmail] = useState(profile.email);
-  const [nameMessage, setNameMessage] = useState("");
-  const [nameError, setNameError] = useState("");
-  const [emailMessage, setEmailMessage] = useState("");
-  const [emailError, setEmailError] = useState("");
+  const [nameMessage, setNameMessage] = useState('');
+  const [nameError, setNameError] = useState('');
+  const [emailMessage, setEmailMessage] = useState('');
+  const [emailError, setEmailError] = useState('');
   const [emailUpdating, setEmailUpdating] = useState(false);
 
   const updateProfileMutation = useUpdateProfileMutation();
@@ -146,8 +146,8 @@ function ProfileForms({ profile, accessToken }: ProfileFormsProps) {
 
   const handleNameSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setNameError("");
-    setNameMessage("");
+    setNameError('');
+    setNameMessage('');
 
     if (!hasNameChanges) {
       return;
@@ -165,11 +165,11 @@ function ProfileForms({ profile, accessToken }: ProfileFormsProps) {
       {
         onSuccess: () => {
           setFullName(normalizedDraftName);
-          setNameMessage("Имя изменено.");
+          setNameMessage('Имя изменено.');
         },
         onError: (error) => {
           setNameError(
-            error instanceof Error ? error.message : "Не удалось изменить имя."
+            error instanceof Error ? error.message : 'Не удалось изменить имя.'
           );
         },
       }
@@ -178,20 +178,20 @@ function ProfileForms({ profile, accessToken }: ProfileFormsProps) {
 
   const handleEmailSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setEmailError("");
-    setEmailMessage("");
+    setEmailError('');
+    setEmailMessage('');
 
     if (!hasEmailChanges) {
       return;
     }
 
     if (!normalizedDraftEmail) {
-      setEmailError("Введите email.");
+      setEmailError('Введите email.');
       return;
     }
 
     if (!isValidEmail(normalizedDraftEmail)) {
-      setEmailError("Введите корректный email.");
+      setEmailError('Введите корректный email.');
       return;
     }
 
@@ -213,7 +213,7 @@ function ProfileForms({ profile, accessToken }: ProfileFormsProps) {
 
     setEmail(normalizedDraftEmail);
     setEmailMessage(
-      "Письмо отправлено. Подтвердите новый email по ссылке из письма."
+      'Письмо отправлено. Подтвердите новый email по ссылке из письма.'
     );
   };
 
@@ -256,8 +256,8 @@ function ProfileForms({ profile, accessToken }: ProfileFormsProps) {
                 value={fullName}
                 onChange={(event) => {
                   setFullName(event.target.value);
-                  setNameError("");
-                  setNameMessage("");
+                  setNameError('');
+                  setNameMessage('');
                 }}
                 maxLength={100}
                 autoComplete="name"
@@ -269,7 +269,7 @@ function ProfileForms({ profile, accessToken }: ProfileFormsProps) {
                 disabled={!canSubmitName}
                 className="rounded-xl bg-foreground px-5 py-2.5 text-sm font-medium text-background transition-colors hover:bg-foreground/80 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {updateProfileMutation.isPending ? "Изменяем..." : "Изменить"}
+                {updateProfileMutation.isPending ? 'Изменяем...' : 'Изменить'}
               </button>
             </div>
 
@@ -308,8 +308,8 @@ function ProfileForms({ profile, accessToken }: ProfileFormsProps) {
                 value={email}
                 onChange={(event) => {
                   setEmail(event.target.value);
-                  setEmailError("");
-                  setEmailMessage("");
+                  setEmailError('');
+                  setEmailMessage('');
                 }}
                 autoComplete="email"
                 className="min-w-0 flex-1 rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-foreground"
@@ -320,7 +320,7 @@ function ProfileForms({ profile, accessToken }: ProfileFormsProps) {
                 disabled={!canSubmitEmail}
                 className="rounded-xl border border-border px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {emailUpdating ? "Отправляем..." : "Изменить email"}
+                {emailUpdating ? 'Отправляем...' : 'Изменить email'}
               </button>
             </div>
 
@@ -351,9 +351,7 @@ function ProfileForms({ profile, accessToken }: ProfileFormsProps) {
           </div>
 
           <div className="flex shrink-0 items-center gap-3 rounded-2xl border border-border bg-background px-4 py-3">
-            <span className="text-sm text-muted-foreground">
-              Текущий тариф
-            </span>
+            <span className="text-sm text-muted-foreground">Текущий тариф</span>
             <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-500">
               Free
             </span>

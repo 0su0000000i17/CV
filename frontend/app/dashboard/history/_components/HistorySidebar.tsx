@@ -1,24 +1,24 @@
-import Link from "next/link";
-import { Clock, FileText } from "lucide-react";
+import Link from 'next/link';
+import { Clock, FileText } from 'lucide-react';
 
 const versions = [
   {
-    title: "Frontend Developer Resume — React Version",
-    resume: "Frontend Developer Resume.pdf",
-    date: "15 июня",
-    status: "Адаптация",
+    title: 'Frontend Developer Resume — React Version',
+    resume: 'Frontend Developer Resume.pdf',
+    date: '15 июня',
+    status: 'Адаптация',
   },
   {
-    title: "Product Manager Resume — Анализ",
-    resume: "Product Manager Resume.pdf",
-    date: "13 июня",
-    status: "Оценка",
+    title: 'Product Manager Resume — Анализ',
+    resume: 'Product Manager Resume.pdf',
+    date: '13 июня',
+    status: 'Оценка',
   },
   {
-    title: "Marketing Specialist Resume — Original",
-    resume: "Marketing Specialist Resume.pdf",
-    date: "10 июня",
-    status: "Оригинал",
+    title: 'Marketing Specialist Resume — Original',
+    resume: 'Marketing Specialist Resume.pdf',
+    date: '10 июня',
+    status: 'Оригинал',
   },
 ];
 

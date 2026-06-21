@@ -1,62 +1,62 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from 'react';
 
-import { BackArrow } from "@/src/shared";
-import { supabase } from "@/src/shared/lib/supabase/client";
+import { BackArrow } from '@/src/shared';
+import { supabase } from '@/src/shared/lib/supabase/client';
 
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
 function getSafeNextPath(value: string | null) {
-  if (value && value.startsWith("/") && !value.startsWith("//")) {
+  if (value && value.startsWith('/') && !value.startsWith('//')) {
     return value;
   }
 
-  return "/dashboard";
+  return '/dashboard';
 }
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [nextPath, setNextPath] = useState("/dashboard");
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">(
-    "idle"
-  );
-  const [message, setMessage] = useState("");
+  const [email, setEmail] = useState('');
+  const [nextPath, setNextPath] = useState('/dashboard');
+  const [status, setStatus] = useState<
+    'idle' | 'loading' | 'success' | 'error'
+  >('idle');
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
-    setNextPath(getSafeNextPath(searchParams.get("next")));
+    setNextPath(getSafeNextPath(searchParams.get('next')));
   }, []);
 
   const normalizedEmail = useMemo(() => email.trim().toLowerCase(), [email]);
   const canSubmit =
     normalizedEmail.length > 0 &&
     isValidEmail(normalizedEmail) &&
-    status !== "loading";
+    status !== 'loading';
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    setMessage("");
+    setMessage('');
 
     if (!normalizedEmail) {
-      setStatus("error");
-      setMessage("Введите email.");
+      setStatus('error');
+      setMessage('Введите email.');
       return;
     }
 
     if (!isValidEmail(normalizedEmail)) {
-      setStatus("error");
-      setMessage("Введите корректный email.");
+      setStatus('error');
+      setMessage('Введите корректный email.');
       return;
     }
 
-    setStatus("loading");
+    setStatus('loading');
 
-    const callbackUrl = new URL("/auth/callback", window.location.origin);
-    callbackUrl.searchParams.set("next", nextPath);
+    const callbackUrl = new URL('/auth/callback', window.location.origin);
+    callbackUrl.searchParams.set('next', nextPath);
 
     const { error } = await supabase.auth.signInWithOtp({
       email: normalizedEmail,
@@ -66,17 +66,17 @@ export default function LoginPage() {
     });
 
     if (error) {
-      setStatus("error");
+      setStatus('error');
       setMessage(error.message);
       return;
     }
 
     setEmail(normalizedEmail);
-    setStatus("success");
-    setMessage("");
+    setStatus('success');
+    setMessage('');
   };
 
-  if (status === "success") {
+  if (status === 'success') {
     return (
       <div className="relative flex flex-1 flex-col">
         <div className="absolute right-0 top-0">
@@ -94,7 +94,7 @@ export default function LoginPage() {
             </h1>
 
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-              Мы отправили ссылку для входа на{" "}
+              Мы отправили ссылку для входа на{' '}
               <span className="font-medium text-foreground">{email}</span>.
             </p>
 
@@ -106,8 +106,8 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => {
-                setStatus("idle");
-                setMessage("");
+                setStatus('idle');
+                setMessage('');
               }}
               className="mt-8 w-full rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
             >
@@ -155,9 +155,9 @@ export default function LoginPage() {
                 onChange={(event) => {
                   setEmail(event.target.value);
 
-                  if (status === "error") {
-                    setStatus("idle");
-                    setMessage("");
+                  if (status === 'error') {
+                    setStatus('idle');
+                    setMessage('');
                   }
                 }}
                 placeholder="your@email.com"
@@ -171,10 +171,10 @@ export default function LoginPage() {
               disabled={!canSubmit}
               className="w-full rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-foreground/80 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {status === "loading" ? "Отправляем..." : "Получить ссылку"}
+              {status === 'loading' ? 'Отправляем...' : 'Получить ссылку'}
             </button>
 
-            {status === "error" && message ? (
+            {status === 'error' && message ? (
               <p className="text-center text-sm text-red-500">{message}</p>
             ) : null}
           </form>

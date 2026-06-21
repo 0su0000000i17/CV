@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { BarChart3, WandSparkles, History } from "lucide-react";
+import Link from 'next/link';
+import { BarChart3, WandSparkles, History } from 'lucide-react';
 
 type Props = {
   resumeId: string;
@@ -7,21 +7,21 @@ type Props = {
 
 const actions = [
   {
-    title: "Запустить анализ",
-    description: "Получить оценку резюме и рекомендации.",
-    href: "/dashboard/analyze",
+    title: 'Запустить анализ',
+    description: 'Получить оценку резюме и рекомендации.',
+    href: '/dashboard/analyze',
     icon: BarChart3,
   },
   {
-    title: "Адаптировать под вакансию",
-    description: "Создать версию под конкретное описание.",
-    href: "/dashboard/adapt",
+    title: 'Адаптировать под вакансию',
+    description: 'Создать версию под конкретное описание.',
+    href: '/dashboard/adapt',
     icon: WandSparkles,
   },
   {
-    title: "Посмотреть историю",
-    description: "Открыть действия и изменения по резюме.",
-    href: "/dashboard/history",
+    title: 'Посмотреть историю',
+    description: 'Открыть действия и изменения по резюме.',
+    href: '/dashboard/history',
     icon: History,
   },
 ];

@@ -1,24 +1,25 @@
-import { BarChart3, FileText, Search, ShieldCheck } from "lucide-react";
+import { BarChart3, FileText, Search, ShieldCheck } from 'lucide-react';
 
 const checks = [
   {
-    title: "Структура резюме",
-    description: "Проверим порядок блоков, читаемость и логику подачи.",
+    title: 'Структура резюме',
+    description: 'Проверим порядок блоков, читаемость и логику подачи.',
     icon: FileText,
   },
   {
-    title: "Опыт и достижения",
-    description: "Оценим, насколько опыт описан через действия и результат.",
+    title: 'Опыт и достижения',
+    description: 'Оценим, насколько опыт описан через действия и результат.',
     icon: BarChart3,
   },
   {
-    title: "Ключевые навыки",
-    description: "Проверим соответствие навыков IT-рынку и роли.",
+    title: 'Ключевые навыки',
+    description: 'Проверим соответствие навыков IT-рынку и роли.',
     icon: Search,
   },
   {
-    title: "ATS-совместимость",
-    description: "Посмотрим, насколько резюме удобно для автоматического отбора.",
+    title: 'ATS-совместимость',
+    description:
+      'Посмотрим, насколько резюме удобно для автоматического отбора.',
     icon: ShieldCheck,
   },
 ];

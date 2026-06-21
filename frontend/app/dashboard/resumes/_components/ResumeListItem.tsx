@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { Download, FileText, MoreHorizontal, Trash2 } from "lucide-react";
+import Link from 'next/link';
+import { Download, FileText, MoreHorizontal, Trash2 } from 'lucide-react';
 
-import type { UploadedResume } from "@/src/shared/api/resumes";
-import { supabase } from "@/src/shared/lib/supabase/client";
-import { useDownloadResumeMutation } from "@/src/shared/hooks/useDownloadResumeMutation";
+import type { UploadedResume } from '@/src/shared/api/resumes';
+import { supabase } from '@/src/shared/lib/supabase/client';
+import { useDownloadResumeMutation } from '@/src/shared/hooks/useDownloadResumeMutation';
 
 type ResumeListItemProps = {
   resume: UploadedResume;
@@ -13,39 +13,69 @@ type ResumeListItemProps = {
   onDelete: (resume: UploadedResume) => void;
 };
 
+function getScoreColorClass(score: number | null) {
+  if (score === null) {
+    return 'text-foreground';
+  }
+
+  if (score >= 80) {
+    return 'text-emerald-400';
+  }
+
+  if (score >= 60) {
+    return 'text-orange-400';
+  }
+
+  return 'text-red-400';
+}
+
 function getAnalysisData(resume: UploadedResume) {
   switch (resume.analysis_status) {
-    case "not_started":
+    case 'completed':
       return {
-        title: "Не пройдена",
-        subtitle: "Запустите анализ",
+        title:
+          resume.last_score === null ? 'Оценка не найдена' : `${resume.last_score}/100`,
+        subtitle: 'Актуальна',
+        titleClassName: getScoreColorClass(resume.last_score),
       };
 
-    case "completed":
+    case 'analyzing':
       return {
-        title: `${resume.last_score}/100`,
-        subtitle: "Актуальна",
+        title: 'Анализируется',
+        subtitle: 'Оценка в процессе',
+        titleClassName: 'text-foreground',
       };
 
-    case "needs_update":
+    case 'failed':
       return {
-        title: "Требует обновления",
-        subtitle: "Резюме изменилось",
+        title: 'Ошибка анализа',
+        subtitle: 'Запустите повторно',
+        titleClassName: 'text-red-400',
       };
 
+    case 'needs_update':
+      return {
+        title: 'Требует обновления',
+        subtitle: 'Резюме изменилось',
+        titleClassName: 'text-orange-400',
+      };
+
+    case 'idle':
+    case 'not_started':
     default:
       return {
-        title: "Неизвестно",
-        subtitle: "",
+        title: 'Не пройдена',
+        subtitle: 'Запустите анализ',
+        titleClassName: 'text-foreground',
       };
   }
 }
 
 function formatDate(date: string) {
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
   }).format(new Date(date));
 }
 
@@ -67,9 +97,9 @@ export function ResumeListItem({
     }
 
     downloadResumeMutation.mutate({
-    resumeId: resume.id,
-    accessToken: session.access_token,
-    fileName: resume.file_name,
+      resumeId: resume.id,
+      accessToken: session.access_token,
+      fileName: resume.file_name,
     });
   };
 
@@ -89,7 +119,7 @@ export function ResumeListItem({
           </Link>
 
           <p className="mt-1 text-sm text-muted-foreground">
-            {resume.role || "Роль не указана"}
+            {resume.role || 'Роль не указана'}
           </p>
 
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
@@ -110,7 +140,7 @@ export function ResumeListItem({
         </p>
 
         <div className="mt-3">
-          <p className="text-xl font-semibold text-foreground">
+          <p className={`text-xl font-semibold ${analysis.titleClassName}`}>
             {analysis.title}
           </p>
 

@@ -1,6 +1,6 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { updateProfile } from "@/src/shared/api/profile";
+import { updateProfile } from '@/src/shared/api/profile';
 
 type UpdateProfileVariables = {
   fullName: string;
@@ -14,7 +14,7 @@ export function useUpdateProfileMutation() {
     mutationFn: ({ fullName, accessToken }: UpdateProfileVariables) =>
       updateProfile(fullName, accessToken),
     onSuccess: (data) => {
-      queryClient.setQueryData(["profile"], data);
+      queryClient.setQueryData(['profile'], data);
     },
   });
 }

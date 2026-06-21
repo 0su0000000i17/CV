@@ -1,8 +1,8 @@
-import { AdaptHeader } from "./_components/AdaptHeader";
-import { AdaptSettings } from "./_components/AdaptSettings";
-import { AdaptSidebar } from "./_components/AdaptSidebar";
-import { SelectedResumeCard } from "./_components/SelectedResumeCard";
-import { VacancyForm } from "./_components/VacancyForm";
+import { AdaptHeader } from './_components/AdaptHeader';
+import { AdaptSettings } from './_components/AdaptSettings';
+import { AdaptSidebar } from './_components/AdaptSidebar';
+import { SelectedResumeCard } from './_components/SelectedResumeCard';
+import { VacancyForm } from './_components/VacancyForm';
 
 export default function AdaptPage() {
   return (

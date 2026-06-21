@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
-import { supabase } from "@/src/shared/lib/supabase/client";
-import { useResumesQuery } from "@/src/shared/hooks/useResumesQuery";
+import { supabase } from '@/src/shared/lib/supabase/client';
+import { useResumesQuery } from '@/src/shared/hooks/useResumesQuery';
 
-import { ResumesHeader } from "./_components/ResumesHeader";
-import { ResumesList } from "./_components/ResumesList";
-import { ResumesStats } from "./_components/ResumesStats";
+import { ResumesHeader } from './_components/ResumesHeader';
+import { ResumesList } from './_components/ResumesList';
+import { ResumesStats } from './_components/ResumesStats';
 
 export default function ResumesPage() {
   const [accessToken, setAccessToken] = useState<string>();

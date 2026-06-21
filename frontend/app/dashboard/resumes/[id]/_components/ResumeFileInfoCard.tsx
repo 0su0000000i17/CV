@@ -1,14 +1,14 @@
-import type { UploadedResume } from "@/src/shared/api/resumes";
+import type { UploadedResume } from '@/src/shared/api/resumes';
 
 type Props = {
   resume: UploadedResume;
 };
 
 function formatDate(date: string) {
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
   }).format(new Date(date));
 }
 

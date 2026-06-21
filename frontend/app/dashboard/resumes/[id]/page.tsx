@@ -1,21 +1,21 @@
-"use client";
+'use client';
 
-import { useParams } from "next/navigation";
+import { useParams } from 'next/navigation';
 
-import { useAuth } from "@/src/shared/hooks/useAuth";
-import { useResumeQuery } from "@/src/shared/hooks/useResumeQuery";
+import { useAuth } from '@/src/shared/hooks/useAuth';
+import { useResumeQuery } from '@/src/shared/hooks/useResumeQuery';
 
-import { ResumeActionsPanel } from "./_components/ResumeActionsPanel";
-import { ResumeActivityCard } from "./_components/ResumeActivityCard";
-import { ResumeDetailsHeader } from "./_components/ResumeDetailsHeader";
-import { ResumeDetailsSkeleton } from "./_components/ResumeDetailsSkeleton";
-import { ResumeFileInfoCard } from "./_components/ResumeFileInfoCard";
-import { ResumeNotFoundState } from "./_components/ResumeNotFoundState";
-import { ResumeStatsCards } from "./_components/ResumeStatsCards";
-import { ResumeVersionsCard } from "./_components/ResumeVersionsCard";
+import { ResumeActionsPanel } from './_components/ResumeActionsPanel';
+import { ResumeActivityCard } from './_components/ResumeActivityCard';
+import { ResumeDetailsHeader } from './_components/ResumeDetailsHeader';
+import { ResumeDetailsSkeleton } from './_components/ResumeDetailsSkeleton';
+import { ResumeFileInfoCard } from './_components/ResumeFileInfoCard';
+import { ResumeNotFoundState } from './_components/ResumeNotFoundState';
+import { ResumeStatsCards } from './_components/ResumeStatsCards';
+import { ResumeVersionsCard } from './_components/ResumeVersionsCard';
 
 function getResumeId(value: string | string[] | undefined) {
-  if (typeof value === "string") {
+  if (typeof value === 'string') {
     return value;
   }
 

@@ -1,4 +1,4 @@
-import { Wand2 } from "lucide-react";
+import { Wand2 } from 'lucide-react';
 
 export function AdaptHeader() {
   return (

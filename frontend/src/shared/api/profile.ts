@@ -1,8 +1,4 @@
-import {
-  createAuthHeaders,
-  getApiUrl,
-  parseApiResponse,
-} from "./http";
+import { createAuthHeaders, getApiUrl, parseApiResponse } from './http';
 
 export type Profile = {
   id: string;
@@ -21,27 +17,21 @@ export async function getProfile(accessToken: string) {
     headers: createAuthHeaders(accessToken),
   });
 
-  return parseApiResponse<ProfileResponse>(
-    response,
-    "Failed to fetch profile"
-  );
+  return parseApiResponse<ProfileResponse>(response, 'Failed to fetch profile');
 }
 
-export async function updateProfile(
-  fullName: string,
-  accessToken: string
-) {
+export async function updateProfile(fullName: string, accessToken: string) {
   const response = await fetch(`${getApiUrl()}/api/profile`, {
-    method: "PATCH",
+    method: 'PATCH',
     headers: {
       ...createAuthHeaders(accessToken),
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({ full_name: fullName }),
   });
 
   return parseApiResponse<ProfileResponse>(
     response,
-    "Failed to update profile"
+    'Failed to update profile'
   );
 }

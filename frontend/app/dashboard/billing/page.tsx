@@ -9,9 +9,7 @@ export default function Page() {
         Мои резюме
       </h1>
 
-      <p className="mt-4 text-muted-foreground">
-        Раздел в разработке.
-      </p>
+      <p className="mt-4 text-muted-foreground">Раздел в разработке.</p>
     </div>
   );
 }

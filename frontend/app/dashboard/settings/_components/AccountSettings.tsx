@@ -1,24 +1,24 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
-import { LogOut, ShieldAlert } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useRouter } from 'next/navigation';
+import { LogOut, ShieldAlert } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef, useState } from 'react';
 
-import { supabase } from "@/src/shared/lib/supabase/client";
+import { supabase } from '@/src/shared/lib/supabase/client';
 
 export function AccountSettings() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
-    setErrorMessage("");
+    setErrorMessage('');
 
-    const { error } = await supabase.auth.signOut({ scope: "local" });
+    const { error } = await supabase.auth.signOut({ scope: 'local' });
 
     if (error) {
       setErrorMessage(error.message);
@@ -27,7 +27,7 @@ export function AccountSettings() {
     }
 
     queryClient.clear();
-    router.replace("/");
+    router.replace('/');
     router.refresh();
   };
 
@@ -54,7 +54,7 @@ export function AccountSettings() {
           <button
             type="button"
             onClick={() => {
-              setErrorMessage("");
+              setErrorMessage('');
               setDialogOpen(true);
             }}
             className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-red-500/30 px-5 py-2.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-500 hover:text-white"
@@ -96,14 +96,14 @@ function LogoutDialog({
     cancelButtonRef.current?.focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !isLoggingOut) {
+      if (event.key === 'Escape' && !isLoggingOut) {
         onCancel();
       }
     };
 
-    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener('keydown', handleKeyDown);
 
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isLoggingOut, onCancel]);
 
   return (
@@ -165,7 +165,7 @@ function LogoutDialog({
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-500 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <LogOut className="h-4 w-4" />
-            {isLoggingOut ? "Выходим..." : "Да, выйти"}
+            {isLoggingOut ? 'Выходим...' : 'Да, выйти'}
           </button>
         </div>
       </div>

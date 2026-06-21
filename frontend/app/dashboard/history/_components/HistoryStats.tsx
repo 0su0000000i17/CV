@@ -1,7 +1,7 @@
 const stats = [
-  { label: "Всего действий", value: "24" },
-  { label: "Создано версий", value: "6" },
-  { label: "Скачиваний", value: "8" },
+  { label: 'Всего действий', value: '24' },
+  { label: 'Создано версий', value: '6' },
+  { label: 'Скачиваний', value: '8' },
 ];
 
 export function HistoryStats() {
