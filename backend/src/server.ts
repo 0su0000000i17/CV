@@ -3,6 +3,7 @@ import "dotenv/config";
 import cors from "cors";
 import express from "express";
 
+import { aiRouter } from "./routes/ai.js";
 import { profileRouter } from "./routes/profile.js";
 import { resumesRouter } from "./routes/resumes.js";
 
@@ -19,6 +20,7 @@ app.use(
 
 app.use(express.json());
 
+app.use("/api/ai", aiRouter);
 app.use("/api/profile", profileRouter);
 app.use("/api/resumes", resumesRouter);
 
