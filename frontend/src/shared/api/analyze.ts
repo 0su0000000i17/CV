@@ -34,23 +34,40 @@ export type ResumeAnalysisResult = {
   };
 };
 
+export type ResumeAnalysisRecord = {
+  id: string;
+  score: number;
+  createdAt: string;
+  rubricVersion: string;
+};
+
+export type AnalyzeResumeMeta = {
+  provider: string | null;
+  model: string | null;
+  markdownChars: number;
+  markdownLimited: boolean;
+  diagnostics?: {
+    heuristicFlags: string[];
+    scoring: {
+      baseScore: number;
+      finalScore: number;
+      appliedCaps: string[];
+    };
+  };
+};
+
 export type AnalyzeResumeResponse = {
   resumeId: string;
   analysis: ResumeAnalysisResult;
-  meta: {
-    provider: string;
-    model: string;
-    markdownChars: number;
-    markdownLimited: boolean;
-    diagnostics?: {
-      heuristicFlags: string[];
-      scoring: {
-        baseScore: number;
-        finalScore: number;
-        appliedCaps: string[];
-      };
-    };
-  };
+  analysisRecord: ResumeAnalysisRecord;
+  meta: AnalyzeResumeMeta;
+};
+
+export type LatestResumeAnalysisResponse = {
+  resumeId: string;
+  analysis: ResumeAnalysisResult | null;
+  analysisRecord: ResumeAnalysisRecord | null;
+  meta: AnalyzeResumeMeta | null;
 };
 
 export async function analyzeResume(resumeId: string, accessToken: string) {
@@ -66,5 +83,22 @@ export async function analyzeResume(resumeId: string, accessToken: string) {
   return parseApiResponse<AnalyzeResumeResponse>(
     response,
     'Failed to analyze resume'
+  );
+}
+
+export async function getLatestResumeAnalysis(
+  resumeId: string,
+  accessToken: string
+) {
+  const response = await fetch(
+    `${getApiUrl()}/api/resumes/${resumeId}/analysis`,
+    {
+      headers: createAuthHeaders(accessToken),
+    }
+  );
+
+  return parseApiResponse<LatestResumeAnalysisResponse>(
+    response,
+    'Failed to fetch latest resume analysis'
   );
 }

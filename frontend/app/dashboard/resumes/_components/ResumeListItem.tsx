@@ -13,30 +13,60 @@ type ResumeListItemProps = {
   onDelete: (resume: UploadedResume) => void;
 };
 
+function getScoreColorClass(score: number | null) {
+  if (score === null) {
+    return 'text-foreground';
+  }
+
+  if (score >= 80) {
+    return 'text-emerald-400';
+  }
+
+  if (score >= 60) {
+    return 'text-orange-400';
+  }
+
+  return 'text-red-400';
+}
+
 function getAnalysisData(resume: UploadedResume) {
   switch (resume.analysis_status) {
-    case 'not_started':
-      return {
-        title: 'Не пройдена',
-        subtitle: 'Запустите анализ',
-      };
-
     case 'completed':
       return {
-        title: `${resume.last_score}/100`,
+        title:
+          resume.last_score === null ? 'Оценка не найдена' : `${resume.last_score}/100`,
         subtitle: 'Актуальна',
+        titleClassName: getScoreColorClass(resume.last_score),
+      };
+
+    case 'analyzing':
+      return {
+        title: 'Анализируется',
+        subtitle: 'Оценка в процессе',
+        titleClassName: 'text-foreground',
+      };
+
+    case 'failed':
+      return {
+        title: 'Ошибка анализа',
+        subtitle: 'Запустите повторно',
+        titleClassName: 'text-red-400',
       };
 
     case 'needs_update':
       return {
         title: 'Требует обновления',
         subtitle: 'Резюме изменилось',
+        titleClassName: 'text-orange-400',
       };
 
+    case 'idle':
+    case 'not_started':
     default:
       return {
-        title: 'Неизвестно',
-        subtitle: '',
+        title: 'Не пройдена',
+        subtitle: 'Запустите анализ',
+        titleClassName: 'text-foreground',
       };
   }
 }
@@ -110,7 +140,7 @@ export function ResumeListItem({
         </p>
 
         <div className="mt-3">
-          <p className="text-xl font-semibold text-foreground">
+          <p className={`text-xl font-semibold ${analysis.titleClassName}`}>
             {analysis.title}
           </p>
 

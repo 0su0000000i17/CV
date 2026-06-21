@@ -1,5 +1,8 @@
 import { randomUUID } from "node:crypto";
 
+import { Agent, fetch as undiciFetch } from "undici";
+import type { Dispatcher, RequestInit, Response } from "undici";
+
 import { AiConfigurationError, AiProviderError } from "../errors.js";
 import type {
   AiGenerateTextParams,
@@ -35,6 +38,7 @@ const TOKEN_REFRESH_SAFETY_WINDOW_MS = 60_000;
 const FALLBACK_TOKEN_TTL_MS = 25 * 60 * 1000;
 
 let cachedToken: CachedToken | null = null;
+let insecureTlsDispatcher: Dispatcher | null = null;
 
 function getRequiredEnv(name: string) {
   const value = process.env[name]?.trim();
@@ -48,6 +52,12 @@ function getRequiredEnv(name: string) {
 
 function getOptionalEnv(name: string, fallback: string) {
   return process.env[name]?.trim() || fallback;
+}
+
+function getBooleanEnv(name: string) {
+  const value = process.env[name]?.trim().toLowerCase();
+
+  return value === "1" || value === "true" || value === "yes";
 }
 
 function getGigaChatAuthorizationKey() {
@@ -64,29 +74,76 @@ function getGigaChatAuthorizationKey() {
 }
 
 function getGigaChatConfig() {
+  const allowInsecureTls = getBooleanEnv("GIGACHAT_ALLOW_INSECURE_TLS");
+
+  if (allowInsecureTls && process.env.NODE_ENV === "production") {
+    throw new AiConfigurationError(
+      "GIGACHAT_ALLOW_INSECURE_TLS cannot be enabled in production"
+    );
+  }
+
   return {
     authUrl: getOptionalEnv("GIGACHAT_AUTH_URL", DEFAULT_AUTH_URL),
-    apiUrl: getOptionalEnv("GIGACHAT_API_URL", DEFAULT_API_URL).replace(/\/$/, ""),
+    apiUrl: getOptionalEnv("GIGACHAT_API_URL", DEFAULT_API_URL).replace(
+      /\/$/,
+      ""
+    ),
     authorizationKey: getGigaChatAuthorizationKey(),
     scope: getOptionalEnv("GIGACHAT_SCOPE", DEFAULT_SCOPE),
     model: getOptionalEnv("GIGACHAT_MODEL", DEFAULT_MODEL),
     timeoutMs: Number(process.env.GIGACHAT_TIMEOUT_MS) || DEFAULT_TIMEOUT_MS,
+    allowInsecureTls,
   };
+}
+
+function getInsecureTlsDispatcher() {
+  if (!insecureTlsDispatcher) {
+    insecureTlsDispatcher = new Agent({
+      connect: {
+        rejectUnauthorized: false,
+      },
+    });
+  }
+
+  return insecureTlsDispatcher;
+}
+
+function createProviderNetworkError(error: unknown, url: string) {
+  if (error instanceof Error && error.name === "AbortError") {
+    return new AiProviderError(`AI provider request timed out: ${url}`);
+  }
+
+  if (error instanceof Error) {
+    const message = error.message || "Unknown network error";
+
+    return new AiProviderError(`AI provider network error: ${message}`);
+  }
+
+  return new AiProviderError("AI provider network error");
 }
 
 async function fetchWithTimeout(
   url: string,
   options: RequestInit,
-  timeoutMs: number
-) {
+  timeoutMs: number,
+  allowInsecureTls: boolean
+): Promise<Response> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
+  const requestOptions: RequestInit = {
+    ...options,
+    signal: controller.signal,
+  };
+
+  if (allowInsecureTls) {
+    requestOptions.dispatcher = getInsecureTlsDispatcher();
+  }
+
   try {
-    return await fetch(url, {
-      ...options,
-      signal: controller.signal,
-    });
+    return await undiciFetch(url, requestOptions);
+  } catch (error) {
+    throw createProviderNetworkError(error, url);
   } finally {
     clearTimeout(timeout);
   }
@@ -136,7 +193,8 @@ async function getAccessToken() {
       },
       body,
     },
-    config.timeoutMs
+    config.timeoutMs,
+    config.allowInsecureTls
   );
 
   if (!response.ok) {
@@ -188,7 +246,8 @@ export function createGigaChatProvider(): AiProvider {
             max_tokens: params.maxTokens,
           }),
         },
-        config.timeoutMs
+        config.timeoutMs,
+        config.allowInsecureTls
       );
 
       if (!response.ok) {
