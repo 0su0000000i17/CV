@@ -66,12 +66,13 @@ export async function analyzeResumePreview(req: Request, res: Response) {
     return res.json({
       resumeId: resume.id,
       analysis: aiResult.analysis,
-      meta: {
-        provider: aiResult.provider,
-        model: aiResult.model,
-        markdownChars: extraction.stats.returnedChars,
-        markdownLimited: extraction.stats.limited,
-      },
+meta: {
+  provider: aiResult.provider,
+  model: aiResult.model,
+  markdownChars: extraction.stats.returnedChars,
+  markdownLimited: extraction.stats.limited,
+  diagnostics: aiResult.diagnostics,
+},
     });
   } catch (error) {
     return sendServerError(res, "Failed to analyze resume", error);

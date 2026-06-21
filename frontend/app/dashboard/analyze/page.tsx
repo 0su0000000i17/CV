@@ -10,6 +10,7 @@ import { FutureResultCard } from './_components/FutureResultCard';
 import { SelectedResumeCard } from './_components/SelectedResumeCard';
 
 import { useAuth } from '@/src/shared/hooks/useAuth';
+import { useAnalyzeResumeMutation } from '@/src/shared/hooks/useAnalyzeResumeMutation';
 import { useResumesQuery } from '@/src/shared/hooks/useResumesQuery';
 
 export default function AnalyzePage() {
@@ -18,6 +19,7 @@ export default function AnalyzePage() {
 
   const { accessToken } = useAuth();
   const resumesQuery = useResumesQuery(accessToken);
+  const analyzeResumeMutation = useAnalyzeResumeMutation();
 
   const resumeId = searchParams.get('resumeId');
 
@@ -35,13 +37,37 @@ export default function AnalyzePage() {
     return resumes.find((resume) => resume.id === resumeId);
   }, [resumeId, resumes]);
 
+  const analysisResult = analyzeResumeMutation.data;
+  const analysis = analysisResult?.analysis;
+
+  const shouldShowResultCard =
+    Boolean(analysis) ||
+    analyzeResumeMutation.isPending ||
+    analyzeResumeMutation.isError;
+
   function handleSelectResume(nextResumeId: string) {
+    analyzeResumeMutation.reset();
     router.replace(`/dashboard/analyze?resumeId=${nextResumeId}`);
+  }
+
+  function handleRunAnalyze() {
+    if (!selectedResume || !accessToken || analyzeResumeMutation.isPending) {
+      return;
+    }
+
+    analyzeResumeMutation.mutate({
+      resumeId: selectedResume.id,
+      accessToken,
+    });
   }
 
   return (
     <div>
-      <AnalyzeHeader selectedResume={selectedResume} />
+      <AnalyzeHeader
+        selectedResume={selectedResume}
+        isAnalyzing={analyzeResumeMutation.isPending}
+        onAnalyze={handleRunAnalyze}
+      />
 
       <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
         <div className="space-y-6">
@@ -53,11 +79,28 @@ export default function AnalyzePage() {
             onSelectResume={handleSelectResume}
           />
 
-          <ChecksGrid />
-          <FutureResultCard />
+          {shouldShowResultCard ? (
+            <FutureResultCard
+              analysis={analysis}
+              isAnalyzing={analyzeResumeMutation.isPending}
+              isError={analyzeResumeMutation.isError}
+              errorMessage={
+                analyzeResumeMutation.error instanceof Error
+                  ? analyzeResumeMutation.error.message
+                  : undefined
+              }
+            />
+          ) : (
+            <ChecksGrid />
+          )}
         </div>
 
-        <AnalyzeSidebar selectedResume={selectedResume} />
+        <AnalyzeSidebar
+          selectedResume={selectedResume}
+          analysis={analysis}
+          isAnalyzing={analyzeResumeMutation.isPending}
+          onAnalyze={handleRunAnalyze}
+        />
       </div>
     </div>
   );

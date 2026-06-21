@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useState } from "react";
-import { Check, FileText, Loader2, Search, X } from "lucide-react";
+import { useEffect, useMemo, useState } from 'react';
+import { Check, FileText, Loader2, Search, X } from 'lucide-react';
 
-import type { UploadedResume } from "@/src/shared/api/resumes";
+import type { UploadedResume } from '@/src/shared/api/resumes';
 
 type Props = {
   selectedResume?: UploadedResume;
@@ -15,7 +15,7 @@ type Props = {
 
 function formatFileSize(bytes?: number | null) {
   if (!bytes || bytes <= 0) {
-    return "Размер не указан";
+    return 'Размер не указан';
   }
 
   const mb = bytes / 1024 / 1024;
@@ -29,26 +29,26 @@ function formatFileSize(bytes?: number | null) {
 
 function formatResumeStatus(resume?: UploadedResume) {
   if (!resume) {
-    return "Резюме не выбрано";
+    return 'Резюме не выбрано';
   }
 
-  if (typeof resume.last_score === "number") {
+  if (typeof resume.last_score === 'number') {
     return `Последняя оценка: ${resume.last_score}/100`;
   }
 
-  if (resume.analysis_status === "completed") {
-    return "Оценка завершена";
+  if (resume.analysis_status === 'completed') {
+    return 'Оценка завершена';
   }
 
-  if (resume.analysis_status === "processing") {
-    return "Оценка в процессе";
+  if (resume.analysis_status === 'processing') {
+    return 'Оценка в процессе';
   }
 
-  if (resume.analysis_status === "failed") {
-    return "Оценка не удалась";
+  if (resume.analysis_status === 'failed') {
+    return 'Оценка не удалась';
   }
 
-  return "Оценка не пройдена";
+  return 'Оценка не пройдена';
 }
 
 function getResumeSubtitle(resume: UploadedResume) {
@@ -56,7 +56,7 @@ function getResumeSubtitle(resume: UploadedResume) {
     return resume.role;
   }
 
-  return `${resume.file_type || "Файл"} · ${formatFileSize(resume.file_size)}`;
+  return `${resume.file_type || 'Файл'} · ${formatFileSize(resume.file_size)}`;
 }
 
 export function SelectedResumeCard({
@@ -67,7 +67,7 @@ export function SelectedResumeCard({
   onSelectResume,
 }: Props) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState("");
+  const [searchValue, setSearchValue] = useState('');
 
   const filteredResumes = useMemo(() => {
     const normalizedSearch = searchValue.trim().toLowerCase();
@@ -84,7 +84,7 @@ export function SelectedResumeCard({
         resume.file_type,
       ]
         .filter(Boolean)
-        .join(" ")
+        .join(' ')
         .toLowerCase();
 
       return searchSource.includes(normalizedSearch);
@@ -97,7 +97,7 @@ export function SelectedResumeCard({
 
   function closeModal() {
     setIsModalOpen(false);
-    setSearchValue("");
+    setSearchValue('');
   }
 
   function handleSelect(resumeId: string) {
@@ -111,24 +111,24 @@ export function SelectedResumeCard({
     }
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
+      if (event.key === 'Escape') {
         closeModal();
       }
     }
 
-    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isModalOpen]);
 
   return (
     <>
-      <div className="rounded-2xl border border-border bg-card/60 p-6">
-        <div className="mb-6 flex items-start justify-between gap-4">
+      <div className="rounded-2xl border border-border bg-card/60 p-5">
+        <div className="mb-4 flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-xl font-medium text-foreground">
+            <h2 className="text-lg font-medium text-foreground">
               Выбранное резюме
             </h2>
 
@@ -147,12 +147,12 @@ export function SelectedResumeCard({
         </div>
 
         {isLoading ? (
-          <div className="flex items-center gap-3 rounded-2xl border border-border bg-background p-5 text-sm text-muted-foreground">
+          <div className="flex items-center gap-3 rounded-xl border border-border bg-background px-4 py-3 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
             Загружаем список резюме...
           </div>
         ) : isError ? (
-          <div className="rounded-2xl border border-border bg-background p-5">
+          <div className="rounded-xl border border-border bg-background px-4 py-3">
             <p className="font-medium text-foreground">
               Не удалось загрузить резюме
             </p>
@@ -162,27 +162,27 @@ export function SelectedResumeCard({
             </p>
           </div>
         ) : selectedResume ? (
-          <div className="flex items-start gap-4 rounded-2xl border border-border bg-background p-5">
-            <div className="rounded-xl bg-muted p-3">
-              <FileText className="h-5 w-5 text-foreground" />
+          <div className="flex items-center gap-3 rounded-xl border border-border bg-background px-4 py-3">
+            <div className="rounded-lg bg-muted p-2">
+              <FileText className="h-4 w-4 text-foreground" />
             </div>
 
-            <div className="min-w-0">
-              <p className="truncate text-base font-medium text-foreground">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-foreground">
                 {selectedResume.title || selectedResume.file_name}
               </p>
 
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="mt-0.5 text-xs text-muted-foreground">
                 {getResumeSubtitle(selectedResume)}
               </p>
+            </div>
 
-              <div className="mt-3 inline-flex rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
-                {formatResumeStatus(selectedResume)}
-              </div>
+            <div className="hidden shrink-0 rounded-full border border-border px-3 py-1 text-[11px] text-muted-foreground sm:inline-flex">
+              {formatResumeStatus(selectedResume)}
             </div>
           </div>
         ) : (
-          <div className="rounded-2xl border border-border bg-background p-5">
+          <div className="rounded-xl border border-border bg-background px-4 py-3">
             <p className="font-medium text-foreground">Резюме не выбрано</p>
 
             <p className="mt-1 text-sm text-muted-foreground">

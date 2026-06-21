@@ -1,12 +1,18 @@
-import { Play } from 'lucide-react';
+import { Loader2, Play } from 'lucide-react';
 
 import type { UploadedResume } from '@/src/shared/api/resumes';
 
 type Props = {
   selectedResume?: UploadedResume;
+  isAnalyzing: boolean;
+  onAnalyze: () => void;
 };
 
-export function AnalyzeHeader({ selectedResume }: Props) {
+export function AnalyzeHeader({
+  selectedResume,
+  isAnalyzing,
+  onAnalyze,
+}: Props) {
   return (
     <div className="mb-10">
       <p className="mb-3 text-xs font-medium uppercase tracking-widest text-muted-foreground">
@@ -27,11 +33,21 @@ export function AnalyzeHeader({ selectedResume }: Props) {
 
         <button
           type="button"
-          disabled={!selectedResume}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-foreground px-5 py-3 text-sm font-medium text-background transition-colors hover:bg-foreground/80 disabled:cursor-not-allowed disabled:opacity-50"
+          onClick={onAnalyze}
+          disabled={!selectedResume || isAnalyzing}
+          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-foreground px-5 py-3 text-sm font-medium text-background transition-colors hover:bg-foreground/80 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <Play className="h-4 w-4" />
-          Запустить оценку
+          {isAnalyzing ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Оцениваем...
+            </>
+          ) : (
+            <>
+              <Play className="h-4 w-4" />
+              Запустить оценку
+            </>
+          )}
         </button>
       </div>
     </div>

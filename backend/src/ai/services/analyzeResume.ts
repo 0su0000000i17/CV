@@ -4,9 +4,11 @@ import {
   createAnalyzeResumeUserPrompt,
 } from "../prompts/analyzeResumePrompt.js";
 import {
-  resumeAnalysisSchema,
-  type ResumeAnalysis,
+  aiResumeAnalysisSchema,
+  type AiResumeAnalysis,
 } from "../schemas/resumeAnalysisSchema.js";
+import { detectResumeHeuristics } from "./detectResumeHeuristics.js";
+import { scoreResumeAnalysis } from "./scoreResumeAnalysis.js";
 
 type AnalyzeResumeParams = {
   resumeMarkdown: string;
@@ -39,7 +41,7 @@ function extractJsonObject(rawText: string) {
   return trimmedText;
 }
 
-function parseResumeAnalysis(rawText: string): ResumeAnalysis {
+function parseAiResumeAnalysis(rawText: string): AiResumeAnalysis {
   const jsonText = extractJsonObject(rawText);
 
   let parsedJson: unknown;
@@ -50,7 +52,7 @@ function parseResumeAnalysis(rawText: string): ResumeAnalysis {
     throw new Error("AI response is not valid JSON");
   }
 
-  const validationResult = resumeAnalysisSchema.safeParse(parsedJson);
+  const validationResult = aiResumeAnalysisSchema.safeParse(parsedJson);
 
   if (!validationResult.success) {
     throw new Error(
@@ -75,16 +77,26 @@ export async function analyzeResume(params: AnalyzeResumeParams) {
         content: createAnalyzeResumeUserPrompt(params.resumeMarkdown),
       },
     ],
-    temperature: 0.1,
-    maxTokens: 1_800,
+    temperature: 0,
+    maxTokens: 2_400,
   });
 
-  const analysis = parseResumeAnalysis(result.text);
+  const rawAiAnalysis = parseAiResumeAnalysis(result.text);
+  const heuristicResult = detectResumeHeuristics(
+    rawAiAnalysis,
+    params.resumeMarkdown
+  );
+  const scoringResult = scoreResumeAnalysis(heuristicResult.analysis);
 
   return {
-    analysis,
+    analysis: scoringResult.analysis,
+    rawAiAnalysis,
     rawText: result.text,
     provider: result.provider,
     model: result.model,
+    diagnostics: {
+      heuristicFlags: heuristicResult.heuristicFlags,
+      scoring: scoringResult.scoring,
+    },
   };
 }
