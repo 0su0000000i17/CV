@@ -1,5 +1,6 @@
 import { Router } from "express";
 
+import { analyzeResumePreview } from "../controllers/resumeAnalysis.js";
 import { extractResumeTextPreview } from "../controllers/resumeExtraction.js";
 import {
   deleteResume,
@@ -15,6 +16,7 @@ const router = Router();
 router.get("/", getResumes);
 router.post("/upload", handleResumeUpload, uploadResume);
 router.delete("/:resumeId", deleteResume);
+router.post("/:resumeId/analyze", analyzeResumePreview);
 router.post("/:resumeId/extract-text", extractResumeTextPreview);
 router.get("/:resumeId/download-url", getResumeDownloadUrl);
 router.get("/:resumeId", getResumeById);
