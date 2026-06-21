@@ -160,7 +160,7 @@ function ThemeToggleButton({
     <button
       type="button"
       onClick={onToggle}
-      className="rounded-full p-2 transition-colors hover:bg-muted"
+      className="rounded-full p-2 transition-colors hover:bg-muted cursor-pointer"
       aria-label="Переключить тему"
     >
       {mounted ? (
@@ -282,7 +282,7 @@ function ProfilePopover({
       <button
         type="button"
         onClick={() => setIsOpen((currentValue) => !currentValue)}
-        className="flex h-10 w-10 items-center justify-center text-foreground transition-colors hover:text-muted-foreground"
+        className="flex h-10 w-10 items-center justify-center text-foreground transition-colors hover:text-muted-foreground cursor-pointer"
         aria-label="Открыть профиль"
         aria-expanded={isOpen}
         aria-haspopup="menu"
@@ -457,7 +457,7 @@ function MobileMenu({
                   onClick={handleSignOut}
                   className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
-                  <LogOut className="h-4 w-4" />
+                  <LogOut className="h-4 w-4"/>
                   Выйти
                 </button>
               </div>
