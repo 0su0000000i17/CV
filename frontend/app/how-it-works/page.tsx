@@ -1,46 +1,54 @@
-import Link from "next/link";
+import Link from 'next/link';
+import { title } from 'process';
 
-
-type MetricStatus = "good" | "medium" | "needs work";
+type MetricStatus = 'good' | 'medium' | 'needs work';
 
 const metrics: { label: string; status: MetricStatus }[] = [
-  { label: "Positioning", status: "good" },
-  { label: "Role fit", status: "medium" },
-  { label: "ATS", status: "needs work" },
-  { label: "Evidence", status: "good" },
+  { label: 'Позиционирование', status: 'good' },
+  { label: 'Соответствие', status: 'medium' },
+  { label: 'ATS', status: 'needs work' },
+  { label: 'Доказательность', status: 'good' },
 ];
 
 const statusColor: Record<MetricStatus, string> = {
-  good: "text-emerald-500",
-  medium: "text-yellow-500",
-  "needs work": "text-red-500",
+  good: 'text-emerald-500',
+  medium: 'text-yellow-500',
+  'needs work': 'text-red-500',
 };
 
 export default function HowItWorksPage() {
   const steps = [
     {
-      number: "01",
-      title: "Загрузи резюме",
+      number: '01',
+      title: 'Загрузи резюме',
       description:
-        "Добавь PDF или DOCX из личного кабинета. Файл остаётся привязан к твоему аккаунту и используется для анализа.",
+        'Добавь PDF или DOCX из личного кабинета. Файл остаётся привязан к твоему аккаунту и используется для анализа.',
     },
     {
-      number: "02",
-      title: "Сервис извлечёт содержание",
+      number: '02',
+      title: 'Сервис извлечёт содержание',
       description:
-        "Backend преобразует резюме в текстовый формат, чтобы анализировать не картинку файла, а реальное содержание: опыт, роли, навыки и структуру.",
+        'Backend преобразует резюме в текстовый формат, чтобы анализировать не картинку файла, а реальное содержание: опыт, роли, навыки и структуру.',
     },
     {
-      number: "03",
-      title: "AI найдёт сильные места и риски",
+      number: '03',
+      title: 'AI найдёт сильные места и риски',
       description:
-        "Модель помогает выделить факты, red flags, ATS-проблемы и зоны улучшения. Финальную оценку считает backend по собственной рубрике.",
+        'Модель помогает выделить факты, red flags, ATS-проблемы и зоны улучшения. Финальную оценку считает backend по собственной рубрике.',
     },
+
     {
-      number: "04",
-      title: "Получишь понятный результат",
+      number: '04',
+      title: 'Адаптируй резюме под вакансию',
       description:
-        "В личном кабинете появится итоговая оценка, детализация по метрикам и рекомендации, что стоит усилить перед откликом.",
+        'Выбери резюме, вставь ссылку на вакансию — сервис создаст новую версию, которая точнее попадает в требования работодателя. Исходный файл останется без изменений.',
+    },
+
+    {
+      number: '05',
+      title: 'Получишь понятный результат',
+      description:
+        'В личном кабинете появится итоговая оценка, детализация по метрикам и рекомендации, что стоит усилить перед откликом.',
     },
   ];
 
@@ -52,11 +60,12 @@ export default function HowItWorksPage() {
         </p>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_auto] lg:gap-12">
-
           <div className="space-y-8">
             <h1 className="text-4xl font-normal leading-[1.1] tracking-tight text-foreground sm:text-5xl md:text-6xl">
-              Проверь резюме <br /> 
-              <span className="font-medium text-foreground">перед откликом</span>
+              Проверь резюме <br />
+              <span className="font-medium text-foreground">
+                перед откликом
+              </span>
             </h1>
 
             <p className="max-w-2xl text-base font-light leading-relaxed tracking-tight text-muted-foreground md:text-lg">
@@ -71,7 +80,6 @@ export default function HowItWorksPage() {
             >
               Проверить резюме
             </Link>
-
 
             <div className="mt-12 space-y-8">
               {steps.map((step, index) => (
@@ -98,19 +106,24 @@ export default function HowItWorksPage() {
             </div>
           </div>
 
-
           <div className="flex flex-col items-start justify-start gap-6 pt-1 lg:pt-0">
             <div className="w-full max-w-[260px] rounded-2xl border border-border bg-background p-5">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
                   Resume analysis
                 </p>
-                <span className="text-xs font-medium text-emerald-500">● Live</span>
+                <span className="text-xs font-medium text-emerald-500">
+                  ● Live
+                </span>
               </div>
 
               <div className="mt-4 flex items-end gap-1">
-                <span className="text-4xl font-semibold text-foreground">78</span>
-                <span className="pb-1 text-sm text-muted-foreground">/ 100</span>
+                <span className="text-4xl font-semibold text-foreground">
+                  78
+                </span>
+                <span className="pb-1 text-sm text-muted-foreground">
+                  / 100
+                </span>
               </div>
 
               <div className="mt-4 space-y-2">
@@ -125,9 +138,9 @@ export default function HowItWorksPage() {
                     <span
                       className={`text-sm font-medium ${statusColor[metric.status]}`}
                     >
-                      {metric.status === "good" && "● Good"}
-                      {metric.status === "medium" && "● Medium"}
-                      {metric.status === "needs work" && "● Needs work"}
+                      {metric.status === 'good' && '● Good'}
+                      {metric.status === 'medium' && '● Medium'}
+                      {metric.status === 'needs work' && '● Needs work'}
                     </span>
                   </div>
                 ))}
@@ -148,7 +161,6 @@ export default function HowItWorksPage() {
                 </span>
               </div>
             </div>
-
           </div>
         </div>
       </div>
