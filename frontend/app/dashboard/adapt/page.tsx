@@ -9,11 +9,15 @@ import { AdaptSidebar } from './_components/AdaptSidebar';
 import { SelectedResumeCard } from './_components/SelectedResumeCard';
 import { VacancyForm } from './_components/VacancyForm';
 
+import type { PageExtractionStatus } from '@/src/shared/api/vacancies';
 import { useAuth } from '@/src/shared/hooks/useAuth';
+import { usePrepareVacancyInputMutation } from '@/src/shared/hooks/usePrepareVacancyInputMutation';
 import { useResumesQuery } from '@/src/shared/hooks/useResumesQuery';
 
 const LAST_SELECTED_ADAPT_RESUME_ID_KEY =
   'cvpro:last-selected-adapt-resume-id';
+
+type VacancyInputKind = 'empty' | 'url' | 'text';
 
 function readLastSelectedResumeId() {
   if (typeof window === 'undefined') {
@@ -39,22 +43,58 @@ function saveLastSelectedResumeId(resumeId: string) {
   }
 }
 
+function getVacancyInputKind(value: string): VacancyInputKind {
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return 'empty';
+  }
+
+  if (trimmedValue.includes('\n') || /\s/.test(trimmedValue)) {
+    return 'text';
+  }
+
+  const urlWithProtocol = /^[a-zA-Z][a-zA-Z\d+.-]*:/.test(trimmedValue)
+    ? trimmedValue
+    : `https://${trimmedValue}`;
+
+  try {
+    const url = new URL(urlWithProtocol);
+
+    if (
+      (url.protocol === 'http:' || url.protocol === 'https:') &&
+      url.hostname.includes('.')
+    ) {
+      return 'url';
+    }
+
+    return 'text';
+  } catch {
+    return 'text';
+  }
+}
+
 export default function AdaptPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const { accessToken } = useAuth();
   const resumesQuery = useResumesQuery(accessToken);
+  const prepareVacancyMutation = usePrepareVacancyInputMutation();
 
   const resumeId = searchParams.get('resumeId');
 
   const [storedResumeId, setStoredResumeId] = useState<string | null>(null);
   const [isStoredResumeLoaded, setIsStoredResumeLoaded] = useState(false);
 
-  const [vacancyUrl, setVacancyUrl] = useState('');
-  const [vacancyText, setVacancyText] = useState('');
+  const [vacancyInput, setVacancyInput] = useState('');
+  const [preparedVacancyText, setPreparedVacancyText] = useState('');
+  const [extractionStatus, setExtractionStatus] =
+    useState<PageExtractionStatus | null>(null);
+  const [extractionMessage, setExtractionMessage] = useState('');
 
   const resumes = resumesQuery.data?.resumes ?? [];
+  const vacancyInputKind = getVacancyInputKind(vacancyInput);
 
   useEffect(() => {
     setStoredResumeId(readLastSelectedResumeId());
@@ -69,7 +109,9 @@ export default function AdaptPage() {
     const preferredResumeId = resumeId ?? storedResumeId;
 
     if (preferredResumeId) {
-      const foundResume = resumes.find((resume) => resume.id === preferredResumeId);
+      const foundResume = resumes.find(
+        (resume) => resume.id === preferredResumeId
+      );
 
       if (foundResume) {
         return foundResume;
@@ -109,6 +151,58 @@ export default function AdaptPage() {
     router.replace(`/dashboard/adapt?resumeId=${nextResumeId}`);
   }
 
+  function handleVacancyInputChange(value: string) {
+    setVacancyInput(value);
+    setPreparedVacancyText('');
+    setExtractionStatus(null);
+    setExtractionMessage('');
+  }
+
+function handlePrepareVacancy() {
+  const trimmedInput = vacancyInput.trim();
+
+  if (!trimmedInput) {
+    setExtractionStatus('invalid_url');
+    setExtractionMessage('Вставьте ссылку или текст вакансии.');
+    return;
+  }
+
+  if (!accessToken) {
+    setExtractionStatus('access_denied');
+    setExtractionMessage('Нужно войти в аккаунт.');
+    return;
+  }
+
+  setExtractionStatus(null);
+  setExtractionMessage('');
+  setPreparedVacancyText('');
+
+  prepareVacancyMutation.mutate(
+    {
+      input: trimmedInput,
+      accessToken,
+    },
+    {
+      onSuccess: (data) => {
+        setExtractionStatus(data.status);
+        setExtractionMessage(data.message);
+
+        if (data.status === 'success' && data.page?.text) {
+          setPreparedVacancyText(data.page.text);
+        }
+      },
+      onError: (error) => {
+        setExtractionStatus('render_failed');
+        setExtractionMessage(
+          error instanceof Error
+            ? error.message
+            : 'Не удалось обработать вакансию. Вставьте текст вручную.'
+        );
+      },
+    }
+  );
+}
+
   return (
     <div>
       <AdaptHeader />
@@ -124,10 +218,14 @@ export default function AdaptPage() {
           />
 
           <VacancyForm
-            vacancyUrl={vacancyUrl}
-            vacancyText={vacancyText}
-            onVacancyUrlChange={setVacancyUrl}
-            onVacancyTextChange={setVacancyText}
+            vacancyInput={vacancyInput}
+            vacancyInputKind={vacancyInputKind}
+            preparedVacancyTextLength={preparedVacancyText.length}
+            isPreparing={prepareVacancyMutation.isPending}
+            extractionStatus={extractionStatus}
+            extractionMessage={extractionMessage}
+            onVacancyInputChange={handleVacancyInputChange}
+            onPrepareVacancy={handlePrepareVacancy}
           />
 
           <AdaptSettings />
