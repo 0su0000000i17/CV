@@ -200,16 +200,7 @@ export default function Home() {
                 strokeWidth="1"
                 className="text-border/30"
               />
-              <line
-                x1="40"
-                y1="20"
-                x2="40"
-                y2="390"
-                stroke="currentColor"
-                strokeWidth="1"
-                className="text-border/30"
-              />
-
+            
               <rect
                 x="52"
                 y="350"
