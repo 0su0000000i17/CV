@@ -1,6 +1,6 @@
 export function SettingsHeader() {
   return (
-    <div className="mb-10">
+    <div>
       <p className="mb-3 text-xs font-medium uppercase tracking-widest text-muted-foreground">
         Личный кабинет / Настройки
       </p>
@@ -9,8 +9,8 @@ export function SettingsHeader() {
         Настройки
       </h1>
 
-      <p className="mt-4 max-w-2xl text-muted-foreground">
-        Управляйте основными данными вашего аккаунта.
+      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+        Основные данные аккаунта, тариф и управление текущей сессией.
       </p>
     </div>
   );

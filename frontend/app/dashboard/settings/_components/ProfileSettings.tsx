@@ -49,14 +49,14 @@ export function ProfileSettings() {
 
   if (sessionLoading || profileQuery.isLoading) {
     return (
-      <div className="space-y-6">
-        <section className="rounded-2xl border border-border bg-card/60 p-6">
-          <div className="h-7 w-40 animate-pulse rounded bg-muted" />
-          <div className="mt-6 h-40 animate-pulse rounded-2xl bg-muted" />
+      <div className="space-y-5">
+        <section className="rounded-2xl border border-border bg-card/60 p-5">
+          <div className="h-6 w-32 animate-pulse rounded bg-muted" />
+          <div className="mt-5 h-28 animate-pulse rounded-2xl bg-muted" />
         </section>
 
-        <section className="rounded-2xl border border-border bg-card/60 p-6">
-          <div className="h-7 w-32 animate-pulse rounded bg-muted" />
+        <section className="rounded-2xl border border-border bg-card/60 p-5">
+          <div className="h-6 w-28 animate-pulse rounded bg-muted" />
           <div className="mt-4 h-20 animate-pulse rounded-2xl bg-muted" />
         </section>
       </div>
@@ -65,7 +65,7 @@ export function ProfileSettings() {
 
   if (!accessToken) {
     return (
-      <section className="rounded-2xl border border-red-500/30 bg-card/60 p-6 text-sm text-red-500">
+      <section className="rounded-2xl border border-red-500/30 bg-card/60 p-5 text-sm text-red-500">
         Сессия не найдена. Войдите в аккаунт повторно.
       </section>
     );
@@ -73,7 +73,7 @@ export function ProfileSettings() {
 
   if (profileQuery.isError) {
     return (
-      <section className="rounded-2xl border border-red-500/30 bg-card/60 p-6">
+      <section className="rounded-2xl border border-red-500/30 bg-card/60 p-5">
         <p className="text-sm text-red-500">
           {profileQuery.error instanceof Error
             ? profileQuery.error.message
@@ -218,38 +218,40 @@ function ProfileForms({ profile, accessToken }: ProfileFormsProps) {
   };
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-2xl border border-border bg-card/60 p-6">
-        <div className="mb-6 flex items-start gap-4">
-          <div className="rounded-xl bg-muted p-3">
-            <User className="h-5 w-5 text-foreground" />
+    <div className="space-y-5">
+      <section className="rounded-2xl border border-border bg-card/60 p-5">
+        <div className="flex items-start gap-3 border-b border-border pb-4">
+          <div className="rounded-xl bg-muted p-2.5">
+            <User className="h-4 w-4 text-foreground" />
           </div>
 
           <div>
-            <h2 className="text-xl font-medium text-foreground">Профиль</h2>
+            <h2 className="text-lg font-medium text-foreground">Профиль</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Управляйте именем и email вашего аккаунта.
+              Имя и email аккаунта.
             </p>
           </div>
         </div>
 
-        <div className="space-y-5">
+        <div className="divide-y divide-border">
           <form
             onSubmit={handleNameSubmit}
-            className="rounded-2xl border border-border bg-background p-5"
+            className="grid gap-3 py-5 lg:grid-cols-[180px_minmax(0,1fr)_128px] lg:items-start"
           >
-            <label
-              htmlFor="full-name"
-              className="text-sm font-medium text-foreground"
-            >
-              Имя
-            </label>
+            <div>
+              <label
+                htmlFor="full-name"
+                className="text-sm font-medium text-foreground"
+              >
+                Имя
+              </label>
 
-            <p className="mt-1 text-xs text-muted-foreground">
-              Это имя будет отображаться в личном кабинете и минипрофиле.
-            </p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                Отображается в личном кабинете.
+              </p>
+            </div>
 
-            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+            <div>
               <input
                 id="full-name"
                 type="text"
@@ -261,47 +263,49 @@ function ProfileForms({ profile, accessToken }: ProfileFormsProps) {
                 }}
                 maxLength={100}
                 autoComplete="name"
-                className="min-w-0 flex-1 rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-foreground"
+                className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors focus:border-foreground"
               />
 
-              <button
-                type="submit"
-                disabled={!canSubmitName}
-                className="rounded-xl bg-foreground px-5 py-2.5 text-sm font-medium text-background transition-colors hover:bg-foreground/80 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {updateProfileMutation.isPending ? 'Изменяем...' : 'Изменить'}
-              </button>
+              <p className="mt-2 min-h-4 text-xs" aria-live="polite">
+                {nameError ? (
+                  <span className="text-red-500">{nameError}</span>
+                ) : nameMessage ? (
+                  <span className="text-emerald-500">{nameMessage}</span>
+                ) : null}
+              </p>
             </div>
 
-            <p className="mt-3 min-h-5 text-xs" aria-live="polite">
-              {nameError ? (
-                <span className="text-red-500">{nameError}</span>
-              ) : nameMessage ? (
-                <span className="text-emerald-500">{nameMessage}</span>
-              ) : null}
-            </p>
+            <button
+              type="submit"
+              disabled={!canSubmitName}
+              className="inline-flex h-10 items-center justify-center rounded-xl bg-foreground px-4 text-sm font-medium text-background transition-colors hover:bg-foreground/80 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {updateProfileMutation.isPending ? 'Сохраняем...' : 'Сохранить'}
+            </button>
           </form>
 
           <form
             onSubmit={handleEmailSubmit}
-            className="rounded-2xl border border-border bg-background p-5"
+            className="grid gap-3 py-5 lg:grid-cols-[180px_minmax(0,1fr)_128px] lg:items-start"
           >
-            <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4 text-muted-foreground" />
+            <div>
+              <div className="flex items-center gap-2">
+                <Mail className="h-3.5 w-3.5 text-muted-foreground" />
 
-              <label
-                htmlFor="email"
-                className="text-sm font-medium text-foreground"
-              >
-                Email
-              </label>
+                <label
+                  htmlFor="email"
+                  className="text-sm font-medium text-foreground"
+                >
+                  Email
+                </label>
+              </div>
+
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                Новый адрес нужно подтвердить.
+              </p>
             </div>
 
-            <p className="mt-1 text-xs text-muted-foreground">
-              После изменения нужно подтвердить новый адрес по ссылке из письма.
-            </p>
-
-            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+            <div>
               <input
                 id="email"
                 type="email"
@@ -312,59 +316,61 @@ function ProfileForms({ profile, accessToken }: ProfileFormsProps) {
                   setEmailMessage('');
                 }}
                 autoComplete="email"
-                className="min-w-0 flex-1 rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-foreground"
+                className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition-colors focus:border-foreground"
               />
 
-              <button
-                type="submit"
-                disabled={!canSubmitEmail}
-                className="rounded-xl border border-border px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {emailUpdating ? 'Отправляем...' : 'Изменить email'}
-              </button>
+              <p className="mt-2 min-h-4 text-xs" aria-live="polite">
+                {emailError ? (
+                  <span className="text-red-500">{emailError}</span>
+                ) : emailMessage ? (
+                  <span className="text-emerald-500">{emailMessage}</span>
+                ) : null}
+              </p>
             </div>
 
-            <p className="mt-3 min-h-5 text-xs" aria-live="polite">
-              {emailError ? (
-                <span className="text-red-500">{emailError}</span>
-              ) : emailMessage ? (
-                <span className="text-emerald-500">{emailMessage}</span>
-              ) : null}
-            </p>
+            <button
+              type="submit"
+              disabled={!canSubmitEmail}
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-border px-4 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {emailUpdating ? 'Отправляем...' : 'Изменить'}
+            </button>
           </form>
         </div>
       </section>
 
-      <section className="rounded-2xl border border-border bg-card/60 p-6">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-4">
-            <div className="rounded-xl bg-muted p-3">
-              <WalletCards className="h-5 w-5 text-foreground" />
+      <section className="rounded-2xl border border-border bg-card/60 p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="rounded-xl bg-muted p-2.5">
+              <WalletCards className="h-4 w-4 text-foreground" />
             </div>
 
             <div>
-              <h2 className="text-xl font-medium text-foreground">Тариф</h2>
+              <h2 className="text-lg font-medium text-foreground">Тариф</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Сейчас аккаунт работает на бесплатном тарифе.
+                Сейчас доступен бесплатный режим.
               </p>
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-3 rounded-2xl border border-border bg-background px-4 py-3">
-            <span className="text-sm text-muted-foreground">Текущий тариф</span>
-            <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-500">
+          <div className="inline-flex w-fit items-center gap-2 rounded-full border border-border bg-background px-3 py-1.5">
+            <span className="text-xs text-muted-foreground">Текущий тариф</span>
+
+            <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-500">
               Free
             </span>
           </div>
         </div>
 
-        <div className="mt-5 rounded-2xl border border-border bg-background p-5">
+        <div className="mt-4 rounded-xl border border-border bg-background px-4 py-3">
           <p className="text-sm font-medium text-foreground">
             Pro появится позже
           </p>
+
           <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-            Платный тариф подключим ближе к продакшену, когда будут готовы
-            анализ резюме, адаптация под вакансии и история версий.
+            Платный тариф подключим ближе к продакшену, когда будут готовы анализ
+            резюме, адаптация под вакансии и версии.
           </p>
         </div>
       </section>

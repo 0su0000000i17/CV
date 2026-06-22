@@ -1,4 +1,4 @@
-import { Loader2, Play } from 'lucide-react';
+import { Loader2, Play, RotateCw } from 'lucide-react';
 
 import type { UploadedResume } from '@/src/shared/api/resumes';
 
@@ -8,11 +8,21 @@ type Props = {
   onAnalyze: () => void;
 };
 
+function isResumeAnalyzed(resume?: UploadedResume) {
+  return Boolean(
+    resume &&
+      resume.analysis_status === 'completed' &&
+      resume.last_score !== null
+  );
+}
+
 export function AnalyzeHeader({
   selectedResume,
   isAnalyzing,
   onAnalyze,
 }: Props) {
+  const analyzed = isResumeAnalyzed(selectedResume);
+
   return (
     <div className="mb-10">
       <p className="mb-3 text-xs font-medium uppercase tracking-widest text-muted-foreground">
@@ -26,8 +36,9 @@ export function AnalyzeHeader({
           </h1>
 
           <p className="mt-4 max-w-2xl text-muted-foreground">
-            Проверьте резюме по структуре, опыту, навыкам и пригодности для
-            отклика. После анализа сервис покажет, что стоит усилить.
+            {analyzed
+              ? 'Резюме уже оценено. Можно посмотреть результат или запустить повторную проверку, если вы обновили файл или хотите пересчитать оценку.'
+              : 'Проверьте резюме по структуре, опыту, навыкам и пригодности для отклика. После анализа сервис покажет, что стоит усилить.'}
           </p>
         </div>
 
@@ -41,6 +52,11 @@ export function AnalyzeHeader({
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
               Оцениваем...
+            </>
+          ) : analyzed ? (
+            <>
+              <RotateCw className="h-4 w-4" />
+              Повторить оценку
             </>
           ) : (
             <>

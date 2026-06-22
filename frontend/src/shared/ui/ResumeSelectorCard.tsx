@@ -20,6 +20,17 @@ type ResumeSelectorCardProps = {
   emptyDescription?: string;
 };
 
+type ResumeStatusMeta = {
+  label: string;
+  prefix?: string;
+  className: string;
+  dotClassName: string;
+};
+
+function joinClassNames(...classNames: Array<string | false | null | undefined>) {
+  return classNames.filter(Boolean).join(' ');
+}
+
 function formatFileSize(bytes?: number | null) {
   if (!bytes || bytes <= 0) {
     return 'Размер не указан';
@@ -34,31 +45,111 @@ function formatFileSize(bytes?: number | null) {
   return `${Math.round(bytes / 1024)} КБ`;
 }
 
-function formatResumeStatus(resume?: UploadedResume) {
-  if (!resume) {
-    return 'Резюме не выбрано';
+function getScoreTone(score: number) {
+  if (score >= 80) {
+    return {
+      className: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400',
+      dotClassName: 'bg-emerald-400',
+    };
   }
 
-  if (typeof resume.last_score === 'number') {
-    return `Последняя оценка: ${resume.last_score}/100`;
+  if (score >= 60) {
+    return {
+      className: 'border-amber-500/35 bg-amber-500/10 text-amber-300',
+      dotClassName: 'bg-amber-300',
+    };
+  }
+
+  return {
+    className: 'border-rose-500/30 bg-rose-500/10 text-rose-300',
+    dotClassName: 'bg-rose-300',
+  };
+}
+
+function getResumeStatusMeta(resume?: UploadedResume): ResumeStatusMeta {
+  if (!resume) {
+    return {
+      label: 'Резюме не выбрано',
+      className: 'border-border bg-muted/30 text-muted-foreground',
+      dotClassName: 'bg-muted-foreground',
+    };
+  }
+
+  if (typeof resume.last_score === 'number' && Number.isFinite(resume.last_score)) {
+    const score = Math.max(0, Math.min(100, Math.round(resume.last_score)));
+    const tone = getScoreTone(score);
+
+    return {
+      prefix: 'Последняя оценка:',
+      label: `${score}/100`,
+      ...tone,
+    };
   }
 
   if (resume.analysis_status === 'completed') {
-    return 'Оценка завершена';
+    return {
+      label: 'Оценка завершена',
+      className: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-400',
+      dotClassName: 'bg-emerald-400',
+    };
   }
 
   if (
     resume.analysis_status === 'processing' ||
     resume.analysis_status === 'analyzing'
   ) {
-    return 'Оценка в процессе';
+    return {
+      label: 'Оценка в процессе',
+      className: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
+      dotClassName: 'bg-amber-300',
+    };
   }
 
   if (resume.analysis_status === 'failed') {
-    return 'Оценка не удалась';
+    return {
+      label: 'Оценка не удалась',
+      className: 'border-rose-500/30 bg-rose-500/10 text-rose-300',
+      dotClassName: 'bg-rose-300',
+    };
   }
 
-  return 'Оценка не пройдена';
+  return {
+    label: 'Оценка не пройдена',
+    className: 'border-border bg-muted/30 text-muted-foreground',
+    dotClassName: 'bg-muted-foreground',
+  };
+}
+
+function ResumeStatusBadge({
+  resume,
+  compact = false,
+  className,
+}: {
+  resume?: UploadedResume;
+  compact?: boolean;
+  className?: string;
+}) {
+  const status = getResumeStatusMeta(resume);
+  const prefix = compact && status.prefix ? 'Оценка:' : status.prefix;
+
+  return (
+    <div
+      className={joinClassNames(
+        'inline-flex shrink-0 items-center gap-1.5 rounded-full border font-medium',
+        compact ? 'px-2 py-0.5 text-[11px]' : 'px-3 py-1 text-[11px]',
+        status.className,
+        className
+      )}
+    >
+      <span className={joinClassNames('h-1.5 w-1.5 rounded-full', status.dotClassName)} />
+
+      {prefix ? (
+        <span className="font-normal text-muted-foreground">{prefix}</span>
+      ) : null}
+
+      <span>{status.label}</span>
+    </div>
+  );
 }
 
 function getResumeSubtitle(resume: UploadedResume) {
@@ -174,23 +265,28 @@ export function ResumeSelectorCard({
             </p>
           </div>
         ) : selectedResume ? (
-          <div className="flex items-center gap-3 rounded-xl border border-border bg-background px-4 py-3">
-            <div className="rounded-lg bg-muted p-2">
-              <FileText className="h-4 w-4 text-foreground" />
-            </div>
+          <div className="rounded-xl border border-border bg-background px-4 py-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="rounded-lg bg-muted p-2">
+                  <FileText className="h-4 w-4 text-foreground" />
+                </div>
 
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-foreground">
-                {selectedResume.title || selectedResume.file_name}
-              </p>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {selectedResume.title || selectedResume.file_name}
+                  </p>
 
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {getResumeSubtitle(selectedResume)}
-              </p>
-            </div>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {getResumeSubtitle(selectedResume)}
+                  </p>
+                </div>
+              </div>
 
-            <div className="hidden shrink-0 rounded-full border border-border px-3 py-1 text-[11px] text-muted-foreground sm:inline-flex">
-              {formatResumeStatus(selectedResume)}
+              <ResumeStatusBadge
+                resume={selectedResume}
+                className="self-start sm:self-center"
+              />
             </div>
           </div>
         ) : (
@@ -291,9 +387,11 @@ export function ResumeSelectorCard({
                             {getResumeSubtitle(resume)}
                           </p>
 
-                          <p className="mt-1 text-[11px] text-muted-foreground">
-                            {formatResumeStatus(resume)}
-                          </p>
+                          <ResumeStatusBadge
+                            resume={resume}
+                            compact
+                            className="mt-2"
+                          />
                         </div>
                       </button>
                     );

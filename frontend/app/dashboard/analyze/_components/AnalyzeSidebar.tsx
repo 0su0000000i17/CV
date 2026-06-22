@@ -1,7 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { AlertCircle, ArrowRight, ChevronDown, Loader2 } from 'lucide-react';
+import {
+  AlertCircle,
+  ArrowRight,
+  ChevronDown,
+  Loader2,
+  RotateCw,
+} from 'lucide-react';
 
 import type { ResumeAnalysisResult } from '@/src/shared/api/analyze';
 import type { UploadedResume } from '@/src/shared/api/resumes';
@@ -161,9 +167,14 @@ export function AnalyzeSidebar({
               <Loader2 className="h-4 w-4 animate-spin" />
               Оцениваем...
             </>
+          ) : analysis ? (
+            <>
+              Повторить оценку
+              <RotateCw className="h-4 w-4" />
+            </>
           ) : (
             <>
-              {analysis ? 'Запустить заново' : 'Запустить оценку'}
+              Запустить оценку
               <ArrowRight className="h-4 w-4" />
             </>
           )}
@@ -241,8 +252,9 @@ export function AnalyzeSidebar({
             <h2 className="font-medium text-foreground">Важно</h2>
 
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              Оценка не заменяет рекрутера, но помогает быстро найти слабые
-              места в резюме перед откликом.
+              Повторная оценка не означает, что резюме каждый раз заново
+              отправляется в AI. Если файл не менялся, backend может быстро
+              вернуть сохранённый результат.
             </p>
           </div>
         </div>

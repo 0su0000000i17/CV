@@ -37,12 +37,12 @@ export function VacancyForm({
   useEffect(() => {
     const textarea = textareaRef.current;
 
-    if (!textarea) {
+    if (!textarea || !isTextMode) {
       return;
     }
 
-    const minHeight = isTextMode ? 72 : 22;
-    const maxHeight = 180;
+    const minHeight = 52;
+    const maxHeight = 220;
 
     textarea.style.height = 'auto';
 
@@ -54,7 +54,27 @@ export function VacancyForm({
     textarea.style.height = `${nextHeight}px`;
     textarea.style.overflowY =
       textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
-  }, [isTextMode, vacancyInput]);
+  }, [vacancyInput, isTextMode]);
+
+  function handleInputPaste(event: React.ClipboardEvent<HTMLInputElement>) {
+    const pastedText = event.clipboardData.getData('text');
+
+    if (!pastedText) {
+      return;
+    }
+
+    const looksLikeLongText =
+      pastedText.includes('\n') ||
+      pastedText.length > 180 ||
+      pastedText.split(/\s+/).length > 20;
+
+    if (!looksLikeLongText) {
+      return;
+    }
+
+    event.preventDefault();
+    onVacancyInputChange(pastedText);
+  }
 
   return (
     <div className="rounded-2xl border border-border bg-card/60 p-6">
@@ -72,23 +92,33 @@ export function VacancyForm({
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-start">
+      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_190px] md:items-start">
         <div>
           <label className="mb-2 block text-sm text-muted-foreground">
             Ссылка или текст вакансии
           </label>
 
-          <div className="flex items-start gap-3 rounded-xl border border-border bg-background px-4 py-2.5">
-            <LinkIcon className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />
+          <div className="flex min-h-[48px] items-center gap-3 rounded-xl border border-border bg-background px-4">
+            <LinkIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
 
-            <textarea
-              ref={textareaRef}
-              value={vacancyInput}
-              rows={1}
-              onChange={(event) => onVacancyInputChange(event.target.value)}
-              placeholder="https://hh.ru/vacancy/... или полный текст вакансии"
-              className="max-h-[180px] min-h-[22px] w-full resize-none bg-transparent text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
-            />
+            {isTextMode ? (
+              <textarea
+                ref={textareaRef}
+                value={vacancyInput}
+                rows={1}
+                onChange={(event) => onVacancyInputChange(event.target.value)}
+                placeholder="Вставьте полный текст вакансии"
+                className="max-h-[220px] min-h-[52px] w-full resize-none bg-transparent py-3 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
+              />
+            ) : (
+              <input
+                value={vacancyInput}
+                onChange={(event) => onVacancyInputChange(event.target.value)}
+                onPaste={handleInputPaste}
+                placeholder="Ссылка или текст вакансии"
+                className="h-12 w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+              />
+            )}
           </div>
 
           <p className="mt-2 text-xs text-muted-foreground">
@@ -102,7 +132,7 @@ export function VacancyForm({
           type="button"
           onClick={onPrepareVacancy}
           disabled={isPreparing || !vacancyInput.trim()}
-          className="inline-flex h-[42px] items-center justify-center gap-2 rounded-xl bg-foreground px-5 text-sm font-medium text-background transition-colors hover:bg-foreground/80 disabled:cursor-not-allowed disabled:opacity-60 md:mt-[30px]"
+          className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-foreground px-5 text-sm font-medium text-background transition-colors hover:bg-foreground/80 disabled:cursor-not-allowed disabled:opacity-60 md:mt-[30px]"
         >
           {isPreparing ? (
             <>

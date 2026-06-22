@@ -33,20 +33,20 @@ export function AccountSettings() {
 
   return (
     <>
-      <section className="rounded-2xl border border-border bg-card/60 p-6">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-4">
-            <div className="rounded-xl bg-red-500/10 p-3">
-              <ShieldAlert className="h-5 w-5 text-red-500" />
+      <div className="space-y-5">
+        <section className="rounded-2xl border border-border bg-card/60 p-5">
+          <div className="flex items-start gap-3">
+            <div className="rounded-xl bg-red-500/10 p-2.5">
+              <ShieldAlert className="h-4 w-4 text-red-500" />
             </div>
 
-            <div>
-              <h2 className="text-xl font-medium text-foreground">
-                Выход из аккаунта
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-medium text-foreground">
+                Сессия
               </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Текущая сессия на этом устройстве будет завершена. Данные
-                профиля и резюме останутся сохранены.
+
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                Выход завершит текущую сессию только на этом устройстве.
               </p>
             </div>
           </div>
@@ -57,13 +57,25 @@ export function AccountSettings() {
               setErrorMessage('');
               setDialogOpen(true);
             }}
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-red-500/30 px-5 py-2.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-500 hover:text-white"
+            className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-red-500/30 px-4 text-sm font-medium text-red-500 transition-colors hover:bg-red-500 hover:text-white"
           >
             <LogOut className="h-4 w-4" />
-            Выйти
+            Выйти из аккаунта
           </button>
-        </div>
-      </section>
+        </section>
+
+        <section className="rounded-2xl border border-border bg-card/60 p-5">
+          <p className="text-sm font-medium text-foreground">
+            Безопасность данных
+          </p>
+
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            Резюме и данные профиля останутся сохранены после выхода. Удаление
+            аккаунта добавим отдельно, когда будет готова финальная политика
+            хранения данных.
+          </p>
+        </section>
+      </div>
 
       {dialogOpen ? (
         <LogoutDialog

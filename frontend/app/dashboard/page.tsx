@@ -14,6 +14,9 @@ import {
   Upload,
 } from 'lucide-react';
 
+import { useDashboardResumeSelection } from './_components/DashboardResumeSelectionProvider';
+import { UploadResumeButton } from './resumes/_components/UploadResumeButton';
+
 import type { UploadedResume } from '@/src/shared/api/resumes';
 import { useAuth } from '@/src/shared/hooks/useAuth';
 import { useProfileQuery } from '@/src/shared/hooks/useProfileQuery';
@@ -78,13 +81,13 @@ function getScoreBarClass(score: number | null | undefined) {
 function getAnalysisStatusLabel(resume: UploadedResume) {
   switch (resume.analysis_status) {
     case 'completed':
-      return 'Проверено';
+      return 'Оценено';
 
     case 'analyzing':
-      return 'Анализируется';
+      return 'Оценивается';
 
     case 'failed':
-      return 'Ошибка анализа';
+      return 'Ошибка оценки';
 
     case 'needs_update':
       return 'Нужно обновить';
@@ -92,7 +95,7 @@ function getAnalysisStatusLabel(resume: UploadedResume) {
     case 'idle':
     case 'not_started':
     default:
-      return 'Не проверено';
+      return 'Не оценено';
   }
 }
 
@@ -152,6 +155,14 @@ function getLatestCheckedResume(resumes: UploadedResume[]) {
       new Date(secondResume.updated_at).getTime() -
       new Date(firstResume.updated_at).getTime()
   )[0];
+}
+
+function createResumeActionHref(path: '/dashboard/analyze' | '/dashboard/adapt', resumeId?: string) {
+  if (!resumeId) {
+    return path;
+  }
+
+  return `${path}?resumeId=${resumeId}`;
 }
 
 type StatCardProps = {
@@ -256,7 +267,7 @@ function ResumeRow({ resume }: { resume: UploadedResume }) {
           href={`/dashboard/analyze?resumeId=${resume.id}`}
           className="inline-flex items-center justify-center rounded-xl bg-foreground px-4 py-2 text-xs font-medium text-background transition-colors hover:bg-foreground/80"
         >
-          Проверить
+          Оценить
         </Link>
       </div>
     </div>
@@ -281,6 +292,9 @@ function DashboardSkeleton() {
 }
 
 export default function DashboardPage() {
+  const { selectedResumeId, setSelectedResumeId } =
+    useDashboardResumeSelection();
+
   const { accessToken, user } = useAuth();
   const profileQuery = useProfileQuery(accessToken);
   const resumesQuery = useResumesQuery(accessToken);
@@ -298,7 +312,23 @@ export default function DashboardPage() {
   const latestCheckedResume = getLatestCheckedResume(resumes);
   const recentResumes = resumes.slice(0, 4);
 
+  const selectedResumeExists = selectedResumeId
+    ? resumes.some((resume) => resume.id === selectedResumeId)
+    : false;
+
+  const actionResumeId =
+  selectedResumeExists && selectedResumeId
+    ? selectedResumeId
+    : latestCheckedResume?.id ?? resumes[0]?.id;
+
+  const analyzeHref = createResumeActionHref('/dashboard/analyze', actionResumeId);
+  const adaptHref = createResumeActionHref('/dashboard/adapt', actionResumeId);
+
   const isLoading = resumesQuery.isLoading || profileQuery.isLoading;
+
+  function handleUploadedResume(resume: UploadedResume) {
+    setSelectedResumeId(resume.id);
+  }
 
   if (isLoading) {
     return <DashboardSkeleton />;
@@ -317,25 +347,33 @@ export default function DashboardPage() {
 
         <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground">
           Здесь видно состояние ваших резюме, последние оценки и следующие
-          действия перед откликом. Начните с загрузки файла или запустите анализ
-          уже добавленного резюме.
+          действия перед откликом. Начните с загрузки файла, оценки резюме или
+          адаптации под конкретную вакансию.
         </p>
 
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <Link
-            href="/dashboard/resumes"
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-foreground px-5 py-3 text-sm font-medium text-background transition-colors hover:bg-foreground/80"
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <UploadResumeButton
+            icon={<Upload className="h-4 w-4" />}
+            errorAlign="left"
+            onUploaded={handleUploadedResume}
           >
-            <Upload className="h-4 w-4" />
             Загрузить резюме
-          </Link>
+          </UploadResumeButton>
 
           <Link
-            href="/dashboard/analyze"
+            href={analyzeHref}
             className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-5 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
           >
             <Sparkles className="h-4 w-4" />
-            Проверить резюме
+            Оценить резюме
+          </Link>
+
+          <Link
+            href={adaptHref}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-5 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+          >
+            <Target className="h-4 w-4" />
+            Адаптировать под вакансию
           </Link>
         </div>
       </section>
@@ -349,7 +387,7 @@ export default function DashboardPage() {
         />
 
         <StatCard
-          label="Проверено"
+          label="Оценено"
           value={`${checkedResumes.length}/${resumes.length}`}
           caption="Резюме с готовой оценкой"
           icon={<CheckCircle2 className="h-5 w-5" />}
@@ -358,7 +396,7 @@ export default function DashboardPage() {
         <StatCard
           label="Средний score"
           value={averageScore === null ? '—' : `${averageScore}/100`}
-          caption="По всем проверенным резюме"
+          caption="По всем оцененным резюме"
           icon={<BarChart3 className="h-5 w-5" />}
           valueClassName={getScoreColorClass(averageScore)}
         />
@@ -374,7 +412,7 @@ export default function DashboardPage() {
           caption={
             latestCheckedResume
               ? latestCheckedResume.title
-              : 'Анализ ещё не запускался'
+              : 'Оценка ещё не запускалась'
           }
           icon={<Clock3 className="h-5 w-5" />}
           valueClassName={getScoreColorClass(latestCheckedResume?.last_score)}
@@ -390,7 +428,7 @@ export default function DashboardPage() {
               </h2>
 
               <p className="mt-1 text-sm text-muted-foreground">
-                Быстрый доступ к файлам, оценкам и повторному анализу.
+                Быстрый доступ к файлам, оценкам и повторной проверке.
               </p>
             </div>
 
@@ -437,12 +475,15 @@ export default function DashboardPage() {
                   метрикам и рекомендации по улучшению.
                 </p>
 
-                <Link
-                  href="/dashboard/resumes"
-                  className="mt-5 inline-flex items-center justify-center rounded-xl bg-foreground px-5 py-3 text-sm font-medium text-background transition-colors hover:bg-foreground/80"
-                >
-                  Загрузить резюме
-                </Link>
+                <div className="mt-5 flex justify-center">
+                  <UploadResumeButton
+                    icon={<Upload className="h-4 w-4" />}
+                    errorAlign="left"
+                    onUploaded={handleUploadedResume}
+                  >
+                    Загрузить резюме
+                  </UploadResumeButton>
+                </div>
               </div>
             </div>
           )}
@@ -456,7 +497,7 @@ export default function DashboardPage() {
 
             <div className="mt-5 space-y-3">
               <Link
-                href="/dashboard/analyze"
+                href={analyzeHref}
                 className="group flex items-start gap-4 rounded-2xl border border-border p-4 transition-colors hover:bg-muted/40"
               >
                 <div className="shrink-0 rounded-xl bg-muted p-3">
@@ -465,11 +506,31 @@ export default function DashboardPage() {
 
                 <div>
                   <h3 className="text-sm font-medium text-foreground">
-                    Проверить резюме
+                    Оценить резюме
                   </h3>
 
                   <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                     Запустите анализ структуры, опыта, ATS и red flags.
+                  </p>
+                </div>
+              </Link>
+
+              <Link
+                href={adaptHref}
+                className="group flex items-start gap-4 rounded-2xl border border-border p-4 transition-colors hover:bg-muted/40"
+              >
+                <div className="shrink-0 rounded-xl bg-muted p-3">
+                  <Target className="h-5 w-5 text-foreground" />
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-medium text-foreground">
+                    Адаптировать под вакансию
+                  </h3>
+
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                    Выберите резюме, вставьте вакансию и подготовьте версию под
+                    требования работодателя.
                   </p>
                 </div>
               </Link>
@@ -492,28 +553,6 @@ export default function DashboardPage() {
                   </p>
                 </div>
               </Link>
-
-              <div className="flex items-start gap-4 rounded-2xl border border-border bg-muted/20 p-4 opacity-70">
-                <div className="shrink-0 rounded-xl bg-muted p-3">
-                  <Target className="h-5 w-5 text-foreground" />
-                </div>
-
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-sm font-medium text-foreground">
-                      Подготовить отклик
-                    </h3>
-
-                    <span className="rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-widest text-muted-foreground">
-                      скоро
-                    </span>
-                  </div>
-
-                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                    Позже здесь появится адаптация резюме под вакансию.
-                  </p>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -523,7 +562,7 @@ export default function DashboardPage() {
             </p>
 
             <h2 className="mt-4 text-lg font-medium text-foreground">
-              Сначала проверьте базовое резюме
+              Сначала оцените базовое резюме
             </h2>
 
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">

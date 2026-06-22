@@ -7,8 +7,9 @@ export default function SettingsPage() {
     <div className="pb-10">
       <SettingsHeader />
 
-      <div className="mt-10 max-w-4xl space-y-6">
+      <div className="mt-6 grid max-w-6xl gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
         <ProfileSettings />
+
         <AccountSettings />
       </div>
     </div>

@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+import { useDashboardResumeSelection } from '../_components/DashboardResumeSelectionProvider';
+
 import { AdaptHeader } from './_components/AdaptHeader';
 import { AdaptSettings } from './_components/AdaptSettings';
 import { AdaptSidebar } from './_components/AdaptSidebar';
@@ -14,33 +16,17 @@ import { useAuth } from '@/src/shared/hooks/useAuth';
 import { usePrepareVacancyInputMutation } from '@/src/shared/hooks/usePrepareVacancyInputMutation';
 import { useResumesQuery } from '@/src/shared/hooks/useResumesQuery';
 
-const LAST_SELECTED_ADAPT_RESUME_ID_KEY =
-  'cvpro:last-selected-adapt-resume-id';
-
 type VacancyInputKind = 'empty' | 'url' | 'text';
 
-function readLastSelectedResumeId() {
-  if (typeof window === 'undefined') {
-    return null;
-  }
+function createResumeRoute(
+  path: '/dashboard/analyze' | '/dashboard/adapt',
+  searchParamsString: string,
+  resumeId: string
+) {
+  const params = new URLSearchParams(searchParamsString);
+  params.set('resumeId', resumeId);
 
-  try {
-    return window.localStorage.getItem(LAST_SELECTED_ADAPT_RESUME_ID_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function saveLastSelectedResumeId(resumeId: string) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  try {
-    window.localStorage.setItem(LAST_SELECTED_ADAPT_RESUME_ID_KEY, resumeId);
-  } catch {
-    // localStorage can be unavailable in private/restricted browser modes.
-  }
+  return `${path}?${params.toString()}`;
 }
 
 function getVacancyInputKind(value: string): VacancyInputKind {
@@ -77,15 +63,16 @@ function getVacancyInputKind(value: string): VacancyInputKind {
 export default function AdaptPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const searchParamsString = searchParams.toString();
+
+  const { selectedResumeId, setSelectedResumeId } =
+    useDashboardResumeSelection();
 
   const { accessToken } = useAuth();
   const resumesQuery = useResumesQuery(accessToken);
   const prepareVacancyMutation = usePrepareVacancyInputMutation();
 
   const resumeId = searchParams.get('resumeId');
-
-  const [storedResumeId, setStoredResumeId] = useState<string | null>(null);
-  const [isStoredResumeLoaded, setIsStoredResumeLoaded] = useState(false);
 
   const [vacancyInput, setVacancyInput] = useState('');
   const [preparedVacancyText, setPreparedVacancyText] = useState('');
@@ -96,21 +83,19 @@ export default function AdaptPage() {
   const resumes = resumesQuery.data?.resumes ?? [];
   const vacancyInputKind = getVacancyInputKind(vacancyInput);
 
-  useEffect(() => {
-    setStoredResumeId(readLastSelectedResumeId());
-    setIsStoredResumeLoaded(true);
-  }, []);
-
   const selectedResume = useMemo(() => {
     if (!resumes.length) {
       return undefined;
     }
 
-    const preferredResumeId = resumeId ?? storedResumeId;
+    const candidateResumeIds = [resumeId, selectedResumeId].filter(
+      (candidateResumeId): candidateResumeId is string =>
+        Boolean(candidateResumeId)
+    );
 
-    if (preferredResumeId) {
+    for (const candidateResumeId of candidateResumeIds) {
       const foundResume = resumes.find(
-        (resume) => resume.id === preferredResumeId
+        (resume) => resume.id === candidateResumeId
       );
 
       if (foundResume) {
@@ -118,37 +103,33 @@ export default function AdaptPage() {
       }
     }
 
-    if (!resumeId && !isStoredResumeLoaded) {
-      return undefined;
-    }
-
     return resumes[0];
-  }, [isStoredResumeLoaded, resumeId, resumes, storedResumeId]);
+  }, [resumeId, resumes, selectedResumeId]);
 
   useEffect(() => {
-    if (!selectedResume?.id) {
+    if (!selectedResume?.id || selectedResumeId === selectedResume.id) {
       return;
     }
 
-    saveLastSelectedResumeId(selectedResume.id);
-    setStoredResumeId((currentResumeId) =>
-      currentResumeId === selectedResume.id ? currentResumeId : selectedResume.id
+    setSelectedResumeId(selectedResume.id);
+  }, [selectedResume?.id, selectedResumeId, setSelectedResumeId]);
+
+  useEffect(() => {
+    if (!selectedResume?.id || resumeId === selectedResume.id) {
+      return;
+    }
+
+    router.replace(
+      createResumeRoute('/dashboard/adapt', searchParamsString, selectedResume.id)
     );
-  }, [selectedResume?.id]);
-
-  useEffect(() => {
-    if (!isStoredResumeLoaded || resumeId || !selectedResume?.id) {
-      return;
-    }
-
-    router.replace(`/dashboard/adapt?resumeId=${selectedResume.id}`);
-  }, [isStoredResumeLoaded, resumeId, router, selectedResume?.id]);
+  }, [resumeId, router, searchParamsString, selectedResume?.id]);
 
   function handleSelectResume(nextResumeId: string) {
-    saveLastSelectedResumeId(nextResumeId);
-    setStoredResumeId(nextResumeId);
+    setSelectedResumeId(nextResumeId);
 
-    router.replace(`/dashboard/adapt?resumeId=${nextResumeId}`);
+    router.replace(
+      createResumeRoute('/dashboard/adapt', searchParamsString, nextResumeId)
+    );
   }
 
   function handleVacancyInputChange(value: string) {
@@ -158,50 +139,50 @@ export default function AdaptPage() {
     setExtractionMessage('');
   }
 
-function handlePrepareVacancy() {
-  const trimmedInput = vacancyInput.trim();
+  function handlePrepareVacancy() {
+    const trimmedInput = vacancyInput.trim();
 
-  if (!trimmedInput) {
-    setExtractionStatus('invalid_url');
-    setExtractionMessage('Вставьте ссылку или текст вакансии.');
-    return;
-  }
-
-  if (!accessToken) {
-    setExtractionStatus('access_denied');
-    setExtractionMessage('Нужно войти в аккаунт.');
-    return;
-  }
-
-  setExtractionStatus(null);
-  setExtractionMessage('');
-  setPreparedVacancyText('');
-
-  prepareVacancyMutation.mutate(
-    {
-      input: trimmedInput,
-      accessToken,
-    },
-    {
-      onSuccess: (data) => {
-        setExtractionStatus(data.status);
-        setExtractionMessage(data.message);
-
-        if (data.status === 'success' && data.page?.text) {
-          setPreparedVacancyText(data.page.text);
-        }
-      },
-      onError: (error) => {
-        setExtractionStatus('render_failed');
-        setExtractionMessage(
-          error instanceof Error
-            ? error.message
-            : 'Не удалось обработать вакансию. Вставьте текст вручную.'
-        );
-      },
+    if (!trimmedInput) {
+      setExtractionStatus('invalid_url');
+      setExtractionMessage('Вставьте ссылку или текст вакансии.');
+      return;
     }
-  );
-}
+
+    if (!accessToken) {
+      setExtractionStatus('access_denied');
+      setExtractionMessage('Нужно войти в аккаунт.');
+      return;
+    }
+
+    setExtractionStatus(null);
+    setExtractionMessage('');
+    setPreparedVacancyText('');
+
+    prepareVacancyMutation.mutate(
+      {
+        input: trimmedInput,
+        accessToken,
+      },
+      {
+        onSuccess: (data) => {
+          setExtractionStatus(data.status);
+          setExtractionMessage(data.message);
+
+          if (data.status === 'success' && data.page?.text) {
+            setPreparedVacancyText(data.page.text);
+          }
+        },
+        onError: (error) => {
+          setExtractionStatus('render_failed');
+          setExtractionMessage(
+            error instanceof Error
+              ? error.message
+              : 'Не удалось обработать вакансию. Вставьте текст вручную.'
+          );
+        },
+      }
+    );
+  }
 
   return (
     <div>

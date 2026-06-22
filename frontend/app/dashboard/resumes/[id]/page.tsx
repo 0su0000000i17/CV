@@ -6,7 +6,6 @@ import { useAuth } from '@/src/shared/hooks/useAuth';
 import { useResumeQuery } from '@/src/shared/hooks/useResumeQuery';
 
 import { ResumeActionsPanel } from './_components/ResumeActionsPanel';
-import { ResumeActivityCard } from './_components/ResumeActivityCard';
 import { ResumeDetailsHeader } from './_components/ResumeDetailsHeader';
 import { ResumeDetailsSkeleton } from './_components/ResumeDetailsSkeleton';
 import { ResumeFileInfoCard } from './_components/ResumeFileInfoCard';
@@ -44,14 +43,11 @@ export default function ResumeDetailsPage() {
       <ResumeStatsCards resume={resume} />
 
       <div className="mb-8 grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
-        <ResumeActionsPanel resumeId={resume.id} />
+        <ResumeActionsPanel resume={resume} />
         <ResumeFileInfoCard resume={resume} />
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-2">
-        <ResumeVersionsCard resume={resume} />
-        <ResumeActivityCard resume={resume} />
-      </div>
+      <ResumeVersionsCard resume={resume} />
     </div>
   );
 }

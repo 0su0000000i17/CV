@@ -1,14 +1,47 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Plus } from 'lucide-react';
 
+import type { UploadedResume } from '@/src/shared/api/resumes';
 import { supabase } from '@/src/shared/lib/supabase/client';
 import { useUploadResumeMutation } from '@/src/shared/hooks/useUploadResumeMutation';
 
 const ERROR_MESSAGE_VISIBLE_MS = 15_000;
 
-export function UploadResumeButton() {
+type UploadResumeButtonVariant = 'primary' | 'secondary';
+
+type UploadResumeButtonProps = {
+  children?: ReactNode;
+  icon?: ReactNode;
+  loadingLabel?: string;
+  variant?: UploadResumeButtonVariant;
+  className?: string;
+  errorAlign?: 'left' | 'right';
+  onUploaded?: (resume: UploadedResume) => void;
+};
+
+function joinClassNames(...classNames: Array<string | false | null | undefined>) {
+  return classNames.filter(Boolean).join(' ');
+}
+
+function getButtonVariantClassName(variant: UploadResumeButtonVariant) {
+  if (variant === 'secondary') {
+    return 'border border-border text-foreground hover:bg-muted';
+  }
+
+  return 'bg-foreground text-background hover:bg-foreground/80';
+}
+
+export function UploadResumeButton({
+  children = 'Загрузить резюме',
+  icon,
+  loadingLabel = 'Загружаем...',
+  variant = 'primary',
+  className,
+  errorAlign = 'right',
+  onUploaded,
+}: UploadResumeButtonProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
@@ -61,10 +94,12 @@ export function UploadResumeButton() {
         accessToken: session.access_token,
       },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
           clearErrorTimer();
           setErrorMessage('');
           event.target.value = '';
+
+          onUploaded?.(data.resume);
         },
         onError: (error) => {
           showTemporaryError(
@@ -96,14 +131,23 @@ export function UploadResumeButton() {
         type="button"
         onClick={handleSelectFile}
         disabled={uploadResumeMutation.isPending}
-        className="inline-flex items-center justify-center gap-2 rounded-xl bg-foreground px-5 py-3 text-sm font-medium text-background transition-colors hover:bg-foreground/80 disabled:cursor-not-allowed disabled:opacity-60"
+        className={joinClassNames(
+          'inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60',
+          getButtonVariantClassName(variant),
+          className
+        )}
       >
-        <Plus className="h-4 w-4" />
-        {uploadResumeMutation.isPending ? 'Загружаем...' : 'Загрузить резюме'}
+        {icon ?? <Plus className="h-4 w-4" />}
+        {uploadResumeMutation.isPending ? loadingLabel : children}
       </button>
 
       {errorMessage ? (
-        <p className="absolute right-0 top-full mt-3 w-max max-w-xs text-right text-xs text-red-500">
+        <p
+          className={joinClassNames(
+            'absolute top-full mt-3 w-max max-w-xs text-xs text-red-500',
+            errorAlign === 'left' ? 'left-0 text-left' : 'right-0 text-right'
+          )}
+        >
           {errorMessage}
         </p>
       ) : null}

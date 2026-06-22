@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+
+import { useDashboardResumeSelection } from '../_components/DashboardResumeSelectionProvider';
 
 import { AnalyzeHeader } from './_components/AnalyzeHeader';
 import { AnalyzeSidebar } from './_components/AnalyzeSidebar';
@@ -14,93 +16,100 @@ import { useAnalyzeResumeMutation } from '@/src/shared/hooks/useAnalyzeResumeMut
 import { useResumeAnalysisQuery } from '@/src/shared/hooks/useResumeAnalysisQuery';
 import { useResumesQuery } from '@/src/shared/hooks/useResumesQuery';
 
-const LAST_SELECTED_ANALYZE_RESUME_ID_KEY =
-  'cvpro:last-selected-analyze-resume-id';
+function createResumeRoute(
+  path: '/dashboard/analyze' | '/dashboard/adapt',
+  searchParamsString: string,
+  resumeId: string,
+  options?: {
+    autoRun?: boolean;
+  }
+) {
+  const params = new URLSearchParams(searchParamsString);
 
-function readLastSelectedResumeId() {
-  if (typeof window === 'undefined') {
-    return null;
+  params.set('resumeId', resumeId);
+
+  if (options?.autoRun) {
+    params.set('autoRun', '1');
+  } else {
+    params.delete('autoRun');
   }
 
-  try {
-    return window.localStorage.getItem(LAST_SELECTED_ANALYZE_RESUME_ID_KEY);
-  } catch {
-    return null;
-  }
+  return `${path}?${params.toString()}`;
 }
 
-function saveLastSelectedResumeId(resumeId: string) {
-  if (typeof window === 'undefined') {
-    return;
-  }
+function removeAutoRunFromAnalyzeRoute(
+  searchParamsString: string,
+  resumeId: string
+) {
+  const params = new URLSearchParams(searchParamsString);
 
-  try {
-    window.localStorage.setItem(LAST_SELECTED_ANALYZE_RESUME_ID_KEY, resumeId);
-  } catch {
-    // localStorage can be unavailable in private/restricted browser modes.
-  }
+  params.set('resumeId', resumeId);
+  params.delete('autoRun');
+
+  return `/dashboard/analyze?${params.toString()}`;
 }
 
 export default function AnalyzePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const searchParamsString = searchParams.toString();
+
+  const { selectedResumeId, setSelectedResumeId } =
+    useDashboardResumeSelection();
+
+  const autoRun = searchParams.get('autoRun') === '1';
+  const resumeId = searchParams.get('resumeId');
+
+  const autoRunStartedRef = useRef<string | null>(null);
 
   const { accessToken } = useAuth();
   const resumesQuery = useResumesQuery(accessToken);
   const analyzeResumeMutation = useAnalyzeResumeMutation();
 
-  const resumeId = searchParams.get('resumeId');
-
-  const [storedResumeId, setStoredResumeId] = useState<string | null>(null);
-  const [isStoredResumeLoaded, setIsStoredResumeLoaded] = useState(false);
-
   const resumes = resumesQuery.data?.resumes ?? [];
-
-  useEffect(() => {
-    setStoredResumeId(readLastSelectedResumeId());
-    setIsStoredResumeLoaded(true);
-  }, []);
 
   const selectedResume = useMemo(() => {
     if (!resumes.length) {
       return undefined;
     }
 
-    const preferredResumeId = resumeId ?? storedResumeId;
+    const candidateResumeIds = [resumeId, selectedResumeId].filter(
+      (candidateResumeId): candidateResumeId is string =>
+        Boolean(candidateResumeId)
+    );
 
-    if (preferredResumeId) {
-      const foundResume = resumes.find((resume) => resume.id === preferredResumeId);
+    for (const candidateResumeId of candidateResumeIds) {
+      const foundResume = resumes.find(
+        (resume) => resume.id === candidateResumeId
+      );
 
       if (foundResume) {
         return foundResume;
       }
     }
 
-    if (!resumeId && !isStoredResumeLoaded) {
-      return undefined;
-    }
-
     return resumes[0];
-  }, [isStoredResumeLoaded, resumeId, resumes, storedResumeId]);
+  }, [resumeId, resumes, selectedResumeId]);
 
   useEffect(() => {
-    if (!selectedResume?.id) {
+    if (!selectedResume?.id || selectedResumeId === selectedResume.id) {
       return;
     }
 
-    saveLastSelectedResumeId(selectedResume.id);
-    setStoredResumeId((currentResumeId) =>
-      currentResumeId === selectedResume.id ? currentResumeId : selectedResume.id
+    setSelectedResumeId(selectedResume.id);
+  }, [selectedResume?.id, selectedResumeId, setSelectedResumeId]);
+
+  useEffect(() => {
+    if (!selectedResume?.id || resumeId === selectedResume.id) {
+      return;
+    }
+
+    router.replace(
+      createResumeRoute('/dashboard/analyze', searchParamsString, selectedResume.id, {
+        autoRun,
+      })
     );
-  }, [selectedResume?.id]);
-
-  useEffect(() => {
-    if (!isStoredResumeLoaded || resumeId || !selectedResume?.id) {
-      return;
-    }
-
-    router.replace(`/dashboard/analyze?resumeId=${selectedResume.id}`);
-  }, [isStoredResumeLoaded, resumeId, router, selectedResume?.id]);
+  }, [autoRun, resumeId, router, searchParamsString, selectedResume?.id]);
 
   const latestAnalysisQuery = useResumeAnalysisQuery(
     selectedResume?.id,
@@ -116,12 +125,53 @@ export default function AnalyzePage() {
     analyzeResumeMutation.isPending ||
     analyzeResumeMutation.isError;
 
-  function handleSelectResume(nextResumeId: string) {
-    saveLastSelectedResumeId(nextResumeId);
-    setStoredResumeId(nextResumeId);
+  useEffect(() => {
+    if (
+      !autoRun ||
+      !selectedResume?.id ||
+      !accessToken ||
+      analyzeResumeMutation.isPending
+    ) {
+      return;
+    }
 
+    const autoRunKey = `${selectedResume.id}:${searchParamsString}`;
+
+    if (autoRunStartedRef.current === autoRunKey) {
+      return;
+    }
+
+    autoRunStartedRef.current = autoRunKey;
+
+    analyzeResumeMutation.mutate(
+      {
+        resumeId: selectedResume.id,
+        accessToken,
+      },
+      {
+        onSettled: () => {
+          router.replace(
+            removeAutoRunFromAnalyzeRoute(searchParamsString, selectedResume.id)
+          );
+        },
+      }
+    );
+  }, [
+    accessToken,
+    analyzeResumeMutation,
+    autoRun,
+    router,
+    searchParamsString,
+    selectedResume?.id,
+  ]);
+
+  function handleSelectResume(nextResumeId: string) {
+    setSelectedResumeId(nextResumeId);
     analyzeResumeMutation.reset();
-    router.replace(`/dashboard/analyze?resumeId=${nextResumeId}`);
+
+    router.replace(
+      createResumeRoute('/dashboard/analyze', searchParamsString, nextResumeId)
+    );
   }
 
   function handleRunAnalyze() {

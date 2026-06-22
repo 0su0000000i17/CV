@@ -17,19 +17,19 @@ export function AdaptSettings() {
         Эти параметры будут влиять на то, как сервис перепишет резюме.
       </p>
 
-      <div className="mt-6 grid gap-3 md:grid-cols-2">
+      <div className="mt-4 space-y-2">
         {settings.map((item) => (
           <label
             key={item}
-            className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border bg-background p-4 transition-colors hover:bg-muted"
+            className="flex min-h-[40px] cursor-pointer items-center gap-3 rounded-xl border border-border bg-background px-3 py-2 transition-colors hover:bg-muted"
           >
             <input
               type="checkbox"
               defaultChecked
-              className="mt-1 h-4 w-4 accent-foreground"
+              className="h-3.5 w-3.5 shrink-0 accent-foreground"
             />
 
-            <span className="text-sm leading-relaxed text-foreground">
+            <span className="text-sm leading-snug text-foreground">
               {item}
             </span>
           </label>
