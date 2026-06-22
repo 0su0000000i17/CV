@@ -1,6 +1,20 @@
+'use client';
+
 import { Briefcase, LinkIcon } from 'lucide-react';
 
-export function VacancyForm() {
+type VacancyFormProps = {
+  vacancyUrl: string;
+  vacancyText: string;
+  onVacancyUrlChange: (value: string) => void;
+  onVacancyTextChange: (value: string) => void;
+};
+
+export function VacancyForm({
+  vacancyUrl,
+  vacancyText,
+  onVacancyUrlChange,
+  onVacancyTextChange,
+}: VacancyFormProps) {
   return (
     <div className="rounded-2xl border border-border bg-card/60 p-6">
       <div className="mb-6 flex items-start gap-4">
@@ -28,6 +42,8 @@ export function VacancyForm() {
             <LinkIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
             <input
               type="text"
+              value={vacancyUrl}
+              onChange={(event) => onVacancyUrlChange(event.target.value)}
               placeholder="https://hh.ru/vacancy/..."
               className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
             />
@@ -45,6 +61,8 @@ export function VacancyForm() {
         </label>
 
         <textarea
+          value={vacancyText}
+          onChange={(event) => onVacancyTextChange(event.target.value)}
           placeholder="Вставьте описание вакансии, требования, обязанности и условия..."
           className="min-h-[220px] w-full resize-none rounded-2xl border border-border bg-background px-4 py-4 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
         />

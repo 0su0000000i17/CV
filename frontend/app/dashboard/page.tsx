@@ -1,8 +1,20 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { FileText, Plus, Sparkles } from 'lucide-react';
+import {
+  ArrowRight,
+  BarChart3,
+  CheckCircle2,
+  Clock3,
+  FileText,
+  Plus,
+  Sparkles,
+  Target,
+  Upload,
+} from 'lucide-react';
 
+import type { UploadedResume } from '@/src/shared/api/resumes';
 import { useAuth } from '@/src/shared/hooks/useAuth';
 import { useProfileQuery } from '@/src/shared/hooks/useProfileQuery';
 import { useResumesQuery } from '@/src/shared/hooks/useResumesQuery';
@@ -31,6 +43,243 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
+function getScoreColorClass(score: number | null | undefined) {
+  if (score === null || score === undefined) {
+    return 'text-muted-foreground';
+  }
+
+  if (score >= 80) {
+    return 'text-emerald-400';
+  }
+
+  if (score >= 60) {
+    return 'text-orange-400';
+  }
+
+  return 'text-red-400';
+}
+
+function getScoreBarClass(score: number | null | undefined) {
+  if (score === null || score === undefined) {
+    return 'bg-muted-foreground/30';
+  }
+
+  if (score >= 80) {
+    return 'bg-emerald-400';
+  }
+
+  if (score >= 60) {
+    return 'bg-orange-400';
+  }
+
+  return 'bg-red-400';
+}
+
+function getAnalysisStatusLabel(resume: UploadedResume) {
+  switch (resume.analysis_status) {
+    case 'completed':
+      return 'Проверено';
+
+    case 'analyzing':
+      return 'Анализируется';
+
+    case 'failed':
+      return 'Ошибка анализа';
+
+    case 'needs_update':
+      return 'Нужно обновить';
+
+    case 'idle':
+    case 'not_started':
+    default:
+      return 'Не проверено';
+  }
+}
+
+function getAnalysisStatusClass(resume: UploadedResume) {
+  switch (resume.analysis_status) {
+    case 'completed':
+      return 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300';
+
+    case 'analyzing':
+      return 'border-blue-500/25 bg-blue-500/10 text-blue-300';
+
+    case 'failed':
+      return 'border-red-500/25 bg-red-500/10 text-red-300';
+
+    case 'needs_update':
+      return 'border-orange-500/25 bg-orange-500/10 text-orange-300';
+
+    case 'idle':
+    case 'not_started':
+    default:
+      return 'border-border bg-muted text-muted-foreground';
+  }
+}
+
+function getResumeScoreLabel(resume: UploadedResume) {
+  if (resume.analysis_status !== 'completed' || resume.last_score === null) {
+    return '—';
+  }
+
+  return `${resume.last_score}/100`;
+}
+
+function getCheckedResumes(resumes: UploadedResume[]) {
+  return resumes.filter(
+    (resume) => resume.analysis_status === 'completed' && resume.last_score !== null
+  );
+}
+
+function getAverageScore(resumes: UploadedResume[]) {
+  const checkedResumes = getCheckedResumes(resumes);
+
+  if (!checkedResumes.length) {
+    return null;
+  }
+
+  const totalScore = checkedResumes.reduce(
+    (sum, resume) => sum + (resume.last_score ?? 0),
+    0
+  );
+
+  return Math.round(totalScore / checkedResumes.length);
+}
+
+function getLatestCheckedResume(resumes: UploadedResume[]) {
+  return [...getCheckedResumes(resumes)].sort(
+    (firstResume, secondResume) =>
+      new Date(secondResume.updated_at).getTime() -
+      new Date(firstResume.updated_at).getTime()
+  )[0];
+}
+
+type StatCardProps = {
+  label: string;
+  value: string;
+  caption: string;
+  icon: ReactNode;
+  valueClassName?: string;
+};
+
+function StatCard({
+  label,
+  value,
+  caption,
+  icon,
+  valueClassName = 'text-foreground',
+}: StatCardProps) {
+  return (
+    <div className="rounded-2xl border border-border bg-card/60 p-5">
+      <div className="mb-5 flex items-center justify-between gap-4">
+        <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+          {label}
+        </p>
+
+        <div className="rounded-xl bg-muted p-2.5 text-foreground">{icon}</div>
+      </div>
+
+      <p className={`text-3xl font-semibold tracking-tight ${valueClassName}`}>
+        {value}
+      </p>
+
+      <p className="mt-2 text-sm text-muted-foreground">{caption}</p>
+    </div>
+  );
+}
+
+function ResumeRow({ resume }: { resume: UploadedResume }) {
+  const scoreWidth =
+    resume.analysis_status === 'completed' && resume.last_score !== null
+      ? resume.last_score
+      : 0;
+
+  return (
+    <div className="flex flex-col gap-4 px-4 py-4 transition-colors hover:bg-muted/30 2xl:flex-row 2xl:items-center 2xl:justify-between">
+      <div className="flex min-w-0 items-start gap-4">
+        <div className="shrink-0 rounded-xl bg-muted p-3">
+          <FileText className="h-5 w-5 text-foreground" />
+        </div>
+
+        <div className="min-w-0">
+          <Link
+            href={`/dashboard/resumes/${resume.id}`}
+            className="block max-w-full truncate text-sm font-medium text-foreground hover:underline"
+          >
+            {resume.title}
+          </Link>
+
+          <p className="mt-1 text-xs text-muted-foreground">
+            {resume.role || 'Роль не указана'}
+          </p>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span
+              className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${getAnalysisStatusClass(
+                resume
+              )}`}
+            >
+              {getAnalysisStatusLabel(resume)}
+            </span>
+
+            <span
+              className={`text-sm font-semibold ${getScoreColorClass(
+                resume.last_score
+              )}`}
+            >
+              {getResumeScoreLabel(resume)}
+            </span>
+
+            <span className="text-xs text-muted-foreground">
+              {formatDate(resume.created_at)}
+            </span>
+          </div>
+
+          <div className="mt-3 h-1.5 w-full max-w-[180px] rounded-full bg-muted">
+            <div
+              className={`h-1.5 rounded-full ${getScoreBarClass(resume.last_score)}`}
+              style={{ width: `${scoreWidth}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex shrink-0 flex-wrap gap-2 2xl:justify-end">
+        <Link
+          href={`/dashboard/resumes/${resume.id}`}
+          className="inline-flex items-center justify-center rounded-xl border border-border px-4 py-2 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+        >
+          Открыть
+        </Link>
+
+        <Link
+          href={`/dashboard/analyze?resumeId=${resume.id}`}
+          className="inline-flex items-center justify-center rounded-xl bg-foreground px-4 py-2 text-xs font-medium text-background transition-colors hover:bg-foreground/80"
+        >
+          Проверить
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="h-56 animate-pulse rounded-3xl bg-muted" />
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="h-36 animate-pulse rounded-2xl bg-muted" />
+        <div className="h-36 animate-pulse rounded-2xl bg-muted" />
+        <div className="h-36 animate-pulse rounded-2xl bg-muted" />
+        <div className="h-36 animate-pulse rounded-2xl bg-muted" />
+      </div>
+
+      <div className="h-80 animate-pulse rounded-2xl bg-muted" />
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { accessToken, user } = useAuth();
   const profileQuery = useProfileQuery(accessToken);
@@ -38,192 +287,252 @@ export default function DashboardPage() {
 
   const profile = profileQuery.data?.profile;
   const resumes = resumesQuery.data?.resumes ?? [];
-  const recentResumes = resumes.slice(0, 3);
+
   const firstName = getFirstName(
     profile?.full_name,
     profile?.email || user?.email
   );
 
+  const checkedResumes = getCheckedResumes(resumes);
+  const averageScore = getAverageScore(resumes);
+  const latestCheckedResume = getLatestCheckedResume(resumes);
+  const recentResumes = resumes.slice(0, 4);
+
+  const isLoading = resumesQuery.isLoading || profileQuery.isLoading;
+
+  if (isLoading) {
+    return <DashboardSkeleton />;
+  }
+
   return (
     <div>
-      <div className="mb-10">
-        <p className="mb-3 text-xs font-medium uppercase tracking-widest text-muted-foreground">
+      <section className="rounded-3xl border border-border bg-card/60 p-6 md:p-8 xl:p-10">
+        <p className="mb-4 text-xs font-medium uppercase tracking-widest text-muted-foreground">
           Личный кабинет / Обзор
         </p>
 
-        <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-          <div>
-            <h1 className="text-4xl font-normal tracking-tight text-foreground md:text-5xl">
-              Обзор
-            </h1>
+        <h1 className="max-w-3xl text-4xl font-normal tracking-tight text-foreground md:text-5xl">
+          Привет, {firstName}
+        </h1>
 
-            <p className="mt-4 max-w-2xl text-muted-foreground">
-              Загружайте резюме, оценивайте слабые места и адаптируйте отклик
-              под конкретную вакансию.
-            </p>
-          </div>
+        <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground">
+          Здесь видно состояние ваших резюме, последние оценки и следующие
+          действия перед откликом. Начните с загрузки файла или запустите анализ
+          уже добавленного резюме.
+        </p>
 
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <Link
             href="/dashboard/resumes"
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-foreground px-5 py-3 text-sm font-medium text-background transition-colors hover:bg-foreground/80"
           >
-            <Plus className="h-4 w-4" />
+            <Upload className="h-4 w-4" />
             Загрузить резюме
           </Link>
-        </div>
-      </div>
-
-      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        <div className="rounded-2xl border border-border bg-card/60 p-6">
-          <p className="mb-4 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-            Быстрый старт
-          </p>
-
-          <h2 className="text-xl font-medium text-foreground">
-            Привет, {profileQuery.isLoading ? '...' : firstName}
-          </h2>
-
-          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-            Начните с загрузки резюме. После этого можно будет оценить его и
-            адаптировать под вакансию.
-          </p>
-
-          <div className="mt-6 flex flex-col gap-3">
-            <Link
-              href="/dashboard/resumes"
-              className="rounded-xl bg-foreground px-4 py-3 text-center text-sm font-medium text-background transition-colors hover:bg-foreground/80"
-            >
-              Загрузить резюме
-            </Link>
-
-            <Link
-              href="/dashboard/adapt"
-              className="rounded-xl border border-border px-4 py-3 text-center text-sm font-medium text-foreground transition-colors hover:bg-muted"
-            >
-              Адаптировать
-            </Link>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-border bg-card/60 p-6">
-          <p className="mb-4 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-            Лимиты
-          </p>
-
-          <h2 className="text-xl font-medium text-foreground">
-            Адаптации в этом месяце
-          </h2>
-
-          <div className="mt-6 flex items-end gap-2">
-            <span className="text-5xl font-semibold text-foreground">0</span>
-            <span className="pb-2 text-muted-foreground">/ 10</span>
-          </div>
-
-          <div className="mt-5 h-2 rounded-full bg-muted">
-            <div className="h-2 w-0 rounded-full bg-foreground" />
-          </div>
 
           <Link
-            href="/dashboard/billing"
-            className="mt-6 inline-block text-sm text-muted-foreground transition-colors hover:text-foreground"
+            href="/dashboard/analyze"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-5 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
           >
-            Улучшить тариф →
+            <Sparkles className="h-4 w-4" />
+            Проверить резюме
           </Link>
         </div>
+      </section>
 
-        <div className="rounded-2xl border border-border bg-card/60 p-6 md:col-span-2 xl:col-span-1">
-          <p className="mb-4 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-            Следующее действие
-          </p>
+      <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="Всего резюме"
+          value={String(resumes.length)}
+          caption="Файлы в личном кабинете"
+          icon={<FileText className="h-5 w-5" />}
+        />
 
-          <div className="flex items-start gap-4">
-            <div className="rounded-xl bg-muted p-3">
-              <Sparkles className="h-5 w-5 text-foreground" />
-            </div>
+        <StatCard
+          label="Проверено"
+          value={`${checkedResumes.length}/${resumes.length}`}
+          caption="Резюме с готовой оценкой"
+          icon={<CheckCircle2 className="h-5 w-5" />}
+        />
 
+        <StatCard
+          label="Средний score"
+          value={averageScore === null ? '—' : `${averageScore}/100`}
+          caption="По всем проверенным резюме"
+          icon={<BarChart3 className="h-5 w-5" />}
+          valueClassName={getScoreColorClass(averageScore)}
+        />
+
+        <StatCard
+          label="Последняя оценка"
+          value={
+            latestCheckedResume?.last_score === null ||
+            latestCheckedResume?.last_score === undefined
+              ? '—'
+              : `${latestCheckedResume.last_score}/100`
+          }
+          caption={
+            latestCheckedResume
+              ? latestCheckedResume.title
+              : 'Анализ ещё не запускался'
+          }
+          icon={<Clock3 className="h-5 w-5" />}
+          valueClassName={getScoreColorClass(latestCheckedResume?.last_score)}
+        />
+      </section>
+
+      <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="overflow-hidden rounded-2xl border border-border bg-card/60">
+          <div className="flex flex-col gap-4 border-b border-border p-6 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="text-xl font-medium text-foreground">
-                Адаптация под вакансию
+                Последние резюме
               </h2>
 
-              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                Вставьте текст вакансии или ссылку, чтобы получить версию резюме
-                под конкретный отклик.
+              <p className="mt-1 text-sm text-muted-foreground">
+                Быстрый доступ к файлам, оценкам и повторному анализу.
               </p>
             </div>
-          </div>
-        </div>
-      </div>
 
-      <div className="mt-8 rounded-2xl border border-border bg-card/60 p-6">
-        <div className="mb-5 flex items-center justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-medium text-foreground">
-              Недавние резюме
-            </h2>
-
-            <p className="mt-1 text-sm text-muted-foreground">
-              Последние файлы, с которыми вы работали.
-            </p>
+            <Link
+              href="/dashboard/resumes"
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Все резюме
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
 
-          <Link
-            href="/dashboard/resumes"
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-          >
-            Все резюме →
-          </Link>
-        </div>
+          {resumesQuery.isError ? (
+            <div className="p-6">
+              <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-5">
+                <p className="text-sm font-medium text-red-300">
+                  Не удалось загрузить резюме
+                </p>
 
-        {resumesQuery.isLoading ? (
-          <div className="space-y-3">
-            <div className="h-16 animate-pulse rounded-xl bg-muted" />
-            <div className="h-16 animate-pulse rounded-xl bg-muted" />
-            <div className="h-16 animate-pulse rounded-xl bg-muted" />
-          </div>
-        ) : recentResumes.length > 0 ? (
-          <div className="divide-y divide-border rounded-xl border border-border">
-            {recentResumes.map((resume) => (
-              <Link
-                key={resume.id}
-                href={`/dashboard/resumes/${resume.id}`}
-                className="flex items-center gap-4 px-4 py-4 transition-colors hover:bg-muted/50"
-              >
-                <div className="rounded-xl bg-muted p-3">
-                  <FileText className="h-5 w-5 text-foreground" />
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Обновите страницу или попробуйте позже.
+                </p>
+              </div>
+            </div>
+          ) : recentResumes.length > 0 ? (
+            <div className="divide-y divide-border">
+              {recentResumes.map((resume) => (
+                <ResumeRow key={resume.id} resume={resume} />
+              ))}
+            </div>
+          ) : (
+            <div className="p-6">
+              <div className="rounded-2xl border border-dashed border-border p-8 text-center">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-muted">
+                  <Plus className="h-5 w-5 text-foreground" />
                 </div>
 
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-foreground">
-                    {resume.title}
-                  </p>
+                <p className="text-base font-medium text-foreground">
+                  У вас пока нет загруженных резюме
+                </p>
 
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Загружено {formatDate(resume.created_at)}
+                <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+                  Загрузите первое резюме, чтобы получить оценку, детализацию по
+                  метрикам и рекомендации по улучшению.
+                </p>
+
+                <Link
+                  href="/dashboard/resumes"
+                  className="mt-5 inline-flex items-center justify-center rounded-xl bg-foreground px-5 py-3 text-sm font-medium text-background transition-colors hover:bg-foreground/80"
+                >
+                  Загрузить резюме
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-6">
+          <div className="rounded-2xl border border-border bg-card/60 p-6">
+            <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+              Что дальше
+            </p>
+
+            <div className="mt-5 space-y-3">
+              <Link
+                href="/dashboard/analyze"
+                className="group flex items-start gap-4 rounded-2xl border border-border p-4 transition-colors hover:bg-muted/40"
+              >
+                <div className="shrink-0 rounded-xl bg-muted p-3">
+                  <Sparkles className="h-5 w-5 text-foreground" />
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-medium text-foreground">
+                    Проверить резюме
+                  </h3>
+
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                    Запустите анализ структуры, опыта, ATS и red flags.
                   </p>
                 </div>
               </Link>
-            ))}
+
+              <Link
+                href="/dashboard/resumes"
+                className="group flex items-start gap-4 rounded-2xl border border-border p-4 transition-colors hover:bg-muted/40"
+              >
+                <div className="shrink-0 rounded-xl bg-muted p-3">
+                  <FileText className="h-5 w-5 text-foreground" />
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-medium text-foreground">
+                    Управлять резюме
+                  </h3>
+
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                    Откройте список файлов, скачайте или удалите лишнее.
+                  </p>
+                </div>
+              </Link>
+
+              <div className="flex items-start gap-4 rounded-2xl border border-border bg-muted/20 p-4 opacity-70">
+                <div className="shrink-0 rounded-xl bg-muted p-3">
+                  <Target className="h-5 w-5 text-foreground" />
+                </div>
+
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-sm font-medium text-foreground">
+                      Подготовить отклик
+                    </h3>
+
+                    <span className="rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-widest text-muted-foreground">
+                      скоро
+                    </span>
+                  </div>
+
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                    Позже здесь появится адаптация резюме под вакансию.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
-        ) : (
-          <div className="rounded-xl border border-dashed border-border p-6 text-center">
-            <p className="text-sm font-medium text-foreground">
-              Резюме пока нет
+
+          <div className="rounded-2xl border border-border bg-card/60 p-6">
+            <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+              Подсказка
             </p>
 
-            <p className="mt-2 text-sm text-muted-foreground">
-              Загрузите первое резюме, чтобы начать работу.
-            </p>
+            <h2 className="mt-4 text-lg font-medium text-foreground">
+              Сначала проверьте базовое резюме
+            </h2>
 
-            <Link
-              href="/dashboard/resumes"
-              className="mt-4 inline-flex items-center justify-center rounded-xl bg-foreground px-4 py-2.5 text-sm font-medium text-background transition-colors hover:bg-foreground/80"
-            >
-              Загрузить резюме
-            </Link>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+              Чем понятнее структура, роль и доказательства опыта, тем легче
+              потом адаптировать резюме под конкретные вакансии.
+            </p>
           </div>
-        )}
-      </div>
+        </div>
+      </section>
     </div>
   );
 }
