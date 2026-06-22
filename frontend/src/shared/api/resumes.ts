@@ -9,11 +9,26 @@ export type UploadedResume = {
   file_path: string;
   file_type: string;
   file_size: number;
+  source_file_hash: string | null;
   extracted_text: string | null;
   analysis_status: string;
   last_score: number | null;
   created_at: string;
   updated_at: string;
+};
+
+export type DuplicateResume = {
+  id: string;
+  title: string | null;
+  fileName: string | null;
+  fileSize: number | null;
+  createdAt: string;
+};
+
+export type UploadResumeDuplicateError = {
+  message: string;
+  code: 'DUPLICATE_RESUME';
+  duplicateResume?: DuplicateResume;
 };
 
 type ResumesResponse = {

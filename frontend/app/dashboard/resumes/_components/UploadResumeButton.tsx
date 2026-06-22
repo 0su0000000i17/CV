@@ -1,18 +1,39 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
 
 import { supabase } from '@/src/shared/lib/supabase/client';
 import { useUploadResumeMutation } from '@/src/shared/hooks/useUploadResumeMutation';
 
+const ERROR_MESSAGE_VISIBLE_MS = 15_000;
+
 export function UploadResumeButton() {
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
 
   const uploadResumeMutation = useUploadResumeMutation();
 
+  const clearErrorTimer = () => {
+    if (errorTimerRef.current) {
+      clearTimeout(errorTimerRef.current);
+      errorTimerRef.current = null;
+    }
+  };
+
+  const showTemporaryError = (message: string) => {
+    clearErrorTimer();
+    setErrorMessage(message);
+
+    errorTimerRef.current = setTimeout(() => {
+      setErrorMessage('');
+      errorTimerRef.current = null;
+    }, ERROR_MESSAGE_VISIBLE_MS);
+  };
+
   const handleSelectFile = () => {
+    clearErrorTimer();
     setErrorMessage('');
     inputRef.current?.click();
   };
@@ -29,7 +50,8 @@ export function UploadResumeButton() {
     } = await supabase.auth.getSession();
 
     if (!session?.access_token) {
-      setErrorMessage('Нужно войти в аккаунт.');
+      showTemporaryError('Нужно войти в аккаунт.');
+      event.target.value = '';
       return;
     }
 
@@ -40,19 +62,28 @@ export function UploadResumeButton() {
       },
       {
         onSuccess: () => {
+          clearErrorTimer();
+          setErrorMessage('');
           event.target.value = '';
         },
         onError: (error) => {
-          setErrorMessage(
+          showTemporaryError(
             error instanceof Error ? error.message : 'Ошибка загрузки резюме'
           );
+          event.target.value = '';
         },
       }
     );
   };
 
+  useEffect(() => {
+    return () => {
+      clearErrorTimer();
+    };
+  }, []);
+
   return (
-    <div className="flex flex-col items-start gap-2 md:items-end">
+    <div className="relative flex items-start md:items-end">
       <input
         ref={inputRef}
         type="file"
@@ -72,7 +103,7 @@ export function UploadResumeButton() {
       </button>
 
       {errorMessage ? (
-        <p className="max-w-xs text-right text-xs text-red-500">
+        <p className="absolute right-0 top-full mt-3 w-max max-w-xs text-right text-xs text-red-500">
           {errorMessage}
         </p>
       ) : null}

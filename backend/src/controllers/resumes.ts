@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { Request, Response } from "express";
 
 import { supabaseAdmin } from "../lib/supabase.js";
@@ -12,6 +13,73 @@ import {
   createResumeStorageFilePath,
   decodeFileName,
 } from "../utils/resumeFiles.js";
+
+function createSourceFileHash(fileBuffer: Buffer) {
+  return createHash("sha256").update(fileBuffer).digest("hex");
+}
+
+async function findDuplicateResume(params: {
+  userId: string;
+  sourceFileHash: string;
+}) {
+  const { data, error } = await supabaseAdmin
+    .from("resumes")
+    .select("id, title, file_name, file_size, created_at")
+    .eq("user_id", params.userId)
+    .eq("source_file_hash", params.sourceFileHash)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data as
+    | {
+        id: string;
+        title: string | null;
+        file_name: string | null;
+        file_size: number | null;
+        created_at: string;
+      }
+    | null;
+}
+
+function isUniqueSourceFileHashError(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const errorRecord = error as Record<string, unknown>;
+
+  return (
+    errorRecord.code === "23505" &&
+    typeof errorRecord.message === "string" &&
+    errorRecord.message.includes("resumes_user_source_file_hash_unique_idx")
+  );
+}
+
+function sendDuplicateResumeError(
+  res: Response,
+  duplicateResume: {
+    id: string;
+    title: string | null;
+    file_name: string | null;
+    file_size: number | null;
+    created_at: string;
+  }
+) {
+  return res.status(409).json({
+    message: "Такое резюме уже загружено в вашем профиле.",
+    code: "DUPLICATE_RESUME",
+    duplicateResume: {
+      id: duplicateResume.id,
+      title: duplicateResume.title,
+      fileName: duplicateResume.file_name,
+      fileSize: duplicateResume.file_size,
+      createdAt: duplicateResume.created_at,
+    },
+  });
+}
 
 export async function getResumes(req: Request, res: Response) {
   try {
@@ -56,6 +124,17 @@ export async function uploadResume(req: Request, res: Response) {
       return sendError(res, 400, "Unsupported file type");
     }
 
+    const sourceFileHash = createSourceFileHash(file.buffer);
+
+    const duplicateResume = await findDuplicateResume({
+      userId: user.id,
+      sourceFileHash,
+    });
+
+    if (duplicateResume) {
+      return sendDuplicateResumeError(res, duplicateResume);
+    }
+
     const decodedFileName = decodeFileName(file.originalname);
     const filePath = createResumeStorageFilePath(
       user.id,
@@ -83,6 +162,7 @@ export async function uploadResume(req: Request, res: Response) {
         file_path: filePath,
         file_type: file.mimetype,
         file_size: file.size,
+        source_file_hash: sourceFileHash,
       })
       .select()
       .single();
@@ -94,6 +174,22 @@ export async function uploadResume(req: Request, res: Response) {
 
       if (cleanupError) {
         console.error(cleanupError);
+      }
+
+      if (isUniqueSourceFileHashError(insertError)) {
+        const duplicateResumeAfterRace = await findDuplicateResume({
+          userId: user.id,
+          sourceFileHash,
+        });
+
+        if (duplicateResumeAfterRace) {
+          return sendDuplicateResumeError(res, duplicateResumeAfterRace);
+        }
+
+        return res.status(409).json({
+          message: "Такое резюме уже загружено в вашем профиле.",
+          code: "DUPLICATE_RESUME",
+        });
       }
 
       return sendServerError(res, "Failed to save resume", insertError);
