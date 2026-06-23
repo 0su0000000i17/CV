@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ClipboardEvent } from 'react';
 import { Briefcase } from 'lucide-react';
 
 import type { VacancyFormProps } from './vacancy-form/types';
@@ -47,7 +47,7 @@ export function VacancyForm({
       textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
   }, [vacancyInput, isTextMode]);
 
-  function handleInputPaste(event: React.ClipboardEvent<HTMLInputElement>) {
+  function handleInputPaste(event: ClipboardEvent<HTMLInputElement>) {
     const pastedText = event.clipboardData.getData('text');
 
     if (!pastedText) {
