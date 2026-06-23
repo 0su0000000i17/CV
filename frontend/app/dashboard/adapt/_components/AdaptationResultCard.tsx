@@ -1,7 +1,5 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-
 import { ContactsSection } from './adaptation-result/contacts-section';
 import { EditorSection } from './adaptation-result/editor-section';
 import { EditorSidebar } from './adaptation-result/editor-sidebar';
@@ -9,16 +7,9 @@ import { EducationSection } from './adaptation-result/education-section';
 import { ErrorState, LoadingState } from './adaptation-result/result-states';
 import { SkillsSection } from './adaptation-result/skills-section';
 import { SummarySection } from './adaptation-result/summary-section';
-import type {
-  AdaptationResultCardProps,
-  ContactDraft,
-} from './adaptation-result/types';
+import type { AdaptationResultCardProps } from './adaptation-result/types';
+import { useEditorState } from './adaptation-result/use-editor-state';
 import { WorkSection } from './adaptation-result/work-section';
-import {
-  cloneAdaptation,
-  createPlainResumeText,
-} from './adaptation-result/utils';
-import type { ResumeAdaptationResult } from '@/src/shared/api/resumeAdaptation';
 
 export function AdaptationResultCard({
   adaptationResponse,
@@ -27,50 +18,7 @@ export function AdaptationResultCard({
   errorMessage,
   onResetAdaptation,
 }: AdaptationResultCardProps) {
-  const [draft, setDraft] = useState<ResumeAdaptationResult | null>(null);
-  const [contacts, setContacts] = useState<ContactDraft>({
-    fullName: '',
-    phone: '',
-    email: '',
-    city: '',
-  });
-
-  const [expandedExperienceIndexes, setExpandedExperienceIndexes] = useState<
-    number[]
-  >([]);
-  const [editingExperienceIndex, setEditingExperienceIndex] = useState<
-    number | null
-  >(null);
-  const [isContactsEditing, setIsContactsEditing] = useState(false);
-  const [isSkillsEditing, setIsSkillsEditing] = useState(false);
-  const [isEducationEditing, setIsEducationEditing] = useState(false);
-  const [isAboutEditing, setIsAboutEditing] = useState(false);
-  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>(
-    'idle'
-  );
-
-  useEffect(() => {
-    if (!adaptationResponse?.adaptation) {
-      setDraft(null);
-      return;
-    }
-
-    setDraft(cloneAdaptation(adaptationResponse.adaptation));
-    setExpandedExperienceIndexes([]);
-    setEditingExperienceIndex(null);
-    setIsContactsEditing(false);
-    setIsSkillsEditing(false);
-    setIsEducationEditing(false);
-    setIsAboutEditing(false);
-  }, [adaptationResponse]);
-
-  const plainResumeText = useMemo(() => {
-    if (!draft) {
-      return '';
-    }
-
-    return createPlainResumeText(draft, contacts);
-  }, [contacts, draft]);
+  const editor = useEditorState(adaptationResponse);
 
   if (isAdapting) {
     return <LoadingState />;
@@ -80,48 +28,8 @@ export function AdaptationResultCard({
     return <ErrorState errorMessage={errorMessage} />;
   }
 
-  if (!adaptationResponse || !draft) {
+  if (!adaptationResponse || !editor.draft) {
     return null;
-  }
-
-  function updateDraft(updater: (current: ResumeAdaptationResult) => void) {
-    setDraft((current) => {
-      if (!current) {
-        return current;
-      }
-
-      const next = cloneAdaptation(current);
-      updater(next);
-
-      return next;
-    });
-  }
-
-  function resetDraftToAiVersion() {
-    if (!adaptationResponse?.adaptation) {
-      return;
-    }
-
-    setDraft(cloneAdaptation(adaptationResponse.adaptation));
-  }
-
-  function toggleExpandedExperience(index: number) {
-    setExpandedExperienceIndexes((current) =>
-      current.includes(index)
-        ? current.filter((item) => item !== index)
-        : [...current, index]
-    );
-  }
-
-  async function copyResumeText() {
-    try {
-      await navigator.clipboard.writeText(plainResumeText);
-      setCopyStatus('copied');
-    } catch {
-      setCopyStatus('error');
-    } finally {
-      window.setTimeout(() => setCopyStatus('idle'), 1800);
-    }
   }
 
   return (
@@ -129,9 +37,9 @@ export function AdaptationResultCard({
       <div className="space-y-5">
         <EditorSection title="Заголовок">
           <input
-            value={draft.adaptedResume.headline}
+            value={editor.draft.adaptedResume.headline}
             onChange={(event) =>
-              updateDraft((current) => {
+              editor.updateDraft((current) => {
                 current.adaptedResume.headline = event.target.value;
               })
             }
@@ -140,48 +48,48 @@ export function AdaptationResultCard({
         </EditorSection>
 
         <ContactsSection
-          contacts={contacts}
-          setContacts={setContacts}
-          isEditing={isContactsEditing}
-          setIsEditing={setIsContactsEditing}
+          contacts={editor.contacts}
+          setContacts={editor.setContacts}
+          isEditing={editor.isContactsEditing}
+          setIsEditing={editor.setIsContactsEditing}
         />
 
         <WorkSection
-          draft={draft}
-          expandedIndexes={expandedExperienceIndexes}
-          editingIndex={editingExperienceIndex}
-          setEditingIndex={setEditingExperienceIndex}
-          toggleExpanded={toggleExpandedExperience}
-          updateDraft={updateDraft}
+          draft={editor.draft}
+          expandedIndexes={editor.expandedExperienceIndexes}
+          editingIndex={editor.editingExperienceIndex}
+          setEditingIndex={editor.setEditingExperienceIndex}
+          toggleExpanded={editor.toggleExpandedExperience}
+          updateDraft={editor.updateDraft}
         />
 
         <SkillsSection
-          draft={draft}
-          isEditing={isSkillsEditing}
-          setIsEditing={setIsSkillsEditing}
-          updateDraft={updateDraft}
+          draft={editor.draft}
+          isEditing={editor.isSkillsEditing}
+          setIsEditing={editor.setIsSkillsEditing}
+          updateDraft={editor.updateDraft}
         />
 
         <EducationSection
-          draft={draft}
-          isEditing={isEducationEditing}
-          setIsEditing={setIsEducationEditing}
-          updateDraft={updateDraft}
+          draft={editor.draft}
+          isEditing={editor.isEducationEditing}
+          setIsEditing={editor.setIsEducationEditing}
+          updateDraft={editor.updateDraft}
         />
 
         <SummarySection
-          draft={draft}
-          isEditing={isAboutEditing}
-          setIsEditing={setIsAboutEditing}
-          updateDraft={updateDraft}
+          draft={editor.draft}
+          isEditing={editor.isAboutEditing}
+          setIsEditing={editor.setIsAboutEditing}
+          updateDraft={editor.updateDraft}
         />
       </div>
 
       <EditorSidebar
-        draft={draft}
-        copyStatus={copyStatus}
-        onCopyResumeText={copyResumeText}
-        onResetDraftToAiVersion={resetDraftToAiVersion}
+        draft={editor.draft}
+        copyStatus={editor.copyStatus}
+        onCopyResumeText={editor.copyResumeText}
+        onResetDraftToAiVersion={editor.resetDraftToAiVersion}
         onResetAdaptation={onResetAdaptation}
       />
     </div>
