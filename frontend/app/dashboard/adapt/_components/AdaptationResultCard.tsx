@@ -2,13 +2,13 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
-import { AboutSection } from './adaptation-result/summary-section';
 import { ContactsSection } from './adaptation-result/contacts-section';
 import { EditorSection } from './adaptation-result/editor-section';
 import { EditorSidebar } from './adaptation-result/editor-sidebar';
 import { EducationSection } from './adaptation-result/education-section';
 import { ErrorState, LoadingState } from './adaptation-result/result-states';
 import { SkillsSection } from './adaptation-result/skills-section';
+import { SummarySection } from './adaptation-result/summary-section';
 import type {
   AdaptationResultCardProps,
   ContactDraft,
@@ -169,7 +169,7 @@ export function AdaptationResultCard({
           updateDraft={updateDraft}
         />
 
-        <AboutSection
+        <SummarySection
           draft={draft}
           isEditing={isAboutEditing}
           setIsEditing={setIsAboutEditing}
