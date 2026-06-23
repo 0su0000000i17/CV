@@ -1,4 +1,4 @@
-import { Loader2, Play, RotateCw } from 'lucide-react';
+import { Play, RotateCw, Sparkles } from 'lucide-react';
 
 import type { UploadedResume } from '@/src/shared/api/resumes';
 
@@ -50,8 +50,8 @@ export function AnalyzeHeader({
         >
           {isAnalyzing ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Оцениваем...
+              <Sparkles className="h-4 w-4 animate-pulse" />
+              Оценка идёт...
             </>
           ) : analyzed ? (
             <>

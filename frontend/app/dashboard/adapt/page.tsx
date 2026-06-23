@@ -6,14 +6,20 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useDashboardResumeSelection } from '../_components/DashboardResumeSelectionProvider';
 
 import { AdaptHeader } from './_components/AdaptHeader';
-import { AdaptSettings } from './_components/AdaptSettings';
 import { AdaptSidebar } from './_components/AdaptSidebar';
+import { AdaptationResultCard } from './_components/AdaptationResultCard';
+import { ResumeVacancyFitCard } from './_components/ResumeVacancyFitCard';
 import { SelectedResumeCard } from './_components/SelectedResumeCard';
 import { VacancyForm } from './_components/VacancyForm';
 
-import type { PageExtractionStatus } from '@/src/shared/api/vacancies';
+import type {
+  NormalizedVacancy,
+  PageExtractionStatus,
+} from '@/src/shared/api/vacancies';
 import { useAuth } from '@/src/shared/hooks/useAuth';
 import { usePrepareVacancyInputMutation } from '@/src/shared/hooks/usePrepareVacancyInputMutation';
+import { useResumeAdaptationMutation } from '@/src/shared/hooks/useResumeAdaptationMutation';
+import { useResumeVacancyFitMutation } from '@/src/shared/hooks/useResumeVacancyFitMutation';
 import { useResumesQuery } from '@/src/shared/hooks/useResumesQuery';
 
 type VacancyInputKind = 'empty' | 'url' | 'text';
@@ -71,11 +77,15 @@ export default function AdaptPage() {
   const { accessToken } = useAuth();
   const resumesQuery = useResumesQuery(accessToken);
   const prepareVacancyMutation = usePrepareVacancyInputMutation();
+  const resumeVacancyFitMutation = useResumeVacancyFitMutation();
+  const resumeAdaptationMutation = useResumeAdaptationMutation();
 
   const resumeId = searchParams.get('resumeId');
 
   const [vacancyInput, setVacancyInput] = useState('');
   const [preparedVacancyText, setPreparedVacancyText] = useState('');
+  const [preparedVacancy, setPreparedVacancy] =
+    useState<NormalizedVacancy | null>(null);
   const [extractionStatus, setExtractionStatus] =
     useState<PageExtractionStatus | null>(null);
   const [extractionMessage, setExtractionMessage] = useState('');
@@ -106,6 +116,18 @@ export default function AdaptPage() {
     return resumes[0];
   }, [resumeId, resumes, selectedResumeId]);
 
+  const fitResponse = resumeVacancyFitMutation.data;
+  const adaptationResponse = resumeAdaptationMutation.data;
+
+  const isPreparing = prepareVacancyMutation.isPending;
+  const isCheckingFit = resumeVacancyFitMutation.isPending;
+  const isAdapting = resumeAdaptationMutation.isPending;
+
+  const hasAdaptationWorkspace =
+    Boolean(adaptationResponse) ||
+    isAdapting ||
+    resumeAdaptationMutation.isError;
+
   useEffect(() => {
     if (!selectedResume?.id || selectedResumeId === selectedResume.id) {
       return;
@@ -124,8 +146,24 @@ export default function AdaptPage() {
     );
   }, [resumeId, router, searchParamsString, selectedResume?.id]);
 
+  function resetVacancyResult() {
+    setPreparedVacancyText('');
+    setPreparedVacancy(null);
+    setExtractionStatus(null);
+    setExtractionMessage('');
+
+    resumeVacancyFitMutation.reset();
+    resumeAdaptationMutation.reset();
+  }
+
+  function handleResetAdaptation() {
+    resumeAdaptationMutation.reset();
+  }
+
   function handleSelectResume(nextResumeId: string) {
     setSelectedResumeId(nextResumeId);
+    resumeVacancyFitMutation.reset();
+    resumeAdaptationMutation.reset();
 
     router.replace(
       createResumeRoute('/dashboard/adapt', searchParamsString, nextResumeId)
@@ -134,9 +172,31 @@ export default function AdaptPage() {
 
   function handleVacancyInputChange(value: string) {
     setVacancyInput(value);
-    setPreparedVacancyText('');
-    setExtractionStatus(null);
-    setExtractionMessage('');
+    resetVacancyResult();
+  }
+
+  function runResumeVacancyFit(params: {
+    vacancy: NormalizedVacancy;
+    vacancyText: string;
+  }) {
+    if (!accessToken) {
+      setExtractionStatus('access_denied');
+      setExtractionMessage('Нужно войти в аккаунт.');
+      return;
+    }
+
+    if (!selectedResume?.id) {
+      setExtractionStatus('needs_manual_text');
+      setExtractionMessage('Сначала выберите резюме.');
+      return;
+    }
+
+    resumeVacancyFitMutation.mutate({
+      resumeId: selectedResume.id,
+      vacancy: params.vacancy,
+      vacancyText: params.vacancyText,
+      accessToken,
+    });
   }
 
   function handlePrepareVacancy() {
@@ -154,9 +214,18 @@ export default function AdaptPage() {
       return;
     }
 
+    if (!selectedResume?.id) {
+      setExtractionStatus('needs_manual_text');
+      setExtractionMessage('Сначала выберите резюме.');
+      return;
+    }
+
     setExtractionStatus(null);
     setExtractionMessage('');
     setPreparedVacancyText('');
+    setPreparedVacancy(null);
+    resumeVacancyFitMutation.reset();
+    resumeAdaptationMutation.reset();
 
     prepareVacancyMutation.mutate(
       {
@@ -168,8 +237,18 @@ export default function AdaptPage() {
           setExtractionStatus(data.status);
           setExtractionMessage(data.message);
 
-          if (data.status === 'success' && data.page?.text) {
+          if (
+            data.status === 'success' &&
+            data.page?.text &&
+            data.vacancy?.isVacancy
+          ) {
             setPreparedVacancyText(data.page.text);
+            setPreparedVacancy(data.vacancy);
+
+            runResumeVacancyFit({
+              vacancy: data.vacancy,
+              vacancyText: data.page.text,
+            });
           }
         },
         onError: (error) => {
@@ -184,36 +263,86 @@ export default function AdaptPage() {
     );
   }
 
+  function handleCreateAdaptation() {
+    if (
+      !accessToken ||
+      !selectedResume?.id ||
+      !preparedVacancy ||
+      !preparedVacancyText ||
+      !resumeVacancyFitMutation.data?.fit.canAdapt
+    ) {
+      return;
+    }
+
+    resumeAdaptationMutation.mutate({
+      resumeId: selectedResume.id,
+      vacancy: preparedVacancy,
+      vacancyText: preparedVacancyText,
+      fit: resumeVacancyFitMutation.data.fit,
+      accessToken,
+    });
+  }
+
   return (
     <div>
       <AdaptHeader />
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
-        <div className="space-y-6">
-          <SelectedResumeCard
-            selectedResume={selectedResume}
-            resumes={resumes}
-            isLoading={resumesQuery.isPending}
-            isError={resumesQuery.isError}
-            onSelectResume={handleSelectResume}
-          />
+      {hasAdaptationWorkspace ? (
+        <AdaptationResultCard
+          adaptationResponse={adaptationResponse}
+          isAdapting={isAdapting}
+          isError={resumeAdaptationMutation.isError}
+          errorMessage={
+            resumeAdaptationMutation.error instanceof Error
+              ? resumeAdaptationMutation.error.message
+              : undefined
+          }
+          onResetAdaptation={handleResetAdaptation}
+        />
+      ) : (
+        <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
+          <div className="space-y-6">
+            <SelectedResumeCard
+              selectedResume={selectedResume}
+              resumes={resumes}
+              isLoading={resumesQuery.isPending}
+              isError={resumesQuery.isError}
+              onSelectResume={handleSelectResume}
+            />
 
-          <VacancyForm
-            vacancyInput={vacancyInput}
-            vacancyInputKind={vacancyInputKind}
-            preparedVacancyTextLength={preparedVacancyText.length}
-            isPreparing={prepareVacancyMutation.isPending}
-            extractionStatus={extractionStatus}
-            extractionMessage={extractionMessage}
-            onVacancyInputChange={handleVacancyInputChange}
-            onPrepareVacancy={handlePrepareVacancy}
-          />
+            <VacancyForm
+              vacancyInput={vacancyInput}
+              vacancyInputKind={vacancyInputKind}
+              preparedVacancyTextLength={preparedVacancyText.length}
+              isPreparing={isPreparing}
+              isCheckingFit={isCheckingFit}
+              extractionStatus={extractionStatus}
+              extractionMessage={extractionMessage}
+              onVacancyInputChange={handleVacancyInputChange}
+              onPrepareVacancy={handlePrepareVacancy}
+            />
 
-          <AdaptSettings />
+            <ResumeVacancyFitCard
+              fitResponse={fitResponse}
+              isChecking={isCheckingFit}
+              isError={resumeVacancyFitMutation.isError}
+              errorMessage={
+                resumeVacancyFitMutation.error instanceof Error
+                  ? resumeVacancyFitMutation.error.message
+                  : undefined
+              }
+            />
+          </div>
+
+          <AdaptSidebar
+            fitResponse={fitResponse}
+            adaptationResponse={adaptationResponse}
+            isAdapting={isAdapting}
+            isCheckingFit={isCheckingFit}
+            onCreateAdaptation={handleCreateAdaptation}
+          />
         </div>
-
-        <AdaptSidebar />
-      </div>
+      )}
     </div>
   );
 }

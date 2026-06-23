@@ -21,17 +21,14 @@ export function createSha256Hash(value: string | Buffer) {
 export function getExpectedAiSignature(): AiSignature {
   const provider = process.env.AI_PROVIDER?.trim().toLowerCase() || "unknown";
 
-  if (provider === "gigachat") {
+  if (
+    provider === "yandex" ||
+    provider === "yandex-ai" ||
+    provider === "yandex-ai-studio"
+  ) {
     return {
-      provider,
-      model: process.env.GIGACHAT_MODEL?.trim() || "GigaChat",
-    };
-  }
-
-  if (provider === "openai") {
-    return {
-      provider,
-      model: process.env.OPENAI_MODEL?.trim() || "unknown",
+      provider: "yandex",
+      model: process.env.YANDEX_AI_MODEL?.trim() || "unknown",
     };
   }
 

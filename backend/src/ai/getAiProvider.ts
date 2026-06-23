@@ -1,5 +1,5 @@
 import { AiConfigurationError } from "./errors.js";
-import { createGigaChatProvider } from "./providers/gigachatProvider.js";
+import { createYandexAiStudioProvider } from "./providers/yandexAiStudioProvider.js";
 import type { AiProvider } from "./types.js";
 
 let providerInstance: AiProvider | null = null;
@@ -11,12 +11,16 @@ export function getAiProvider() {
 
   const providerName = process.env.AI_PROVIDER?.trim().toLowerCase();
 
-  if (providerName === "gigachat") {
-    providerInstance = createGigaChatProvider();
+  if (
+    providerName === "yandex" ||
+    providerName === "yandex-ai" ||
+    providerName === "yandex-ai-studio"
+  ) {
+    providerInstance = createYandexAiStudioProvider();
     return providerInstance;
   }
 
   throw new AiConfigurationError(
-    "AI_PROVIDER is not configured. Supported providers: gigachat"
+    'AI_PROVIDER is not configured. Supported providers: "yandex"'
   );
 }

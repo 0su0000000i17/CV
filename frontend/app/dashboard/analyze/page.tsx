@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { useDashboardResumeSelection } from '../_components/DashboardResumeSelectionProvider';
@@ -15,6 +15,8 @@ import { useAuth } from '@/src/shared/hooks/useAuth';
 import { useAnalyzeResumeMutation } from '@/src/shared/hooks/useAnalyzeResumeMutation';
 import { useResumeAnalysisQuery } from '@/src/shared/hooks/useResumeAnalysisQuery';
 import { useResumesQuery } from '@/src/shared/hooks/useResumesQuery';
+
+const MIN_ANALYSIS_LOADING_MS = 30_000;
 
 function createResumeRoute(
   path: '/dashboard/analyze' | '/dashboard/adapt',
@@ -61,6 +63,10 @@ export default function AnalyzePage() {
   const resumeId = searchParams.get('resumeId');
 
   const autoRunStartedRef = useRef<string | null>(null);
+  const syntheticAnalyzeStartedAtRef = useRef<number | null>(null);
+  const syntheticAnalyzeTimeoutRef = useRef<number | null>(null);
+
+  const [isSyntheticAnalyzing, setIsSyntheticAnalyzing] = useState(false);
 
   const { accessToken } = useAuth();
   const resumesQuery = useResumesQuery(accessToken);
@@ -91,6 +97,29 @@ export default function AnalyzePage() {
     return resumes[0];
   }, [resumeId, resumes, selectedResumeId]);
 
+  const latestAnalysisQuery = useResumeAnalysisQuery(
+    selectedResume?.id,
+    accessToken
+  );
+
+  const mutationAnalysis = analyzeResumeMutation.data?.analysis;
+  const savedAnalysis = latestAnalysisQuery.data?.analysis ?? undefined;
+  const analysis = mutationAnalysis ?? savedAnalysis;
+
+  const isAnalyzeUiLoading =
+    analyzeResumeMutation.isPending || isSyntheticAnalyzing;
+
+  const shouldShowResultCard =
+    Boolean(analysis) || isAnalyzeUiLoading || analyzeResumeMutation.isError;
+
+  useEffect(() => {
+    return () => {
+      if (syntheticAnalyzeTimeoutRef.current !== null) {
+        window.clearTimeout(syntheticAnalyzeTimeoutRef.current);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     if (!selectedResume?.id || selectedResumeId === selectedResume.id) {
       return;
@@ -111,26 +140,55 @@ export default function AnalyzePage() {
     );
   }, [autoRun, resumeId, router, searchParamsString, selectedResume?.id]);
 
-  const latestAnalysisQuery = useResumeAnalysisQuery(
-    selectedResume?.id,
-    accessToken
-  );
+  function startSyntheticAnalyzeLoading() {
+    if (syntheticAnalyzeTimeoutRef.current !== null) {
+      window.clearTimeout(syntheticAnalyzeTimeoutRef.current);
+      syntheticAnalyzeTimeoutRef.current = null;
+    }
 
-  const mutationAnalysis = analyzeResumeMutation.data?.analysis;
-  const savedAnalysis = latestAnalysisQuery.data?.analysis ?? undefined;
-  const analysis = mutationAnalysis ?? savedAnalysis;
+    syntheticAnalyzeStartedAtRef.current = Date.now();
+    setIsSyntheticAnalyzing(true);
+  }
 
-  const shouldShowResultCard =
-    Boolean(analysis) ||
-    analyzeResumeMutation.isPending ||
-    analyzeResumeMutation.isError;
+  function finishSyntheticAnalyzeLoading() {
+    const startedAt = syntheticAnalyzeStartedAtRef.current;
+
+    if (!startedAt) {
+      setIsSyntheticAnalyzing(false);
+      return;
+    }
+
+    const elapsedMs = Date.now() - startedAt;
+    const remainingMs = Math.max(0, MIN_ANALYSIS_LOADING_MS - elapsedMs);
+
+    if (syntheticAnalyzeTimeoutRef.current !== null) {
+      window.clearTimeout(syntheticAnalyzeTimeoutRef.current);
+    }
+
+    syntheticAnalyzeTimeoutRef.current = window.setTimeout(() => {
+      syntheticAnalyzeStartedAtRef.current = null;
+      syntheticAnalyzeTimeoutRef.current = null;
+      setIsSyntheticAnalyzing(false);
+    }, remainingMs);
+  }
+
+  function resetSyntheticAnalyzeLoading() {
+    if (syntheticAnalyzeTimeoutRef.current !== null) {
+      window.clearTimeout(syntheticAnalyzeTimeoutRef.current);
+      syntheticAnalyzeTimeoutRef.current = null;
+    }
+
+    syntheticAnalyzeStartedAtRef.current = null;
+    setIsSyntheticAnalyzing(false);
+  }
 
   useEffect(() => {
     if (
       !autoRun ||
       !selectedResume?.id ||
       !accessToken ||
-      analyzeResumeMutation.isPending
+      analyzeResumeMutation.isPending ||
+      isSyntheticAnalyzing
     ) {
       return;
     }
@@ -142,6 +200,7 @@ export default function AnalyzePage() {
     }
 
     autoRunStartedRef.current = autoRunKey;
+    startSyntheticAnalyzeLoading();
 
     analyzeResumeMutation.mutate(
       {
@@ -150,6 +209,8 @@ export default function AnalyzePage() {
       },
       {
         onSettled: () => {
+          finishSyntheticAnalyzeLoading();
+
           router.replace(
             removeAutoRunFromAnalyzeRoute(searchParamsString, selectedResume.id)
           );
@@ -160,6 +221,7 @@ export default function AnalyzePage() {
     accessToken,
     analyzeResumeMutation,
     autoRun,
+    isSyntheticAnalyzing,
     router,
     searchParamsString,
     selectedResume?.id,
@@ -168,6 +230,7 @@ export default function AnalyzePage() {
   function handleSelectResume(nextResumeId: string) {
     setSelectedResumeId(nextResumeId);
     analyzeResumeMutation.reset();
+    resetSyntheticAnalyzeLoading();
 
     router.replace(
       createResumeRoute('/dashboard/analyze', searchParamsString, nextResumeId)
@@ -175,21 +238,35 @@ export default function AnalyzePage() {
   }
 
   function handleRunAnalyze() {
-    if (!selectedResume || !accessToken || analyzeResumeMutation.isPending) {
+    if (
+      !selectedResume ||
+      !accessToken ||
+      analyzeResumeMutation.isPending ||
+      isSyntheticAnalyzing
+    ) {
       return;
     }
 
-    analyzeResumeMutation.mutate({
-      resumeId: selectedResume.id,
-      accessToken,
-    });
+    startSyntheticAnalyzeLoading();
+
+    analyzeResumeMutation.mutate(
+      {
+        resumeId: selectedResume.id,
+        accessToken,
+      },
+      {
+        onSettled: () => {
+          finishSyntheticAnalyzeLoading();
+        },
+      }
+    );
   }
 
   return (
     <div>
       <AnalyzeHeader
         selectedResume={selectedResume}
-        isAnalyzing={analyzeResumeMutation.isPending}
+        isAnalyzing={isAnalyzeUiLoading}
         onAnalyze={handleRunAnalyze}
       />
 
@@ -206,7 +283,7 @@ export default function AnalyzePage() {
           {shouldShowResultCard ? (
             <FutureResultCard
               analysis={analysis}
-              isAnalyzing={analyzeResumeMutation.isPending}
+              isAnalyzing={isAnalyzeUiLoading}
               isError={analyzeResumeMutation.isError}
               errorMessage={
                 analyzeResumeMutation.error instanceof Error
@@ -222,7 +299,7 @@ export default function AnalyzePage() {
         <AnalyzeSidebar
           selectedResume={selectedResume}
           analysis={analysis}
-          isAnalyzing={analyzeResumeMutation.isPending}
+          isAnalyzing={isAnalyzeUiLoading}
           onAnalyze={handleRunAnalyze}
         />
       </div>

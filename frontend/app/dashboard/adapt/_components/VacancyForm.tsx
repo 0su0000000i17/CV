@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { Briefcase, LinkIcon, Loader2 } from 'lucide-react';
+import { Briefcase, LinkIcon, Loader2, SearchCheck } from 'lucide-react';
 
 import type { PageExtractionStatus } from '@/src/shared/api/vacancies';
 
@@ -12,6 +12,7 @@ type VacancyFormProps = {
   vacancyInputKind: VacancyInputKind;
   preparedVacancyTextLength: number;
   isPreparing: boolean;
+  isCheckingFit: boolean;
   extractionStatus: PageExtractionStatus | null;
   extractionMessage: string;
   onVacancyInputChange: (value: string) => void;
@@ -23,6 +24,7 @@ export function VacancyForm({
   vacancyInputKind,
   preparedVacancyTextLength,
   isPreparing,
+  isCheckingFit,
   extractionStatus,
   extractionMessage,
   onVacancyInputChange,
@@ -33,6 +35,7 @@ export function VacancyForm({
   const isSuccessMessage = extractionStatus === 'success';
   const isUrlMode = vacancyInputKind === 'url';
   const isTextMode = vacancyInputKind === 'text';
+  const isBusy = isPreparing || isCheckingFit;
 
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -41,8 +44,8 @@ export function VacancyForm({
       return;
     }
 
-    const minHeight = 52;
-    const maxHeight = 220;
+    const minHeight = 64;
+    const maxHeight = 180;
 
     textarea.style.height = 'auto';
 
@@ -77,28 +80,29 @@ export function VacancyForm({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-card/60 p-6">
-      <div className="mb-6 flex items-start gap-4">
-        <div className="rounded-xl bg-muted p-3">
+    <div className="rounded-2xl border border-border bg-card/60 p-5">
+      <div className="mb-4 flex items-start gap-3">
+        <div className="rounded-xl bg-muted p-2.5">
           <Briefcase className="h-5 w-5 text-foreground" />
         </div>
 
         <div>
           <h2 className="text-xl font-medium text-foreground">Вакансия</h2>
 
-          <p className="mt-1 text-sm text-muted-foreground">
-            Вставьте ссылку на вакансию или сразу полный текст описания.
+          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+            Вставьте ссылку или полный текст. Сначала проверим, можно ли
+            адаптировать выбранное резюме под эту роль.
           </p>
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_190px] md:items-start">
+      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px] md:items-start">
         <div>
           <label className="mb-2 block text-sm text-muted-foreground">
             Ссылка или текст вакансии
           </label>
 
-          <div className="flex min-h-[48px] items-center gap-3 rounded-xl border border-border bg-background px-4">
+          <div className="flex min-h-[44px] items-center gap-3 rounded-xl border border-border bg-background px-3">
             <LinkIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
 
             {isTextMode ? (
@@ -108,7 +112,7 @@ export function VacancyForm({
                 rows={1}
                 onChange={(event) => onVacancyInputChange(event.target.value)}
                 placeholder="Вставьте полный текст вакансии"
-                className="max-h-[220px] min-h-[52px] w-full resize-none bg-transparent py-3 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
+                className="max-h-[180px] min-h-[64px] w-full resize-none bg-transparent py-2.5 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
               />
             ) : (
               <input
@@ -116,31 +120,40 @@ export function VacancyForm({
                 onChange={(event) => onVacancyInputChange(event.target.value)}
                 onPaste={handleInputPaste}
                 placeholder="Ссылка или текст вакансии"
-                className="h-12 w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+                title={vacancyInput}
+                className="h-11 w-full truncate bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
               />
             )}
           </div>
 
-          <p className="mt-2 text-xs text-muted-foreground">
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
             {isUrlMode
-              ? 'Мы сами получим описание вакансии по ссылке.'
-              : 'Если вставить полный текст, мы очистим его и используем для адаптации.'}
+              ? 'Ссылку используем только для получения описания вакансии.'
+              : 'Если вставить полный текст, используем его напрямую для проверки.'}
           </p>
         </div>
 
         <button
           type="button"
           onClick={onPrepareVacancy}
-          disabled={isPreparing || !vacancyInput.trim()}
-          className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-foreground px-5 text-sm font-medium text-background transition-colors hover:bg-foreground/80 disabled:cursor-not-allowed disabled:opacity-60 md:mt-[30px]"
+          disabled={isBusy || !vacancyInput.trim()}
+          className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-foreground px-4 text-sm font-medium text-background transition-colors hover:bg-foreground/80 disabled:cursor-not-allowed disabled:opacity-60 md:mt-[30px]"
         >
           {isPreparing ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              Адаптируем...
+              Разбираем...
+            </>
+          ) : isCheckingFit ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Проверяем...
             </>
           ) : (
-            'Адаптировать резюме'
+            <>
+              <SearchCheck className="h-4 w-4" />
+              Проверить совместимость
+            </>
           )}
         </button>
       </div>
@@ -149,7 +162,7 @@ export function VacancyForm({
         <div
           className={`mt-4 rounded-xl border px-4 py-3 text-sm ${
             isSuccessMessage
-              ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500'
+              ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400'
               : 'border-border bg-background text-muted-foreground'
           }`}
         >
@@ -161,13 +174,6 @@ export function VacancyForm({
             </p>
           ) : null}
         </div>
-      ) : null}
-
-      {isTextMode ? (
-        <p className="mt-4 text-xs text-muted-foreground">
-          Текст можно править прямо в этом поле. Когда подключим адаптацию, этот
-          текст пойдёт в анализ вместе с выбранным резюме.
-        </p>
       ) : null}
     </div>
   );

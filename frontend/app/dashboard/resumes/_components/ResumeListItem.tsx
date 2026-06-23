@@ -104,21 +104,25 @@ export function ResumeListItem({
   };
 
   return (
-    <div className="grid grid-cols-1 gap-5 px-6 py-5 transition-colors hover:bg-muted/40 xl:grid-cols-[1fr_220px_220px]">
+    <div className="grid grid-cols-1 gap-5 px-6 py-5 transition-colors hover:bg-muted/40 xl:grid-cols-[minmax(0,1fr)_145px_auto] xl:items-center">
       <div className="flex min-w-0 items-start gap-4">
-        <div className="rounded-xl bg-muted p-3">
+        <div className="shrink-0 rounded-xl bg-muted p-3">
           <FileText className="h-5 w-5 text-foreground" />
         </div>
 
         <div className="min-w-0">
           <Link
             href={`/dashboard/resumes/${resume.id}`}
-            className="truncate text-base font-medium text-foreground hover:underline"
+            title={resume.title}
+            className="block max-w-full truncate text-base font-medium text-foreground hover:underline"
           >
             {resume.title}
           </Link>
 
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p
+            className="mt-1 max-w-full truncate text-sm text-muted-foreground"
+            title={resume.role || 'Роль не указана'}
+          >
             {resume.role || 'Роль не указана'}
           </p>
 
@@ -134,23 +138,23 @@ export function ResumeListItem({
         </div>
       </div>
 
-      <div>
-        <p className="text-xs uppercase tracking-widest text-muted-foreground">
+      <div className="min-w-0 xl:text-left">
+        <p className="truncate text-xs uppercase tracking-widest text-muted-foreground">
           Статус анализа
         </p>
 
-        <div className="mt-3">
-          <p className={`text-xl font-semibold ${analysis.titleClassName}`}>
+        <div className="mt-2">
+          <p className={`truncate text-xl font-semibold ${analysis.titleClassName}`}>
             {analysis.title}
           </p>
 
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 truncate text-xs text-muted-foreground">
             {analysis.subtitle}
           </p>
         </div>
       </div>
 
-      <div className="flex items-center gap-2 xl:justify-end">
+      <div className="flex shrink-0 items-center gap-2 xl:justify-end">
         <Link
           href={`/dashboard/resumes/${resume.id}`}
           className="rounded-xl border border-border px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-muted"

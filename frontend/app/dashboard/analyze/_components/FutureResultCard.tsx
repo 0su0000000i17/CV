@@ -1,6 +1,10 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
 import {
   AlertCircle,
   CheckCircle2,
+  FileSearch,
   Lightbulb,
   Loader2,
   Search,
@@ -9,6 +13,7 @@ import {
   Target,
   TriangleAlert,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 import type {
   ResumeAnalysisResult,
@@ -21,6 +26,75 @@ type Props = {
   isError: boolean;
   errorMessage?: string;
 };
+
+type LoadingStep = {
+  title: string;
+  description: string;
+};
+
+const STEP_DURATION_MS = 6_000;
+const LONG_WAIT_STEP_DURATION_MS = 12_000;
+
+const analysisSteps: LoadingStep[] = [
+  {
+    title: 'Считаем позиционирование',
+    description:
+      'Проверяем, насколько понятно резюме показывает роль, фокус и ценность кандидата.',
+  },
+  {
+    title: 'Проверяем соответствие роли',
+    description:
+      'Смотрим, подтверждают ли опыт, последние должности и стек заявленную позицию.',
+  },
+  {
+    title: 'Оцениваем релевантный опыт',
+    description:
+      'Разбираем production-задачи, карьерную линию, стек и глубину опыта.',
+  },
+  {
+    title: 'Проверяем доказательность',
+    description:
+      'Ищем метрики, результаты, масштаб задач и конкретное влияние на продукт.',
+  },
+  {
+    title: 'Делаем быстрый HR-скан',
+    description:
+      'Оцениваем, насколько быстро рекрутер поймёт роль, уровень и сильные стороны.',
+  },
+  {
+    title: 'Проверяем ATS-фильтры',
+    description:
+      'Смотрим структуру, ключевые слова и потенциальные проблемы автоматического отбора.',
+  },
+  {
+    title: 'Оцениваем риск-факторы',
+    description:
+      'Проверяем завышенный уровень, несостыковки, перегруз навыками и слабые места.',
+  },
+  {
+    title: 'Собираем итоговую оценку',
+    description:
+      'Структурируем вывод, рекомендации и детализацию по профессиональной рубрике.',
+  },
+];
+
+const longWaitSteps: LoadingStep[] = [
+  {
+    title: 'Ещё немного',
+    description:
+      'Финализируем результат и приводим рекомендации к понятному формату.',
+  },
+  {
+    title: 'Проверяем итоговую структуру',
+    description:
+      'Сверяем сильные стороны, слабые места, ATS-проблемы и риск-факторы.',
+  },
+  {
+    title: 'Почти готово',
+    description:
+      'Собираем финальный отчёт и подготавливаем результат к отображению.',
+  },
+];
 
 const redFlagLabels: Record<string, string> = {
   role_mismatch: 'Несоответствие роли',
@@ -43,24 +117,61 @@ const severityLabels: Record<ResumeRedFlag['severity'], string> = {
   critical: 'Критичный риск',
 };
 
+const severityClasses: Record<ResumeRedFlag['severity'], string> = {
+  minor: 'border-yellow-500/20 bg-yellow-500/10 text-yellow-300',
+  major: 'border-orange-500/20 bg-orange-500/10 text-orange-300',
+  critical: 'border-red-500/20 bg-red-500/10 text-red-300',
+};
+
+const sectionIconClasses = {
+  yellow: 'bg-yellow-500/10 text-yellow-300 ring-yellow-500/20',
+  green: 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/20',
+  orange: 'bg-orange-500/10 text-orange-300 ring-orange-500/20',
+  red: 'bg-red-500/10 text-red-300 ring-red-500/20',
+};
+
+function getActiveLoadingStep(elapsedMs: number) {
+  const baseDurationMs = analysisSteps.length * STEP_DURATION_MS;
+
+  if (elapsedMs < baseDurationMs) {
+    const stepIndex = Math.min(
+      analysisSteps.length - 1,
+      Math.floor(elapsedMs / STEP_DURATION_MS)
+    );
+
+    return analysisSteps[stepIndex];
+  }
+
+  const longWaitIndex = Math.min(
+    longWaitSteps.length - 1,
+    Math.floor((elapsedMs - baseDurationMs) / LONG_WAIT_STEP_DURATION_MS)
+  );
+
+  return longWaitSteps[longWaitIndex];
+}
+
 function ResultSection({
   title,
   items,
   icon: Icon,
+  tone,
 }: {
   title: string;
   items: string[];
-  icon: typeof CheckCircle2;
+  icon: LucideIcon;
+  tone: keyof typeof sectionIconClasses;
 }) {
   if (!items.length) {
     return null;
   }
 
   return (
-    <section className="border-t border-border py-5 first:border-t-0 first:pt-0 last:pb-0">
+    <section className="rounded-2xl border border-border bg-card/60 p-6">
       <div className="mb-4 flex items-center gap-3">
-        <div className="rounded-lg bg-muted p-2">
-          <Icon className="h-4 w-4 text-foreground" />
+        <div
+          className={`rounded-xl p-2.5 ring-1 ${sectionIconClasses[tone]}`}
+        >
+          <Icon className="h-4 w-4" />
         </div>
 
         <h3 className="text-lg font-medium text-foreground">{title}</h3>
@@ -69,7 +180,7 @@ function ResultSection({
       <div className="space-y-3">
         {items.map((item, index) => (
           <div key={`${title}-${index}`} className="flex items-start gap-3">
-            <span className="mt-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-border text-[11px] text-muted-foreground">
+            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-border text-[11px] text-muted-foreground">
               {index + 1}
             </span>
 
@@ -89,27 +200,31 @@ function RedFlagsBlock({ redFlags }: { redFlags: ResumeRedFlag[] }) {
   }
 
   return (
-    <div className="mb-5 rounded-2xl border border-border bg-background p-5">
-      <div className="mb-4 flex items-center gap-3">
-        <div className="rounded-lg bg-muted p-2">
-          <TriangleAlert className="h-4 w-4 text-foreground" />
+    <section className="rounded-2xl border border-border bg-card/60 p-6">
+      <div className="mb-5 flex items-center gap-3">
+        <div className="rounded-xl bg-yellow-500/10 p-2.5 text-yellow-300 ring-1 ring-yellow-500/20">
+          <TriangleAlert className="h-4 w-4" />
         </div>
 
-        <h3 className="font-medium text-foreground">Почему такая оценка</h3>
+        <h3 className="text-lg font-medium text-foreground">
+          Почему такая оценка
+        </h3>
       </div>
 
-      <div className="space-y-3">
+      <div className="divide-y divide-border">
         {redFlags.map((flag) => (
           <div
             key={`${flag.type}-${flag.explanation}`}
-            className="rounded-xl border border-border bg-card p-4"
+            className="py-4 first:pt-0 last:pb-0"
           >
             <div className="mb-2 flex flex-wrap items-center gap-2">
               <span className="font-medium text-foreground">
                 {redFlagLabels[flag.type] || flag.type}
               </span>
 
-              <span className="rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground">
+              <span
+                className={`rounded-full border px-2 py-0.5 text-[11px] ${severityClasses[flag.severity]}`}
+              >
                 {severityLabels[flag.severity]}
               </span>
             </div>
@@ -119,6 +234,60 @@ function RedFlagsBlock({ redFlags }: { redFlags: ResumeRedFlag[] }) {
             </p>
           </div>
         ))}
+      </div>
+    </section>
+  );
+}
+
+function AnalysisLoadingState() {
+  const [elapsedMs, setElapsedMs] = useState(0);
+
+  useEffect(() => {
+    const startedAt = Date.now();
+
+    const intervalId = window.setInterval(() => {
+      setElapsedMs(Date.now() - startedAt);
+    }, 500);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  const activeStep = useMemo(() => getActiveLoadingStep(elapsedMs), [elapsedMs]);
+
+  return (
+    <div className="rounded-2xl border border-border bg-card/60 p-6">
+      <div className="flex items-start gap-4">
+        <div className="rounded-xl bg-muted p-3">
+          <Loader2 className="h-5 w-5 animate-spin text-foreground" />
+        </div>
+
+        <div className="min-w-0">
+          <h2 className="text-xl font-medium text-foreground">
+            Анализируем резюме
+          </h2>
+
+          <div
+            key={activeStep.title}
+            className="mt-4 animate-in fade-in slide-in-from-top-2 duration-500"
+          >
+            <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+              Сейчас
+            </p>
+
+            <h3 className="mt-2 text-2xl font-medium tracking-tight text-foreground">
+              {activeStep.title}
+            </h3>
+
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+              {activeStep.description}
+            </p>
+          </div>
+
+          <p className="mt-5 max-w-2xl text-xs leading-relaxed text-muted-foreground">
+            Время анализа зависит от размера файла, структуры резюме и скорости
+            ответа AI-модели. Результат появится автоматически.
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -131,34 +300,15 @@ export function FutureResultCard({
   errorMessage,
 }: Props) {
   if (isAnalyzing) {
-    return (
-      <div className="rounded-2xl border border-border bg-card/60 p-6">
-        <div className="flex items-center gap-4">
-          <div className="rounded-xl bg-muted p-3">
-            <Loader2 className="h-5 w-5 animate-spin text-foreground" />
-          </div>
-
-          <div>
-            <h2 className="text-xl font-medium text-foreground">
-              Анализируем резюме
-            </h2>
-
-            <p className="mt-1 text-sm text-muted-foreground">
-              Извлекаем текст, определяем red flags и считаем итоговую оценку по
-              backend-рубрике.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+    return <AnalysisLoadingState />;
   }
 
   if (isError) {
     return (
       <div className="rounded-2xl border border-border bg-card/60 p-6">
         <div className="flex items-start gap-4">
-          <div className="rounded-xl bg-muted p-3">
-            <AlertCircle className="h-5 w-5 text-foreground" />
+          <div className="rounded-xl bg-red-500/10 p-3 text-red-300 ring-1 ring-red-500/20">
+            <AlertCircle className="h-5 w-5" />
           </div>
 
           <div>
@@ -180,8 +330,8 @@ export function FutureResultCard({
     return (
       <div className="rounded-2xl border border-border bg-card/60 p-6">
         <div className="mb-6 flex items-start gap-4">
-          <div className="rounded-xl bg-muted p-3">
-            <Lightbulb className="h-5 w-5 text-foreground" />
+          <div className="rounded-xl bg-emerald-500/10 p-3 text-emerald-300 ring-1 ring-emerald-500/20">
+            <Lightbulb className="h-5 w-5" />
           </div>
 
           <div>
@@ -202,11 +352,8 @@ export function FutureResultCard({
             'Найдём несостыковки роли, уровня, опыта и ATS.',
             'Сформируем конкретные рекомендации для улучшения резюме.',
           ].map((item) => (
-            <div
-              key={item}
-              className="flex items-start gap-3 rounded-xl border border-border bg-background p-4"
-            >
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-foreground" />
+            <div key={item} className="flex items-start gap-3">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
               <p className="text-sm leading-relaxed text-muted-foreground">
                 {item}
               </p>
@@ -218,64 +365,72 @@ export function FutureResultCard({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-card/60 p-6">
-      <div className="mb-6 flex items-start gap-4">
-        <div className="rounded-xl bg-muted p-3">
-          <Sparkles className="h-5 w-5 text-foreground" />
+    <div className="space-y-5">
+      <section className="rounded-2xl border border-border bg-card/60 p-6">
+        <div className="mb-5 flex items-start gap-4">
+          <div className="rounded-xl bg-emerald-500/10 p-3 text-emerald-300 ring-1 ring-emerald-500/20">
+            <Sparkles className="h-5 w-5" />
+          </div>
+
+          <div>
+            <h2 className="text-xl font-medium text-foreground">
+              Результат оценки
+            </h2>
+
+            <p className="mt-1 text-sm text-muted-foreground">
+              {analysis.suggestedHeadline}
+            </p>
+          </div>
         </div>
 
-        <div>
-          <h2 className="text-xl font-medium text-foreground">
-            Результат оценки
-          </h2>
-
-          <p className="mt-1 text-sm text-muted-foreground">
-            {analysis.suggestedHeadline}
-          </p>
-        </div>
-      </div>
-
-      <div className="mb-5 rounded-2xl border border-border bg-background p-5">
         <p className="text-sm leading-relaxed text-muted-foreground">
           {analysis.summary}
         </p>
-      </div>
+      </section>
 
       <RedFlagsBlock redFlags={analysis.redFlags} />
 
-      <div className="rounded-2xl border border-border bg-background p-5">
-        <ResultSection
-          title="Сильные стороны"
-          items={analysis.strengths}
-          icon={CheckCircle2}
-        />
+      <ResultSection
+        title="Сильные стороны"
+        items={analysis.strengths}
+        icon={CheckCircle2}
+        tone="green"
+      />
 
-        <ResultSection
-          title="Что мешает"
-          items={analysis.weaknesses}
-          icon={ShieldAlert}
-        />
+      <ResultSection
+        title="Что мешает"
+        items={analysis.weaknesses}
+        icon={ShieldAlert}
+        tone="orange"
+      />
 
-        <ResultSection
-          title="ATS-проблемы"
-          items={analysis.atsIssues}
-          icon={Search}
-        />
+      <ResultSection
+        title="ATS-проблемы"
+        items={analysis.atsIssues}
+        icon={FileSearch}
+        tone="yellow"
+      />
 
-        <ResultSection
-          title="Рекомендации"
-          items={analysis.recommendations}
-          icon={Target}
-        />
-      </div>
+      <ResultSection
+        title="Рекомендации"
+        items={analysis.recommendations}
+        icon={Target}
+        tone="green"
+      />
 
       {analysis.missingKeywords.length > 0 && (
-        <div className="mt-4 rounded-2xl border border-border bg-background p-5">
-          <h3 className="font-medium text-foreground">
-            Недостающие ключевые слова
-          </h3>
+        <section className="rounded-2xl border border-border bg-card/60 p-6">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="rounded-xl bg-yellow-500/10 p-2.5 text-yellow-300 ring-1 ring-yellow-500/20">
+              <Search className="h-4 w-4" />
+            </div>
 
-          <div className="mt-4 flex flex-wrap gap-2">
+            <h3 className="text-lg font-medium text-foreground">
+              Недостающие ключевые слова
+            </h3>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
             {analysis.missingKeywords.map((keyword) => (
               <span
                 key={keyword}
@@ -285,7 +440,7 @@ export function FutureResultCard({
               </span>
             ))}
           </div>
-        </div>
+        </section>
       )}
     </div>
   );

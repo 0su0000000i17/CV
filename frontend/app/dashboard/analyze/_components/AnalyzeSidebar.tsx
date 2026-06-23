@@ -2,11 +2,10 @@
 
 import { useState } from 'react';
 import {
-  AlertCircle,
   ArrowRight,
   ChevronDown,
-  Loader2,
   RotateCw,
+  Sparkles,
 } from 'lucide-react';
 
 import type { ResumeAnalysisResult } from '@/src/shared/api/analyze';
@@ -43,7 +42,7 @@ function getSectionRows(analysis?: ResumeAnalysisResult): SectionRow[] {
       score: analysis?.sections.roleFit ?? 0,
       status: analysis ? 'Проверено' : 'Ожидает проверки',
       description:
-        'Показывает, подтверждают ли последние должности, задачи и опыт заявленную роль и уровень. Например, Middle-разработчик должен быть подкреплён реальным developer/engineer-опытом.',
+        'Показывает, подтверждают ли последние должности, задачи и опыт заявленную роль и уровень.',
     },
     {
       key: 'experience',
@@ -51,7 +50,7 @@ function getSectionRows(analysis?: ResumeAnalysisResult): SectionRow[] {
       score: analysis?.sections.experience ?? 0,
       status: analysis ? 'Проверено' : 'Ожидает проверки',
       description:
-        'Оценивает, насколько опыт кандидата связан с целевой позицией: есть ли production-задачи, подходящий стек, карьерная линия и достаточная глубина опыта.',
+        'Оценивает, насколько опыт кандидата связан с целевой позицией: production-задачи, подходящий стек, карьерная линия и глубина опыта.',
     },
     {
       key: 'evidence',
@@ -59,7 +58,7 @@ function getSectionRows(analysis?: ResumeAnalysisResult): SectionRow[] {
       score: analysis?.sections.evidence ?? 0,
       status: analysis ? 'Проверено' : 'Ожидает проверки',
       description:
-        'Показывает, насколько резюме доказывает ценность кандидата: есть ли результаты, метрики, масштаб задач, влияние на продукт или бизнес, а не только список обязанностей.',
+        'Показывает, насколько резюме доказывает ценность кандидата: результаты, метрики, масштаб задач и влияние на продукт.',
     },
     {
       key: 'scanability',
@@ -67,7 +66,7 @@ function getSectionRows(analysis?: ResumeAnalysisResult): SectionRow[] {
       score: analysis?.sections.scanability ?? 0,
       status: analysis ? 'Проверено' : 'Ожидает проверки',
       description:
-        'Показывает, насколько быстро рекрутер может понять резюме при первом беглом просмотре: роль, уровень, последний релевантный опыт и ключевая ценность кандидата.',
+        'Показывает, насколько быстро рекрутер может понять роль, уровень, последний релевантный опыт и ключевую ценность кандидата.',
     },
     {
       key: 'ats',
@@ -75,15 +74,15 @@ function getSectionRows(analysis?: ResumeAnalysisResult): SectionRow[] {
       score: analysis?.sections.ats ?? 0,
       status: analysis ? 'Проверено' : 'Ожидает проверки',
       description:
-        'Оценивает пригодность резюме для автоматического отбора: стандартные секции, понятные должности, релевантные ключевые слова и отсутствие форматирования, которое мешает парсингу.',
+        'Оценивает пригодность резюме для автоматического отбора: стандартные секции, понятные должности, ключевые слова и парсинг.',
     },
     {
       key: 'credibility',
-      title: 'Доверие',
+      title: 'Риск-факторы',
       score: analysis?.sections.credibility ?? 0,
       status: analysis ? 'Проверено' : 'Ожидает проверки',
       description:
-        'Показывает, нет ли риск-факторов: завышенного уровня, несостыковки должностей, перегруза навыками, слабой доказательности или ощущения, что резюме выглядит неправдоподобно.',
+        'Показывает, нет ли завышенного уровня, несостыковки должностей, перегруза навыками или слабой доказательности.',
     },
   ];
 }
@@ -152,8 +151,10 @@ export function AnalyzeSidebar({
 
         <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
           {analysis
-            ? 'Оценка рассчитана backend-рубрикой по роли, опыту, доказательности, быстрому HR-скану, ATS и red flags.'
-            : 'Оценка появится после запуска анализа. Сейчас резюме ещё не проверялось.'}
+            ? 'Оценка рассчитана по роли, опыту, доказательности, быстрому HR-скану, ATS и риск-факторам.'
+            : isAnalyzing
+              ? 'Идёт оценка резюме. Результат появится автоматически.'
+              : 'Оценка появится после запуска анализа.'}
         </p>
 
         <button
@@ -164,8 +165,8 @@ export function AnalyzeSidebar({
         >
           {isAnalyzing ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Оцениваем...
+              <Sparkles className="h-4 w-4 animate-pulse" />
+              Оценка идёт...
             </>
           ) : analysis ? (
             <>
@@ -197,42 +198,44 @@ export function AnalyzeSidebar({
                 className="w-full cursor-pointer rounded-xl border border-transparent px-3 py-2 text-left transition-colors duration-150 hover:border-border hover:bg-muted/40"
               >
                 <div className="mb-2 flex items-center justify-between gap-3 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="text-foreground">{item.title}</span>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="truncate text-foreground">
+                      {item.title}
+                    </span>
 
                     <ChevronDown
-                      className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 ${
+                      className={`h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-200 ${
                         isOpened ? 'rotate-180' : ''
                       }`}
                     />
                   </div>
 
                   <span
-                    className={
+                    className={`shrink-0 ${
                       analysis
                         ? getScoreTextClass(item.score)
                         : 'text-muted-foreground'
-                    }
+                    }`}
                   >
                     {analysis ? `${item.score}/100` : '—'}
                   </span>
                 </div>
 
-                <div className="h-2 rounded-full bg-muted">
+                <div className="h-1 rounded-full bg-muted">
                   <div
-                    className={`h-2 rounded-full transition-all duration-500 ${
+                    className={`h-1 rounded-full transition-all duration-500 ${
                       analysis ? getScoreBarClass(item.score) : 'bg-foreground'
                     }`}
                     style={{ width: `${item.score}%` }}
                   />
                 </div>
 
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1.5 text-xs text-muted-foreground">
                   {item.status}
                 </p>
 
                 {isOpened && (
-                  <div className="mt-3 rounded-lg border border-border bg-background/70 px-3 py-2 animate-in fade-in slide-in-from-top-1 duration-150">
+                  <div className="mt-3 animate-in fade-in slide-in-from-top-1 rounded-lg border border-border bg-background/70 px-3 py-2 duration-150">
                     <p className="text-xs leading-relaxed text-muted-foreground">
                       {item.description}
                     </p>
@@ -241,22 +244,6 @@ export function AnalyzeSidebar({
               </button>
             );
           })}
-        </div>
-      </div>
-
-      <div className="rounded-2xl border border-border bg-card/60 p-6">
-        <div className="flex items-start gap-3">
-          <AlertCircle className="mt-0.5 h-5 w-5 text-muted-foreground" />
-
-          <div>
-            <h2 className="font-medium text-foreground">Важно</h2>
-
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              Повторная оценка не означает, что резюме каждый раз заново
-              отправляется в AI. Если файл не менялся, backend может быстро
-              вернуть сохранённый результат.
-            </p>
-          </div>
         </div>
       </div>
     </aside>
