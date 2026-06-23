@@ -1,18 +1,13 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-
 import { AdaptHeader } from './_components/AdaptHeader';
 import { AdaptSetupWorkspace } from './_components/AdaptSetupWorkspace';
 import { GeneratedResumeWorkspace } from './_components/GeneratedResumeWorkspace';
-import {
-  createAdaptationFromFit,
-  prepareVacancyForFit,
-} from './_lib/adapt-flow-actions';
+import { createAdaptationFromFit, prepareVacancyForFit } from './_lib/adapt-flow-actions';
 import { getVacancyInputKind } from './_lib/adapt-page-utils';
 import { useSelectedResumeState } from './_hooks/use-selected-resume-state';
 import { useVacancyState } from './_hooks/use-vacancy-state';
-
 import { useAuth } from '@/src/shared/hooks/useAuth';
 import { usePrepareVacancyInputMutation } from '@/src/shared/hooks/usePrepareVacancyInputMutation';
 import { useResumeAdaptationMutation } from '@/src/shared/hooks/useResumeAdaptationMutation';
