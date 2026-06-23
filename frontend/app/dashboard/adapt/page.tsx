@@ -6,11 +6,12 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useDashboardResumeSelection } from '../_components/DashboardResumeSelectionProvider';
 
 import { AdaptHeader } from './_components/AdaptHeader';
-import { AdaptSidebar } from './_components/AdaptSidebar';
+import { AdaptSetupWorkspace } from './_components/AdaptSetupWorkspace';
 import { AdaptationResultCard } from './_components/AdaptationResultCard';
-import { ResumeVacancyFitCard } from './_components/ResumeVacancyFitCard';
-import { SelectedResumeCard } from './_components/SelectedResumeCard';
-import { VacancyForm } from './_components/VacancyForm';
+import {
+  createResumeRoute,
+  getVacancyInputKind,
+} from './_lib/adapt-page-utils';
 
 import type {
   NormalizedVacancy,
@@ -21,50 +22,6 @@ import { usePrepareVacancyInputMutation } from '@/src/shared/hooks/usePrepareVac
 import { useResumeAdaptationMutation } from '@/src/shared/hooks/useResumeAdaptationMutation';
 import { useResumeVacancyFitMutation } from '@/src/shared/hooks/useResumeVacancyFitMutation';
 import { useResumesQuery } from '@/src/shared/hooks/useResumesQuery';
-
-type VacancyInputKind = 'empty' | 'url' | 'text';
-
-function createResumeRoute(
-  path: '/dashboard/analyze' | '/dashboard/adapt',
-  searchParamsString: string,
-  resumeId: string
-) {
-  const params = new URLSearchParams(searchParamsString);
-  params.set('resumeId', resumeId);
-
-  return `${path}?${params.toString()}`;
-}
-
-function getVacancyInputKind(value: string): VacancyInputKind {
-  const trimmedValue = value.trim();
-
-  if (!trimmedValue) {
-    return 'empty';
-  }
-
-  if (trimmedValue.includes('\n') || /\s/.test(trimmedValue)) {
-    return 'text';
-  }
-
-  const urlWithProtocol = /^[a-zA-Z][a-zA-Z\d+.-]*:/.test(trimmedValue)
-    ? trimmedValue
-    : `https://${trimmedValue}`;
-
-  try {
-    const url = new URL(urlWithProtocol);
-
-    if (
-      (url.protocol === 'http:' || url.protocol === 'https:') &&
-      url.hostname.includes('.')
-    ) {
-      return 'url';
-    }
-
-    return 'text';
-  } catch {
-    return 'text';
-  }
-}
 
 export default function AdaptPage() {
   const router = useRouter();
@@ -300,48 +257,32 @@ export default function AdaptPage() {
           onResetAdaptation={handleResetAdaptation}
         />
       ) : (
-        <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
-          <div className="space-y-6">
-            <SelectedResumeCard
-              selectedResume={selectedResume}
-              resumes={resumes}
-              isLoading={resumesQuery.isPending}
-              isError={resumesQuery.isError}
-              onSelectResume={handleSelectResume}
-            />
-
-            <VacancyForm
-              vacancyInput={vacancyInput}
-              vacancyInputKind={vacancyInputKind}
-              preparedVacancyTextLength={preparedVacancyText.length}
-              isPreparing={isPreparing}
-              isCheckingFit={isCheckingFit}
-              extractionStatus={extractionStatus}
-              extractionMessage={extractionMessage}
-              onVacancyInputChange={handleVacancyInputChange}
-              onPrepareVacancy={handlePrepareVacancy}
-            />
-
-            <ResumeVacancyFitCard
-              fitResponse={fitResponse}
-              isChecking={isCheckingFit}
-              isError={resumeVacancyFitMutation.isError}
-              errorMessage={
-                resumeVacancyFitMutation.error instanceof Error
-                  ? resumeVacancyFitMutation.error.message
-                  : undefined
-              }
-            />
-          </div>
-
-          <AdaptSidebar
-            fitResponse={fitResponse}
-            adaptationResponse={adaptationResponse}
-            isAdapting={isAdapting}
-            isCheckingFit={isCheckingFit}
-            onCreateAdaptation={handleCreateAdaptation}
-          />
-        </div>
+        <AdaptSetupWorkspace
+          selectedResume={selectedResume}
+          resumes={resumes}
+          isResumesLoading={resumesQuery.isPending}
+          isResumesError={resumesQuery.isError}
+          vacancyInput={vacancyInput}
+          vacancyInputKind={vacancyInputKind}
+          preparedVacancyTextLength={preparedVacancyText.length}
+          extractionStatus={extractionStatus}
+          extractionMessage={extractionMessage}
+          fitResponse={fitResponse}
+          adaptationResponse={adaptationResponse}
+          isPreparing={isPreparing}
+          isCheckingFit={isCheckingFit}
+          isAdapting={isAdapting}
+          isFitError={resumeVacancyFitMutation.isError}
+          fitErrorMessage={
+            resumeVacancyFitMutation.error instanceof Error
+              ? resumeVacancyFitMutation.error.message
+              : undefined
+          }
+          onSelectResume={handleSelectResume}
+          onVacancyInputChange={handleVacancyInputChange}
+          onPrepareVacancy={handlePrepareVacancy}
+          onCreateAdaptation={handleCreateAdaptation}
+        />
       )}
     </div>
   );
