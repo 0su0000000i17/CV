@@ -1,9 +1,11 @@
 import { AdaptationResultCard } from './adaptation-result-card';
 
 import type { ResumeAdaptationResponse } from '@/src/shared/api/resume-adaptation';
+import type { UploadedResume } from '@/src/shared/api/resumes';
 
 type Props = {
   adaptationResponse?: ResumeAdaptationResponse;
+  sourceResume?: UploadedResume;
   isAdapting: boolean;
   isError: boolean;
   error: unknown;
@@ -12,6 +14,7 @@ type Props = {
 
 export function GeneratedResumeWorkspace({
   adaptationResponse,
+  sourceResume,
   isAdapting,
   isError,
   error,
@@ -20,6 +23,7 @@ export function GeneratedResumeWorkspace({
   return (
     <AdaptationResultCard
       adaptationResponse={adaptationResponse}
+      sourceResume={sourceResume}
       isAdapting={isAdapting}
       isError={isError}
       errorMessage={error instanceof Error ? error.message : undefined}

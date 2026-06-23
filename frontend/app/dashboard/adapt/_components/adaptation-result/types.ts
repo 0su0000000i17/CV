@@ -4,9 +4,11 @@ import type {
   ResumeAdaptationResponse,
   ResumeAdaptationResult,
 } from '@/src/shared/api/resume-adaptation';
+import type { UploadedResume } from '@/src/shared/api/resumes';
 
 export type AdaptationResultCardProps = {
   adaptationResponse?: ResumeAdaptationResponse;
+  sourceResume?: UploadedResume;
   isAdapting: boolean;
   isError: boolean;
   errorMessage?: string;
@@ -15,9 +17,16 @@ export type AdaptationResultCardProps = {
 
 export type ContactDraft = {
   fullName: string;
+  gender: string;
+  age: string;
+  birthDate: string;
   phone: string;
   email: string;
   city: string;
+  citizenship: string;
+  workPermit: string;
+  relocation: string;
+  businessTrips: string;
 };
 
 export type DraftUpdater = (

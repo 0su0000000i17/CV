@@ -21,13 +21,14 @@ export function useResumeAdaptationMutation() {
     Error,
     ResumeAdaptationVariables
   >({
-    mutationFn: ({ resumeId, vacancy, vacancyText, fit, accessToken }) =>
-      adaptResumeToVacancy({
+    mutationFn: ({ resumeId, vacancy, vacancyText, fit, accessToken }) => {
+      return adaptResumeToVacancy({
         resumeId,
         vacancy,
         vacancyText,
         fit,
         accessToken,
-      }),
+      });
+    },
   });
 }

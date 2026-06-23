@@ -75,13 +75,14 @@ export default function AdaptPage() {
       <AdaptHeader />
 
       {hasAdaptationWorkspace ? (
-        <GeneratedResumeWorkspace
-          adaptationResponse={adaptationResponse}
-          isAdapting={isAdapting}
-          isError={resumeAdaptationMutation.isError}
-          error={resumeAdaptationMutation.error}
-          onResetAdaptation={resumeAdaptationMutation.reset}
-        />
+<GeneratedResumeWorkspace
+  adaptationResponse={adaptationResponse}
+  sourceResume={selectedResume}
+  isAdapting={isAdapting}
+  isError={resumeAdaptationMutation.isError}
+  error={resumeAdaptationMutation.error}
+  onResetAdaptation={resumeAdaptationMutation.reset}
+/>
       ) : (
         <AdaptSetupWorkspace
           selectedResume={selectedResume}

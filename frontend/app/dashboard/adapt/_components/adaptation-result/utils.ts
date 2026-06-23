@@ -43,66 +43,82 @@ export function createPlainResumeText(
   adaptation: ResumeAdaptationResult,
   contacts: ContactDraft
 ) {
-  const draft = adaptation.adaptedResume;
-  const lines: string[] = [];
-
-  lines.push(draft.headline, '');
-
-  const contactLines = [
+  return [
     contacts.fullName,
+    createContactsText(contacts),
+    '',
+    adaptation.adaptedResume.headline,
+    '',
+    'Опыт работы',
+    createExperienceText(adaptation),
+    '',
+    'Навыки',
+    createSkillsText(adaptation),
+    '',
+    'Образование',
+    createEducationText(adaptation),
+    '',
+    'О себе',
+    adaptation.adaptedResume.summary,
+    '',
+    'Дополнительная информация',
+    adaptation.adaptedResume.additionalInfo.join('\n'),
+  ]
+    .filter((item) => item !== undefined && item !== null)
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function createContactsText(contacts: ContactDraft) {
+  const profileLine = [contacts.gender, contacts.age, contacts.birthDate]
+    .filter(Boolean)
+    .join(', ');
+
+  return [
+    profileLine,
     contacts.phone,
     contacts.email,
-    contacts.city,
-  ].filter(Boolean);
+    contacts.city ? `Проживает: ${contacts.city}` : '',
+    contacts.citizenship ? `Гражданство: ${contacts.citizenship}` : '',
+    contacts.workPermit
+      ? `Разрешение на работу: ${contacts.workPermit}`
+      : '',
+    contacts.relocation ? `Готов к переезду: ${contacts.relocation}` : '',
+    contacts.businessTrips,
+  ]
+    .filter(Boolean)
+    .join('\n');
+}
 
-  if (contactLines.length) {
-    lines.push('Контакты', ...contactLines, '');
-  }
+function createExperienceText(adaptation: ResumeAdaptationResult) {
+  return adaptation.adaptedResume.experience
+    .map((item) => {
+      const title = [item.dates, item.company, item.position]
+        .filter(Boolean)
+        .join(' · ');
 
-  if (draft.experience.length) {
-    lines.push('Опыт работы');
+      return [
+        title,
+        item.focus,
+        ...item.adaptedBullets.map((bullet) => `— ${bullet}`),
+      ]
+        .filter(Boolean)
+        .join('\n');
+    })
+    .join('\n\n');
+}
 
-    draft.experience.forEach((item) => {
-      lines.push('');
+function createSkillsText(adaptation: ResumeAdaptationResult) {
+  const { skills } = adaptation.adaptedResume;
 
-      const title = [item.position, item.company].filter(Boolean).join(' · ');
-      const dates = item.dates ? ` / ${item.dates}` : '';
+  return [
+    ...skills.primary,
+    ...skills.secondary,
+    ...skills.deprioritized,
+  ].join(', ');
+}
 
-      lines.push(`${title}${dates}`.trim());
-
-      if (item.focus) {
-        lines.push(item.focus);
-      }
-
-      item.adaptedBullets.forEach((bullet) => {
-        lines.push(`— ${bullet}`);
-      });
-    });
-
-    lines.push('');
-  }
-
-  const skills = [...draft.skills.primary, ...draft.skills.secondary];
-
-  if (skills.length) {
-    lines.push('Навыки', skills.join(', '), '');
-  }
-
-  if (draft.education.notes.length) {
-    lines.push('Образование');
-    draft.education.notes.forEach((item) => lines.push(`— ${item}`));
-    lines.push('');
-  }
-
-  if (draft.summary) {
-    lines.push('О себе', draft.summary, '');
-  }
-
-  if (draft.additionalInfo.length) {
-    lines.push('Дополнительная информация');
-    draft.additionalInfo.forEach((item) => lines.push(`— ${item}`));
-    lines.push('');
-  }
-
-  return lines.join('\n').trim();
+function createEducationText(adaptation: ResumeAdaptationResult) {
+  return adaptation.adaptedResume.education.notes.join('\n');
 }

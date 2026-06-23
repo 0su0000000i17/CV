@@ -19,12 +19,13 @@ export function useResumeVacancyFitMutation() {
     Error,
     CheckResumeVacancyFitVariables
   >({
-    mutationFn: ({ resumeId, vacancy, vacancyText, accessToken }) =>
-      checkResumeVacancyFit({
+    mutationFn: ({ resumeId, vacancy, vacancyText, accessToken }) => {
+      return checkResumeVacancyFit({
         resumeId,
         vacancy,
         vacancyText,
         accessToken,
-      }),
+      });
+    },
   });
 }

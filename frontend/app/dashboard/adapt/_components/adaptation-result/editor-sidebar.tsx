@@ -3,7 +3,6 @@ import {
   Copy,
   FileText,
   RotateCcw,
-  Save,
   Sparkles,
   TriangleAlert,
 } from 'lucide-react';
@@ -16,7 +15,6 @@ type Props = {
   draft: ResumeAdaptationResult;
   copyStatus: 'idle' | 'copied' | 'error';
   onCopyResumeText: () => void;
-  onResetDraftToAiVersion: () => void;
   onResetAdaptation: () => void;
 };
 
@@ -24,7 +22,6 @@ export function EditorSidebar({
   draft,
   copyStatus,
   onCopyResumeText,
-  onResetDraftToAiVersion,
   onResetAdaptation,
 }: Props) {
   return (
@@ -41,22 +38,12 @@ export function EditorSidebar({
             </h2>
 
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-              Проверьте черновик и сохраните версию.
+              Проверьте черновик и скопируйте текст для отклика.
             </p>
           </div>
         </div>
 
         <div className="space-y-2">
-          <button
-            type="button"
-            disabled
-            title="Сохранение версий подключим следующим шагом"
-            className="inline-flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3 text-sm font-medium text-background opacity-50"
-          >
-            <Save className="h-4 w-4" />
-            Сохранить версию
-          </button>
-
           <button
             type="button"
             onClick={onCopyResumeText}
@@ -68,15 +55,6 @@ export function EditorSidebar({
               : copyStatus === 'error'
                 ? 'Не скопировано'
                 : 'Скопировать текст'}
-          </button>
-
-          <button
-            type="button"
-            onClick={onResetDraftToAiVersion}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm text-foreground transition-colors hover:bg-muted"
-          >
-            <RotateCcw className="h-4 w-4" />
-            Вернуть AI-версию
           </button>
 
           <button
@@ -94,14 +72,31 @@ export function EditorSidebar({
         <h3 className="font-medium text-foreground">Совет</h3>
 
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          Сначала проверьте опыт и навыки, потом summary. Так проще заметить,
-          не добавилось ли лишнее.
+          Перед откликом проверьте опыт, навыки и summary, чтобы не появилось
+          лишних фактов.
         </p>
       </div>
 
-      <SideBlock title="Что изменено" icon={Sparkles} items={draft.changes} tone="green" />
-      <SideBlock title="Предупреждения" icon={TriangleAlert} items={draft.warnings} tone="orange" />
-      <SideBlock title="Что не было добавлено" icon={AlertCircle} items={draft.forbiddenClaims} tone="orange" />
+      <SideBlock
+        title="Что изменено"
+        icon={Sparkles}
+        items={draft.changes}
+        tone="green"
+      />
+
+      <SideBlock
+        title="Предупреждения"
+        icon={TriangleAlert}
+        items={draft.warnings}
+        tone="orange"
+      />
+
+      <SideBlock
+        title="Что не было добавлено"
+        icon={AlertCircle}
+        items={draft.forbiddenClaims}
+        tone="orange"
+      />
     </aside>
   );
 }

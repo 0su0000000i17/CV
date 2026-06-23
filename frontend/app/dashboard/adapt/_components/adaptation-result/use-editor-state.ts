@@ -5,24 +5,36 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ResumeAdaptationResult } from '@/src/shared/api/resume-adaptation';
 
 import type { AdaptationResultCardProps, ContactDraft } from './types';
+import { extractSourceResumeData } from './source-resume-data';
 import { cloneAdaptation, createPlainResumeText } from './utils';
 
+const emptyContacts: ContactDraft = {
+  fullName: '',
+  gender: '',
+  age: '',
+  birthDate: '',
+  phone: '',
+  email: '',
+  city: '',
+  citizenship: '',
+  workPermit: '',
+  relocation: '',
+  businessTrips: '',
+};
+
 export function useEditorState(
-  adaptationResponse: AdaptationResultCardProps['adaptationResponse']
+  adaptationResponse: AdaptationResultCardProps['adaptationResponse'],
+  sourceResume: AdaptationResultCardProps['sourceResume']
 ) {
   const [draft, setDraft] = useState<ResumeAdaptationResult | null>(null);
-  const [contacts, setContacts] = useState<ContactDraft>({
-    fullName: '',
-    phone: '',
-    email: '',
-    city: '',
-  });
-  const [expandedExperienceIndexes, setExpandedExperienceIndexes] = useState<
-    number[]
-  >([]);
+  const [contacts, setContacts] = useState<ContactDraft>(emptyContacts);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [editingExperienceIndex, setEditingExperienceIndex] = useState<
     number | null
   >(null);
+  const [expandedExperienceIndexes, setExpandedExperienceIndexes] = useState<
+    number[]
+  >([]);
   const [isContactsEditing, setIsContactsEditing] = useState(false);
   const [isSkillsEditing, setIsSkillsEditing] = useState(false);
   const [isEducationEditing, setIsEducationEditing] = useState(false);
@@ -37,21 +49,21 @@ export function useEditorState(
       return;
     }
 
+    const sourceData = extractSourceResumeData(sourceResume);
+
     setDraft(cloneAdaptation(adaptationResponse.adaptation));
-    setExpandedExperienceIndexes([]);
+    setContacts(sourceData.contacts);
+    setPhotoUrl(sourceData.photoUrl);
     setEditingExperienceIndex(null);
+    setExpandedExperienceIndexes([]);
     setIsContactsEditing(false);
     setIsSkillsEditing(false);
     setIsEducationEditing(false);
     setIsAboutEditing(false);
-  }, [adaptationResponse]);
+  }, [adaptationResponse, sourceResume]);
 
   const plainResumeText = useMemo(() => {
-    if (!draft) {
-      return '';
-    }
-
-    return createPlainResumeText(draft, contacts);
+    return draft ? createPlainResumeText(draft, contacts) : '';
   }, [contacts, draft]);
 
   function updateDraft(updater: (current: ResumeAdaptationResult) => void) {
@@ -65,14 +77,6 @@ export function useEditorState(
 
       return next;
     });
-  }
-
-  function resetDraftToAiVersion() {
-    if (!adaptationResponse?.adaptation) {
-      return;
-    }
-
-    setDraft(cloneAdaptation(adaptationResponse.adaptation));
   }
 
   function toggleExpandedExperience(index: number) {
@@ -97,6 +101,7 @@ export function useEditorState(
   return {
     draft,
     contacts,
+    photoUrl,
     copyStatus,
     editingExperienceIndex,
     expandedExperienceIndexes,
@@ -105,13 +110,13 @@ export function useEditorState(
     isEducationEditing,
     isSkillsEditing,
     copyResumeText,
-    resetDraftToAiVersion,
     setContacts,
     setEditingExperienceIndex,
     setIsAboutEditing,
     setIsContactsEditing,
     setIsEducationEditing,
     setIsSkillsEditing,
+    setPhotoUrl,
     toggleExpandedExperience,
     updateDraft,
   };
