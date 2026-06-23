@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 
 import { AdaptHeader } from './_components/AdaptHeader';
 import { AdaptSetupWorkspace } from './_components/AdaptSetupWorkspace';
-import { AdaptationResultCard } from './_components/AdaptationResultCard';
+import { GeneratedResumeWorkspace } from './_components/GeneratedResumeWorkspace';
 import {
   createAdaptationFromFit,
   prepareVacancyForFit,
@@ -80,15 +80,11 @@ export default function AdaptPage() {
       <AdaptHeader />
 
       {hasAdaptationWorkspace ? (
-        <AdaptationResultCard
+        <GeneratedResumeWorkspace
           adaptationResponse={adaptationResponse}
           isAdapting={isAdapting}
           isError={resumeAdaptationMutation.isError}
-          errorMessage={
-            resumeAdaptationMutation.error instanceof Error
-              ? resumeAdaptationMutation.error.message
-              : undefined
-          }
+          error={resumeAdaptationMutation.error}
           onResetAdaptation={resumeAdaptationMutation.reset}
         />
       ) : (
