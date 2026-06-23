@@ -1,4 +1,4 @@
-import type { ResumeVacancyFitResult } from './resumeVacancyFit';
+import type { ResumeVacancyFitResult } from './resume-vacancy-fit';
 import type { NormalizedVacancy } from './vacancies';
 import { createAuthHeaders, getApiUrl, parseApiResponse } from './http';
 

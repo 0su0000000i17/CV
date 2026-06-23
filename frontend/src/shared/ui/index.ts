@@ -1,1 +1,1 @@
-export { BackArrow } from './BackArrow';
+export { BackArrow } from './back-arrow';

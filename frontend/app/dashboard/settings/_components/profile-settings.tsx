@@ -4,8 +4,8 @@ import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { Mail, User, WalletCards } from 'lucide-react';
 
 import type { Profile } from '@/src/shared/api/profile';
-import { useProfileQuery } from '@/src/shared/hooks/useProfileQuery';
-import { useUpdateProfileMutation } from '@/src/shared/hooks/useUpdateProfileMutation';
+import { useProfileQuery } from '@/src/shared/hooks/use-profile-query';
+import { useUpdateProfileMutation } from '@/src/shared/hooks/use-update-profile-mutation';
 import { supabase } from '@/src/shared/lib/supabase/client';
 
 const forbiddenNamePattern =

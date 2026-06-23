@@ -2,16 +2,16 @@
 
 import { useParams } from 'next/navigation';
 
-import { useAuth } from '@/src/shared/hooks/useAuth';
-import { useResumeQuery } from '@/src/shared/hooks/useResumeQuery';
+import { useAuth } from '@/src/shared/hooks/use-auth';
+import { useResumeQuery } from '@/src/shared/hooks/use-resume-query';
 
-import { ResumeActionsPanel } from './_components/ResumeActionsPanel';
-import { ResumeDetailsHeader } from './_components/ResumeDetailsHeader';
-import { ResumeDetailsSkeleton } from './_components/ResumeDetailsSkeleton';
-import { ResumeFileInfoCard } from './_components/ResumeFileInfoCard';
-import { ResumeNotFoundState } from './_components/ResumeNotFoundState';
-import { ResumeStatsCards } from './_components/ResumeStatsCards';
-import { ResumeVersionsCard } from './_components/ResumeVersionsCard';
+import { ResumeActionsPanel } from './_components/resume-actions-panel';
+import { ResumeDetailsHeader } from './_components/resume-details-header';
+import { ResumeDetailsSkeleton } from './_components/resume-details-skeleton';
+import { ResumeFileInfoCard } from './_components/resume-file-info-card';
+import { ResumeNotFoundState } from './_components/resume-not-found-state';
+import { ResumeStatsCards } from './_components/resume-stats-cards';
+import { ResumeVersionsCard } from './_components/resume-versions-card';
 
 function getResumeId(value: string | string[] | undefined) {
   if (typeof value === 'string') {

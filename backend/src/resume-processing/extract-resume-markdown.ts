@@ -1,7 +1,7 @@
-import { extractMarkdownWithMarkitdown } from "./extractors/markitdownExtractor.js";
-import { limitResumeMarkdown } from "./limitResumeMarkdown.js";
-import { normalizeResumeMarkdown } from "./normalizeResumeMarkdown.js";
-import { sanitizeResumeMarkdownForAi } from "./sanitizeResumeMarkdownForAi.js";
+import { extractMarkdownWithMarkitdown } from "./extractors/markitdown-extractor.js";
+import { limitResumeMarkdown } from "./limit-resume-markdown.js";
+import { normalizeResumeMarkdown } from "./normalize-resume-markdown.js";
+import { sanitizeResumeMarkdownForAi } from "./sanitize-resume-markdown-for-ai.js";
 
 type ExtractResumeMarkdownParams = {
   fileBuffer: Buffer;

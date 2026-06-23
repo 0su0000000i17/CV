@@ -1,6 +1,6 @@
 import { AdaptationResultCard } from './adaptation-result-card';
 
-import type { ResumeAdaptationResponse } from '@/src/shared/api/resumeAdaptation';
+import type { ResumeAdaptationResponse } from '@/src/shared/api/resume-adaptation';
 
 type Props = {
   adaptationResponse?: ResumeAdaptationResponse;

@@ -1,4 +1,4 @@
-import type { extractResumeMarkdown } from "../resume-processing/extractResumeMarkdown.js";
+import type { extractResumeMarkdown } from "../resume-processing/extract-resume-markdown.js";
 
 export type AnalysisStatus = "idle" | "analyzing" | "completed" | "failed";
 

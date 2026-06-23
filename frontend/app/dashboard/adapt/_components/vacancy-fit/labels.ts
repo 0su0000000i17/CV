@@ -1,4 +1,4 @@
-import type { ResumeVacancyFitRiskFlag } from '@/src/shared/api/resumeVacancyFit';
+import type { ResumeVacancyFitRiskFlag } from '@/src/shared/api/resume-vacancy-fit';
 
 export const fitLabels: Record<string, string> = {
   impossible: 'Не подходит',

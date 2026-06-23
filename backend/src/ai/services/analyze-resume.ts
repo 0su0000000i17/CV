@@ -1,15 +1,15 @@
 import type { AiGenerateTextResult, AiMessage } from "../types.js";
-import { getAiProvider } from "../getAiProvider.js";
+import { getAiProvider } from "../get-ai-provider.js";
 import {
   analyzeResumeSystemPrompt,
   createAnalyzeResumeUserPrompt,
-} from "../prompts/analyzeResumePrompt.js";
+} from "../prompts/analyze-resume-prompt.js";
 import {
   aiResumeAnalysisSchema,
   type AiResumeAnalysis,
-} from "../schemas/resumeAnalysisSchema.js";
-import { detectResumeHeuristics } from "./detectResumeHeuristics.js";
-import { scoreResumeAnalysis } from "./scoreResumeAnalysis.js";
+} from "../schemas/resume-analysis-schema.js";
+import { detectResumeHeuristics } from "./detect-resume-heuristics.js";
+import { scoreResumeAnalysis } from "./score-resume-analysis.js";
 
 type AnalyzeResumeParams = {
   resumeMarkdown: string;

@@ -1,4 +1,4 @@
-import type { ResumeAdaptationResult } from '@/src/shared/api/resumeAdaptation';
+import type { ResumeAdaptationResult } from '@/src/shared/api/resume-adaptation';
 
 import type { ContactDraft } from './types';
 

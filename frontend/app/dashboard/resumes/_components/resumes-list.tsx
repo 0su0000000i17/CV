@@ -4,12 +4,12 @@ import { useState } from 'react';
 
 import type { UploadedResume } from '@/src/shared/api/resumes';
 import { supabase } from '@/src/shared/lib/supabase/client';
-import { useDeleteResumeMutation } from '@/src/shared/hooks/useDeleteResumeMutation';
+import { useDeleteResumeMutation } from '@/src/shared/hooks/use-delete-resume-mutation';
 
-import { DeleteResumeDialog } from './DeleteResumeDialog';
-import { ResumeEmptyState } from './ResumeEmptyState';
-import { ResumeListItem } from './ResumeListItem';
-import { ResumeListSkeleton } from './ResumeListSkeleton';
+import { DeleteResumeDialog } from './delete-resume-dialog';
+import { ResumeEmptyState } from './resume-empty-state';
+import { ResumeListItem } from './resume-list-item';
+import { ResumeListSkeleton } from './resume-list-skeleton';
 
 type ResumesListProps = {
   resumes: UploadedResume[];

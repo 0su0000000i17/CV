@@ -1,8 +1,8 @@
 import type { Request, Response } from "express";
 
 import { supabaseAdmin } from "../lib/supabase.js";
-import { extractResumeMarkdown } from "../resume-processing/extractResumeMarkdown.js";
-import { sendError, sendServerError, getStringParam } from "../utils/apiResponses.js";
+import { extractResumeMarkdown } from "../resume-processing/extract-resume-markdown.js";
+import { sendError, sendServerError, getStringParam } from "../utils/api-responses.js";
 import { getUserFromRequest } from "../utils/auth.js";
 
 export async function extractResumeTextPreview(req: Request, res: Response) {

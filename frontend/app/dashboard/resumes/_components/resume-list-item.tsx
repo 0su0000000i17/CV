@@ -5,7 +5,7 @@ import { Download, FileText, MoreHorizontal, Trash2 } from 'lucide-react';
 
 import type { UploadedResume } from '@/src/shared/api/resumes';
 import { supabase } from '@/src/shared/lib/supabase/client';
-import { useDownloadResumeMutation } from '@/src/shared/hooks/useDownloadResumeMutation';
+import { useDownloadResumeMutation } from '@/src/shared/hooks/use-download-resume-mutation';
 
 type ResumeListItemProps = {
   resume: UploadedResume;

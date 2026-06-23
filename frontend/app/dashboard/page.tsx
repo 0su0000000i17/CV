@@ -14,13 +14,13 @@ import {
   Upload,
 } from 'lucide-react';
 
-import { useDashboardResumeSelection } from './_components/DashboardResumeSelectionProvider';
-import { UploadResumeButton } from './resumes/_components/UploadResumeButton';
+import { useDashboardResumeSelection } from './_components/dashboard-resume-selection-provider';
+import { UploadResumeButton } from './resumes/_components/upload-resume-button';
 
 import type { UploadedResume } from '@/src/shared/api/resumes';
-import { useAuth } from '@/src/shared/hooks/useAuth';
-import { useProfileQuery } from '@/src/shared/hooks/useProfileQuery';
-import { useResumesQuery } from '@/src/shared/hooks/useResumesQuery';
+import { useAuth } from '@/src/shared/hooks/use-auth';
+import { useProfileQuery } from '@/src/shared/hooks/use-profile-query';
+import { useResumesQuery } from '@/src/shared/hooks/use-resumes-query';
 
 function getFirstName(fullName?: string, email?: string) {
   const trimmedName = fullName?.trim();

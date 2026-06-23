@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import {
   checkResumeVacancyFit,
   type ResumeVacancyFitResponse,
-} from '@/src/shared/api/resumeVacancyFit';
+} from '@/src/shared/api/resume-vacancy-fit';
 import type { NormalizedVacancy } from '@/src/shared/api/vacancies';
 
 type CheckResumeVacancyFitVariables = {

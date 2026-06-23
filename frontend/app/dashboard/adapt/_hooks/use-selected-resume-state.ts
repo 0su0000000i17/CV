@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from 'react';
 
-import { useDashboardResumeSelection } from '../../_components/DashboardResumeSelectionProvider';
+import { useDashboardResumeSelection } from '../../_components/dashboard-resume-selection-provider';
 import { createResumeRoute } from '../_lib/adapt-page-utils';
 
 type RouterLike = {

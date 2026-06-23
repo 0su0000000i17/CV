@@ -10,11 +10,11 @@ import type { PageExtractionResult } from "../types.js";
 import {
   cleanExtractedText,
   validateExtractedText,
-} from "../extraction/cleanExtractedText.js";
-import { isBlockedHostname } from "../security/ipAddressGuards.js";
-import { validatePublicUrl } from "../security/validatePublicUrl.js";
-import { getPlaywrightBrowser } from "./playwrightBrowser.js";
-import { runWithRenderSlot } from "./renderLimiter.js";
+} from "../extraction/clean-extracted-text.js";
+import { isBlockedHostname } from "../security/ip-address-guards.js";
+import { validatePublicUrl } from "../security/validate-public-url.js";
+import { getPlaywrightBrowser } from "./playwright-browser.js";
+import { runWithRenderSlot } from "./render-limiter.js";
 
 type BrowserExtractedPage = {
   title: string | null;

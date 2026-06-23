@@ -2,7 +2,7 @@
 
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
 
-import { QueryProvider } from '@/src/shared/providers/QueryProvider';
+import { QueryProvider } from '@/src/shared/providers/query-provider';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   return (

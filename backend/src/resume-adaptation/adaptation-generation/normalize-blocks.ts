@@ -4,7 +4,7 @@ import type {
   AdaptedResumeSkills,
   ResumeAdaptationTarget,
 } from "../types.js";
-import { isRecord, toNullableString, toStringArray } from "./normalizeHelpers.js";
+import { isRecord, toNullableString, toStringArray } from "./normalize-helpers.js";
 
 export function normalizeTarget(value: unknown): ResumeAdaptationTarget {
   const source = isRecord(value) ? value : {};

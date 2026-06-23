@@ -2,7 +2,7 @@ import type {
   AiResumeAnalysis,
   ResumeRedFlag,
   ResumeRedFlagType,
-} from "../schemas/resumeAnalysisSchema.js";
+} from "../schemas/resume-analysis-schema.js";
 
 type HeuristicResult = {
   analysis: AiResumeAnalysis;

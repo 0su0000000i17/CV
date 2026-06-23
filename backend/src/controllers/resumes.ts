@@ -7,12 +7,12 @@ import {
   sendError,
   sendServerError,
   getStringParam,
-} from "../utils/apiResponses.js";
+} from "../utils/api-responses.js";
 import {
   allowedResumeMimeTypes,
   createResumeStorageFilePath,
   decodeFileName,
-} from "../utils/resumeFiles.js";
+} from "../utils/resume-files.js";
 
 function createSourceFileHash(fileBuffer: Buffer) {
   return createHash("sha256").update(fileBuffer).digest("hex");

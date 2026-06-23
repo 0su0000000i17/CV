@@ -1,5 +1,5 @@
 import type { NormalizedVacancy } from '@/src/shared/api/vacancies';
-import type { ResumeVacancyFitResult } from '@/src/shared/api/resumeVacancyFit';
+import type { ResumeVacancyFitResult } from '@/src/shared/api/resume-vacancy-fit';
 
 export type AdaptationMutation = {
   reset: () => void;

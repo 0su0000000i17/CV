@@ -1,4 +1,4 @@
-import type { ResumeAdaptationResult } from '@/src/shared/api/resumeAdaptation';
+import type { ResumeAdaptationResult } from '@/src/shared/api/resume-adaptation';
 
 import { EditorSection } from './editor-section';
 import type { DraftUpdater } from './types';

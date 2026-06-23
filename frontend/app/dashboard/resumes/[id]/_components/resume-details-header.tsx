@@ -7,9 +7,9 @@ import { useState } from 'react';
 
 import type { UploadedResume } from '@/src/shared/api/resumes';
 import { supabase } from '@/src/shared/lib/supabase/client';
-import { useDeleteResumeMutation } from '@/src/shared/hooks/useDeleteResumeMutation';
-import { useDownloadResumeMutation } from '@/src/shared/hooks/useDownloadResumeMutation';
-import { DeleteResumeDialog } from '../../_components/DeleteResumeDialog';
+import { useDeleteResumeMutation } from '@/src/shared/hooks/use-delete-resume-mutation';
+import { useDownloadResumeMutation } from '@/src/shared/hooks/use-download-resume-mutation';
+import { DeleteResumeDialog } from '../../_components/delete-resume-dialog';
 
 type Props = {
   resume: UploadedResume;

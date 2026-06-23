@@ -4,8 +4,8 @@ import {
   normalizeExperience,
   normalizeSkills,
   normalizeTarget,
-} from "./normalizeBlocks.js";
-import { isRecord, toNullableString, toStringArray } from "./normalizeHelpers.js";
+} from "./normalize-blocks.js";
+import { isRecord, toNullableString, toStringArray } from "./normalize-helpers.js";
 
 export function normalizeAdaptationResult(value: unknown): ResumeAdaptationResult {
   const source = isRecord(value) ? value : {};

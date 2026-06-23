@@ -4,7 +4,7 @@ import multer from "multer";
 import {
   allowedResumeMimeTypes,
   MAX_RESUME_FILE_SIZE,
-} from "../utils/resumeFiles.js";
+} from "../utils/resume-files.js";
 
 const resumeUpload = multer({
   storage: multer.memoryStorage(),

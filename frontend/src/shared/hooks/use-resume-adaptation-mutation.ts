@@ -3,8 +3,8 @@ import { useMutation } from '@tanstack/react-query';
 import {
   adaptResumeToVacancy,
   type ResumeAdaptationResponse,
-} from '@/src/shared/api/resumeAdaptation';
-import type { ResumeVacancyFitResult } from '@/src/shared/api/resumeVacancyFit';
+} from '@/src/shared/api/resume-adaptation';
+import type { ResumeVacancyFitResult } from '@/src/shared/api/resume-vacancy-fit';
 import type { NormalizedVacancy } from '@/src/shared/api/vacancies';
 
 type ResumeAdaptationVariables = {

@@ -1,6 +1,6 @@
 import { Ban, ShieldCheck } from 'lucide-react';
 
-import type { ResumeVacancyFitResponse } from '@/src/shared/api/resumeVacancyFit';
+import type { ResumeVacancyFitResponse } from '@/src/shared/api/resume-vacancy-fit';
 
 import {
   adaptationModeLabels,

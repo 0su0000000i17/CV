@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 
-import { getAiProvider } from "../ai/getAiProvider.js";
-import { sendError, sendServerError } from "../utils/apiResponses.js";
+import { getAiProvider } from "../ai/get-ai-provider.js";
+import { sendError, sendServerError } from "../utils/api-responses.js";
 
 function isAiTestEndpointEnabled() {
   return (

@@ -1,4 +1,4 @@
-import type { ResumeVacancyFitResponse } from '@/src/shared/api/resumeVacancyFit';
+import type { ResumeVacancyFitResponse } from '@/src/shared/api/resume-vacancy-fit';
 
 import { FitInfo } from './vacancy-fit/fit-info';
 import { FitResultCallout } from './vacancy-fit/fit-result-callout';

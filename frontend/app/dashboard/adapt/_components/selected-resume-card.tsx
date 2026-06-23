@@ -1,7 +1,7 @@
 'use client';
 
 import type { UploadedResume } from '@/src/shared/api/resumes';
-import { ResumeSelectorCard } from '@/src/shared/ui/ResumeSelectorCard';
+import { ResumeSelectorCard } from '@/src/shared/ui/resume-selector-card';
 
 type Props = {
   selectedResume?: UploadedResume;

@@ -13,9 +13,9 @@ import {
 } from 'lucide-react';
 import { type ReactNode, useEffect } from 'react';
 
-import { DashboardResumeSelectionProvider } from './_components/DashboardResumeSelectionProvider';
+import { DashboardResumeSelectionProvider } from './_components/dashboard-resume-selection-provider';
 
-import { useAuth } from '@/src/shared/hooks/useAuth';
+import { useAuth } from '@/src/shared/hooks/use-auth';
 
 const navItems = [
   {

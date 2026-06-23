@@ -3,7 +3,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import type {
   ResumeAdaptationResponse,
   ResumeAdaptationResult,
-} from '@/src/shared/api/resumeAdaptation';
+} from '@/src/shared/api/resume-adaptation';
 
 export type AdaptationResultCardProps = {
   adaptationResponse?: ResumeAdaptationResponse;

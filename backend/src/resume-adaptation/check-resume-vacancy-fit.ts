@@ -1,15 +1,15 @@
-import { getAiProvider } from "../ai/getAiProvider.js";
+import { getAiProvider } from "../ai/get-ai-provider.js";
 import type { AiMessage } from "../ai/types.js";
 import type { NormalizedVacancy } from "../vacancy-ai/types.js";
-import { formatVacancyForAdaptation } from "../vacancy-ai/formatVacancyForAdaptation.js";
+import { formatVacancyForAdaptation } from "../vacancy-ai/format-vacancy-for-adaptation.js";
 import type { ResumeVacancyFitResult } from "./types.js";
 import {
   FIT_MAX_TOKENS,
   FIT_RESUME_MAX_CHARS,
   FIT_VACANCY_MAX_CHARS,
 } from "./fit-check/config.js";
-import { parseJsonFromModelResponse } from "./fit-check/jsonResponse.js";
-import { normalizeFitResult } from "./fit-check/normalizeFitResult.js";
+import { parseJsonFromModelResponse } from "./fit-check/json-response.js";
+import { normalizeFitResult } from "./fit-check/normalize-fit-result.js";
 import { createUserPrompt, SYSTEM_PROMPT } from "./fit-check/prompts.js";
 
 type CheckResumeVacancyFitParams = {

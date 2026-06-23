@@ -8,11 +8,11 @@ import { createAdaptationFromFit, prepareVacancyForFit } from './_lib/adapt-flow
 import { getVacancyInputKind } from './_lib/adapt-page-utils';
 import { useSelectedResumeState } from './_hooks/use-selected-resume-state';
 import { useVacancyState } from './_hooks/use-vacancy-state';
-import { useAuth } from '@/src/shared/hooks/useAuth';
-import { usePrepareVacancyInputMutation } from '@/src/shared/hooks/usePrepareVacancyInputMutation';
-import { useResumeAdaptationMutation } from '@/src/shared/hooks/useResumeAdaptationMutation';
-import { useResumeVacancyFitMutation } from '@/src/shared/hooks/useResumeVacancyFitMutation';
-import { useResumesQuery } from '@/src/shared/hooks/useResumesQuery';
+import { useAuth } from '@/src/shared/hooks/use-auth';
+import { usePrepareVacancyInputMutation } from '@/src/shared/hooks/use-prepare-vacancy-input-mutation';
+import { useResumeAdaptationMutation } from '@/src/shared/hooks/use-resume-adaptation-mutation';
+import { useResumeVacancyFitMutation } from '@/src/shared/hooks/use-resume-vacancy-fit-mutation';
+import { useResumesQuery } from '@/src/shared/hooks/use-resumes-query';
 
 export default function AdaptPage() {
   const router = useRouter();

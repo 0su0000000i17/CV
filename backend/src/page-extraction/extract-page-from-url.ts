@@ -1,6 +1,6 @@
 import type { PageExtractionResult } from "./types.js";
-import { validatePublicUrl } from "./security/validatePublicUrl.js";
-import { renderPublicPage } from "./browser/renderPublicPage.js";
+import { validatePublicUrl } from "./security/validate-public-url.js";
+import { renderPublicPage } from "./browser/render-public-page.js";
 
 export async function extractPageFromUrl(
   rawUrl: string

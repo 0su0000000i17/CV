@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 
-import { analyzeResume } from "../ai/services/analyzeResume.js";
-import { extractResumeMarkdown } from "../resume-processing/extractResumeMarkdown.js";
+import { analyzeResume } from "../ai/services/analyze-resume.js";
+import { extractResumeMarkdown } from "../resume-processing/extract-resume-markdown.js";
 import {
   createAnalysisCacheKey,
   createResumeContentHashes,
@@ -12,18 +12,18 @@ import {
   findResumeOwnerRecord,
   markResumeAnalysisCompleted,
   setResumeAnalysisStatus,
-} from "../resume-analysis/repositories/resumesRepository.js";
-import { downloadResumeFileBuffer } from "../resume-analysis/repositories/resumeFilesRepository.js";
+} from "../resume-analysis/repositories/resumes-repository.js";
+import { downloadResumeFileBuffer } from "../resume-analysis/repositories/resume-files-repository.js";
 import {
   createResumeAnalysisFromCache,
   findCurrentResumeReusableAnalysis,
   findLatestResumeAnalysis,
   saveFreshResumeAnalysis,
-} from "../resume-analysis/repositories/resumeAnalysesRepository.js";
+} from "../resume-analysis/repositories/resume-analyses-repository.js";
 import {
   findUserReusableCache,
   upsertResumeAnalysisCache,
-} from "../resume-analysis/repositories/resumeAnalysisCacheRepository.js";
+} from "../resume-analysis/repositories/resume-analysis-cache-repository.js";
 import {
   getTargetRoleFromAnalysis,
   mapAnalysisRow,
@@ -32,7 +32,7 @@ import {
   getStringParam,
   sendError,
   sendServerError,
-} from "../utils/apiResponses.js";
+} from "../utils/api-responses.js";
 import { getUserFromRequest } from "../utils/auth.js";
 
 export async function getLatestResumeAnalysis(req: Request, res: Response) {

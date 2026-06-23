@@ -3,11 +3,11 @@
 import { useEffect, useState } from 'react';
 
 import { supabase } from '@/src/shared/lib/supabase/client';
-import { useResumesQuery } from '@/src/shared/hooks/useResumesQuery';
+import { useResumesQuery } from '@/src/shared/hooks/use-resumes-query';
 
-import { ResumesHeader } from './_components/ResumesHeader';
-import { ResumesList } from './_components/ResumesList';
-import { ResumesStats } from './_components/ResumesStats';
+import { ResumesHeader } from './_components/resumes-header';
+import { ResumesList } from './_components/resumes-list';
+import { ResumesStats } from './_components/resumes-stats';
 
 export default function ResumesPage() {
   const [accessToken, setAccessToken] = useState<string>();

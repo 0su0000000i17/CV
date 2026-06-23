@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 
 import { supabaseAdmin } from "../lib/supabase.js";
 import { getUserFromRequest } from "../utils/auth.js";
-import { sendError, sendServerError } from "../utils/apiResponses.js";
+import { sendError, sendServerError } from "../utils/api-responses.js";
 
 const forbiddenNamePattern =
   /(еблан|дебил|идиот|мудак|пидор|пидр|хуй|хуе|бля|сука|сучка|шлюха|мразь|гандон|гондон|чмо|уеб|уёб)/i;

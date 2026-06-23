@@ -1,5 +1,5 @@
-import type { ResumeAdaptationResponse } from '@/src/shared/api/resumeAdaptation';
-import type { ResumeVacancyFitResponse } from '@/src/shared/api/resumeVacancyFit';
+import type { ResumeAdaptationResponse } from '@/src/shared/api/resume-adaptation';
+import type { ResumeVacancyFitResponse } from '@/src/shared/api/resume-vacancy-fit';
 
 import { AdaptSettings } from './adapt-settings';
 import { SidebarActionButton } from './adapt-sidebar/sidebar-action-button';

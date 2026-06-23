@@ -7,8 +7,8 @@ import { VacancyForm } from './vacancy-form';
 
 import type { VacancyInputKind } from '../_lib/adapt-page-utils';
 import type { PageExtractionStatus } from '@/src/shared/api/vacancies';
-import type { ResumeAdaptationResponse } from '@/src/shared/api/resumeAdaptation';
-import type { ResumeVacancyFitResponse } from '@/src/shared/api/resumeVacancyFit';
+import type { ResumeAdaptationResponse } from '@/src/shared/api/resume-adaptation';
+import type { ResumeVacancyFitResponse } from '@/src/shared/api/resume-vacancy-fit';
 
 type SelectedResumeCardProps = ComponentProps<typeof SelectedResumeCard>;
 

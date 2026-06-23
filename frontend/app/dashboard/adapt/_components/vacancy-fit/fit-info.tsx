@@ -1,6 +1,6 @@
 import { GitBranch } from 'lucide-react';
 
-import type { ResumeVacancyFitResponse } from '@/src/shared/api/resumeVacancyFit';
+import type { ResumeVacancyFitResponse } from '@/src/shared/api/resume-vacancy-fit';
 
 import { FitListSection } from './fit-list-section';
 import { careerMoveLabels } from './labels';

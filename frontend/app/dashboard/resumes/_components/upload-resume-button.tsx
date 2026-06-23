@@ -5,7 +5,7 @@ import { Plus } from 'lucide-react';
 
 import type { UploadedResume } from '@/src/shared/api/resumes';
 import { supabase } from '@/src/shared/lib/supabase/client';
-import { useUploadResumeMutation } from '@/src/shared/hooks/useUploadResumeMutation';
+import { useUploadResumeMutation } from '@/src/shared/hooks/use-upload-resume-mutation';
 
 const ERROR_MESSAGE_VISIBLE_MS = 15_000;
 

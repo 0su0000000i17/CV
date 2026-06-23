@@ -1,5 +1,5 @@
 import type { ParsedPublicUrlResult } from "../types.js";
-import { assertPublicHostname, isBlockedHostname } from "./ipAddressGuards.js";
+import { assertPublicHostname, isBlockedHostname } from "./ip-address-guards.js";
 
 export async function validatePublicUrl(
   rawUrl: string

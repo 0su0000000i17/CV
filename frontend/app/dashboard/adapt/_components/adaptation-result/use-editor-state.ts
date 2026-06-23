@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
-import type { ResumeAdaptationResult } from '@/src/shared/api/resumeAdaptation';
+import type { ResumeAdaptationResult } from '@/src/shared/api/resume-adaptation';
 
 import type { AdaptationResultCardProps, ContactDraft } from './types';
 import { cloneAdaptation, createPlainResumeText } from './utils';

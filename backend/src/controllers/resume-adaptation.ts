@@ -1,20 +1,20 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
 
-import { checkResumeVacancyFit } from "../resume-adaptation/checkResumeVacancyFit.js";
-import { extractResumeMarkdown } from "../resume-processing/extractResumeMarkdown.js";
+import { generateResumeAdaptation } from "../resume-adaptation/generate-resume-adaptation.js";
+import type { ResumeVacancyFitResult } from "../resume-adaptation/types.js";
 import {
   findResumeFileRecord,
-  setResumeAnalysisStatus,
-} from "../resume-analysis/repositories/resumesRepository.js";
-import { downloadResumeFileBuffer } from "../resume-analysis/repositories/resumeFilesRepository.js";
-import { formatVacancyForAdaptation } from "../vacancy-ai/formatVacancyForAdaptation.js";
+} from "../resume-analysis/repositories/resumes-repository.js";
+import { downloadResumeFileBuffer } from "../resume-analysis/repositories/resume-files-repository.js";
+import { extractResumeMarkdown } from "../resume-processing/extract-resume-markdown.js";
+import { formatVacancyForAdaptation } from "../vacancy-ai/format-vacancy-for-adaptation.js";
 import type { NormalizedVacancy } from "../vacancy-ai/types.js";
 import {
   getStringParam,
   sendError,
   sendServerError,
-} from "../utils/apiResponses.js";
+} from "../utils/api-responses.js";
 import { getUserFromRequest } from "../utils/auth.js";
 
 const nullableStringSchema = z.string().trim().min(1).nullable();
@@ -43,15 +43,44 @@ const normalizedVacancySchema = z.object({
   confidence: z.number().min(0).max(1).nullable(),
 });
 
-const checkResumeVacancyFitSchema = z.object({
-  vacancy: normalizedVacancySchema,
-  vacancyText: z.string().trim().max(40_000).optional(),
+const fitRiskFlagSchema = z.object({
+  type: z.string(),
+  severity: z.string(),
+  explanation: z.string(),
 });
 
-export async function checkResumeVacancyFitController(
-  req: Request,
-  res: Response
-) {
+const fitSchema = z.object({
+  canAdapt: z.boolean(),
+  fit: z.string(),
+  score: z.number(),
+  confidence: z.number(),
+
+  resumeRole: nullableStringSchema,
+  vacancyRole: nullableStringSchema,
+  careerMove: z.string(),
+  adaptationMode: z.string(),
+
+  reason: z.string(),
+  safeAdaptationDirection: nullableStringSchema,
+
+  matchedRequirements: z.array(z.string()).default([]),
+  transferableExperience: z.array(z.string()).default([]),
+  gaps: z.array(z.string()).default([]),
+  blockingGaps: z.array(z.string()).default([]),
+
+  allowedChanges: z.array(z.string()).default([]),
+  forbiddenChanges: z.array(z.string()).default([]),
+
+  riskFlags: z.array(fitRiskFlagSchema).default([]),
+});
+
+const adaptResumeSchema = z.object({
+  vacancy: normalizedVacancySchema,
+  vacancyText: z.string().trim().max(40_000).optional(),
+  fit: fitSchema,
+});
+
+export async function adaptResumeToVacancyController(req: Request, res: Response) {
   try {
     const { user } = await getUserFromRequest(req);
     const resumeId = getStringParam(req.params.resumeId);
@@ -64,17 +93,18 @@ export async function checkResumeVacancyFitController(
       return sendError(res, 400, "Invalid resume id");
     }
 
-    const parsedBody = checkResumeVacancyFitSchema.safeParse(req.body);
+    const parsedBody = adaptResumeSchema.safeParse(req.body);
 
     if (!parsedBody.success) {
       return sendError(
         res,
         400,
-        "Некорректные данные вакансии. Сначала распознайте вакансию."
+        "Некорректные данные для адаптации. Сначала проверьте вакансию и совместимость."
       );
     }
 
     const vacancy = parsedBody.data.vacancy as NormalizedVacancy;
+    const fit = parsedBody.data.fit as ResumeVacancyFitResult;
 
     if (!vacancy.isVacancy) {
       return sendError(
@@ -85,6 +115,14 @@ export async function checkResumeVacancyFitController(
       );
     }
 
+    if (!fit.canAdapt || fit.adaptationMode === "blocked") {
+      return sendError(
+        res,
+        409,
+        "Адаптация заблокирована: резюме не подходит вакансии без выдумывания опыта."
+      );
+    }
+
     const preparedVacancyText =
       parsedBody.data.vacancyText?.trim() || formatVacancyForAdaptation(vacancy);
 
@@ -92,7 +130,7 @@ export async function checkResumeVacancyFitController(
       return sendError(
         res,
         400,
-        "Вакансия распознана, но в ней недостаточно данных для проверки."
+        "Вакансия распознана, но в ней недостаточно данных для адаптации."
       );
     }
 
@@ -112,7 +150,7 @@ export async function checkResumeVacancyFitController(
     } catch (downloadError) {
       return sendServerError(
         res,
-        "Failed to download resume file for vacancy fit",
+        "Failed to download resume file for adaptation",
         downloadError
       );
     }
@@ -124,16 +162,17 @@ export async function checkResumeVacancyFitController(
       mimeType: resume.file_type,
     });
 
-    const result = await checkResumeVacancyFit({
+    const result = await generateResumeAdaptation({
       resumeMarkdown: extraction.markdown,
       vacancy,
       vacancyText: preparedVacancyText,
+      fit,
     });
 
     return res.json({
-      status: result.fit.canAdapt ? "fit_passed" : "fit_blocked",
+      status: "adapted",
       resumeId: resume.id,
-      fit: result.fit,
+      adaptation: result.adaptation,
       meta: {
         ...result.meta,
         markdownChars: extraction.stats.returnedChars,
@@ -143,6 +182,6 @@ export async function checkResumeVacancyFitController(
       },
     });
   } catch (error) {
-    return sendServerError(res, "Failed to check resume vacancy fit", error);
+    return sendServerError(res, "Failed to adapt resume to vacancy", error);
   }
 }

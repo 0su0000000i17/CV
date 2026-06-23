@@ -13,7 +13,7 @@ import {
   toEnumValue,
   toNullableString,
   toStringArray,
-} from "./normalizeHelpers.js";
+} from "./normalize-helpers.js";
 
 export function normalizeFitResult(value: unknown): ResumeVacancyFitResult {
   const source = isRecord(value) ? value : {};

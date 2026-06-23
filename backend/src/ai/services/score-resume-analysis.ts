@@ -4,7 +4,7 @@ import type {
   ResumeAnalysis,
   ResumeRedFlag,
   ResumeRedFlagType,
-} from "../schemas/resumeAnalysisSchema.js";
+} from "../schemas/resume-analysis-schema.js";
 
 type ScoreResumeAnalysisResult = {
   analysis: ResumeAnalysis;

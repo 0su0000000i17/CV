@@ -1,6 +1,6 @@
 import { TriangleAlert } from 'lucide-react';
 
-import type { ResumeVacancyFitRiskFlag } from '@/src/shared/api/resumeVacancyFit';
+import type { ResumeVacancyFitRiskFlag } from '@/src/shared/api/resume-vacancy-fit';
 
 import { riskFlagLabels, severityClasses, severityLabels } from './labels';
 

@@ -1,6 +1,6 @@
-import { getAiProvider } from "../ai/getAiProvider.js";
+import { getAiProvider } from "../ai/get-ai-provider.js";
 import type { AiMessage } from "../ai/types.js";
-import { formatVacancyForAdaptation } from "../vacancy-ai/formatVacancyForAdaptation.js";
+import { formatVacancyForAdaptation } from "../vacancy-ai/format-vacancy-for-adaptation.js";
 import type { NormalizedVacancy } from "../vacancy-ai/types.js";
 import type { ResumeAdaptationResult, ResumeVacancyFitResult } from "./types.js";
 import {
@@ -8,8 +8,8 @@ import {
   ADAPT_RESUME_MAX_CHARS,
   ADAPT_VACANCY_MAX_CHARS,
 } from "./adaptation-generation/config.js";
-import { parseJsonFromModelResponse } from "./adaptation-generation/jsonResponse.js";
-import { normalizeAdaptationResult } from "./adaptation-generation/normalizeAdaptationResult.js";
+import { parseJsonFromModelResponse } from "./adaptation-generation/json-response.js";
+import { normalizeAdaptationResult } from "./adaptation-generation/normalize-adaptation-result.js";
 import { createUserPrompt, SYSTEM_PROMPT } from "./adaptation-generation/prompts.js";
 
 type GenerateResumeAdaptationParams = {

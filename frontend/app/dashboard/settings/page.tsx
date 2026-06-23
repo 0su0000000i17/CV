@@ -1,6 +1,6 @@
-import { AccountSettings } from './_components/AccountSettings';
-import { ProfileSettings } from './_components/ProfileSettings';
-import { SettingsHeader } from './_components/SettingsHeader';
+import { AccountSettings } from './_components/account-settings';
+import { ProfileSettings } from './_components/profile-settings';
+import { SettingsHeader } from './_components/settings-header';
 
 export default function SettingsPage() {
   return (

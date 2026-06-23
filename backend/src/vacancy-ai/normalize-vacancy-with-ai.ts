@@ -1,4 +1,4 @@
-import { getAiProvider } from "../ai/getAiProvider.js";
+import { getAiProvider } from "../ai/get-ai-provider.js";
 import type { AiMessage } from "../ai/types.js";
 import type {
   NormalizedVacancy,

@@ -1,13 +1,13 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
 
-import { cleanExtractedText, validateExtractedText } from "../page-extraction/extraction/cleanExtractedText.js";
-import { extractPageFromUrl } from "../page-extraction/extractPageFromUrl.js";
+import { cleanExtractedText, validateExtractedText } from "../page-extraction/extraction/clean-extracted-text.js";
+import { extractPageFromUrl } from "../page-extraction/extract-page-from-url.js";
 import type { PageExtractionMethod } from "../page-extraction/types.js";
-import { formatVacancyForAdaptation } from "../vacancy-ai/formatVacancyForAdaptation.js";
-import { normalizeVacancyWithAi } from "../vacancy-ai/normalizeVacancyWithAi.js";
+import { formatVacancyForAdaptation } from "../vacancy-ai/format-vacancy-for-adaptation.js";
+import { normalizeVacancyWithAi } from "../vacancy-ai/normalize-vacancy-with-ai.js";
 import type { VacancySourceMetadata } from "../vacancy-ai/types.js";
-import { sendError, sendServerError } from "../utils/apiResponses.js";
+import { sendError, sendServerError } from "../utils/api-responses.js";
 import { getUserFromRequest } from "../utils/auth.js";
 
 const extractVacancyUrlSchema = z.object({

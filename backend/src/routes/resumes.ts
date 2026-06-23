@@ -3,10 +3,10 @@ import { Router } from "express";
 import {
   analyzeResumePreview,
   getLatestResumeAnalysis,
-} from "../controllers/resumeAnalysis.js";
-import { adaptResumeToVacancyController } from "../controllers/resumeAdaptation.js";
-import { extractResumeTextPreview } from "../controllers/resumeExtraction.js";
-import { checkResumeVacancyFitController } from "../controllers/resumeVacancyFit.js";
+} from "../controllers/resume-analysis.js";
+import { adaptResumeToVacancyController } from "../controllers/resume-adaptation.js";
+import { extractResumeTextPreview } from "../controllers/resume-extraction.js";
+import { checkResumeVacancyFitController } from "../controllers/resume-vacancy-fit.js";
 import {
   deleteResume,
   getResumeById,
@@ -14,7 +14,7 @@ import {
   getResumes,
   uploadResume,
 } from "../controllers/resumes.js";
-import { handleResumeUpload } from "../middleware/resumeUpload.js";
+import { handleResumeUpload } from "../middleware/resume-upload.js";
 
 const router = Router();
 

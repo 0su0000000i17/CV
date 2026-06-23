@@ -3,18 +3,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-import { useDashboardResumeSelection } from '../_components/DashboardResumeSelectionProvider';
+import { useDashboardResumeSelection } from '../_components/dashboard-resume-selection-provider';
 
-import { AnalyzeHeader } from './_components/AnalyzeHeader';
-import { AnalyzeSidebar } from './_components/AnalyzeSidebar';
-import { ChecksGrid } from './_components/ChecksGrid';
-import { FutureResultCard } from './_components/FutureResultCard';
-import { SelectedResumeCard } from './_components/SelectedResumeCard';
+import { AnalyzeHeader } from './_components/analyze-header';
+import { AnalyzeSidebar } from './_components/analyze-sidebar';
+import { ChecksGrid } from './_components/checks-grid';
+import { FutureResultCard } from './_components/future-result-card';
+import { SelectedResumeCard } from './_components/selected-resume-card';
 
-import { useAuth } from '@/src/shared/hooks/useAuth';
-import { useAnalyzeResumeMutation } from '@/src/shared/hooks/useAnalyzeResumeMutation';
-import { useResumeAnalysisQuery } from '@/src/shared/hooks/useResumeAnalysisQuery';
-import { useResumesQuery } from '@/src/shared/hooks/useResumesQuery';
+import { useAuth } from '@/src/shared/hooks/use-auth';
+import { useAnalyzeResumeMutation } from '@/src/shared/hooks/use-analyze-resume-mutation';
+import { useResumeAnalysisQuery } from '@/src/shared/hooks/use-resume-analysis-query';
+import { useResumesQuery } from '@/src/shared/hooks/use-resumes-query';
 
 const MIN_ANALYSIS_LOADING_MS = 30_000;
 

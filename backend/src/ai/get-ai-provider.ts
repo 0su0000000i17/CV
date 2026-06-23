@@ -1,5 +1,5 @@
 import { AiConfigurationError } from "./errors.js";
-import { createYandexAiStudioProvider } from "./providers/yandexAiStudioProvider.js";
+import { createYandexAiStudioProvider } from "./providers/yandex-ai-studio-provider.js";
 import type { AiProvider } from "./types.js";
 
 let providerInstance: AiProvider | null = null;

@@ -1,6 +1,6 @@
 import { Pencil } from 'lucide-react';
 
-import type { ResumeAdaptationResult } from '@/src/shared/api/resumeAdaptation';
+import type { ResumeAdaptationResult } from '@/src/shared/api/resume-adaptation';
 
 import { EditorSection } from './editor-section';
 import { TextArea } from './form-controls';
