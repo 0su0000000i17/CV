@@ -107,6 +107,11 @@ export function AdaptationResultCard({
 
       <EditorSidebar
         draft={editor.draft}
+        contacts={editor.contacts}
+        photoUrl={editor.photoUrl}
+        sourceResume={sourceResume}
+        accessToken={accessToken}
+        vacancyText={vacancyText}
         copyStatus={editor.copyStatus}
         onCopyResumeText={editor.copyResumeText}
         onResetAdaptation={onResetAdaptation}

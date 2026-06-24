@@ -8,11 +8,19 @@ import {
 } from 'lucide-react';
 
 import type { ResumeAdaptationResult } from '@/src/shared/api/resume-adaptation';
+import type { UploadedResume } from '@/src/shared/api/resumes';
 
+import { SaveAdaptedResumeButton } from './save-adapted-resume-button';
 import { SideBlock } from './sidebar-list-block';
+import type { ContactDraft } from './types';
 
 type Props = {
   draft: ResumeAdaptationResult;
+  contacts: ContactDraft;
+  photoUrl: string | null;
+  sourceResume?: UploadedResume;
+  accessToken?: string | null;
+  vacancyText: string;
   copyStatus: 'idle' | 'copied' | 'error';
   onCopyResumeText: () => void;
   onResetAdaptation: () => void;
@@ -20,6 +28,11 @@ type Props = {
 
 export function EditorSidebar({
   draft,
+  contacts,
+  photoUrl,
+  sourceResume,
+  accessToken,
+  vacancyText,
   copyStatus,
   onCopyResumeText,
   onResetAdaptation,
@@ -38,16 +51,25 @@ export function EditorSidebar({
             </h2>
 
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-              Проверьте черновик и скопируйте текст для отклика.
+              Проверьте черновик и сохраните готовый PDF.
             </p>
           </div>
         </div>
 
         <div className="space-y-2">
+          <SaveAdaptedResumeButton
+            draft={draft}
+            contacts={contacts}
+            photoUrl={photoUrl}
+            sourceResume={sourceResume}
+            accessToken={accessToken}
+            vacancyText={vacancyText}
+          />
+
           <button
             type="button"
             onClick={onCopyResumeText}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm text-foreground transition-colors hover:bg-muted"
+            className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm text-foreground transition-colors hover:bg-muted"
           >
             <Copy className="h-4 w-4" />
             {copyStatus === 'copied'
@@ -60,7 +82,7 @@ export function EditorSidebar({
           <button
             type="button"
             onClick={onResetAdaptation}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-orange-500/20 bg-orange-500/10 px-4 py-3 text-sm text-orange-300 transition-colors hover:bg-orange-500/15"
+            className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-orange-500/20 bg-orange-500/10 px-4 py-3 text-sm text-orange-300 transition-colors hover:bg-orange-500/15"
           >
             <RotateCcw className="h-4 w-4" />
             Сбросить адаптацию
@@ -68,35 +90,9 @@ export function EditorSidebar({
         </div>
       </div>
 
-      <div className="rounded-2xl border border-border bg-card/60 p-4">
-        <h3 className="font-medium text-foreground">Совет</h3>
-
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          Перед откликом проверьте опыт, навыки и summary, чтобы не появилось
-          лишних фактов.
-        </p>
-      </div>
-
-      <SideBlock
-        title="Что изменено"
-        icon={Sparkles}
-        items={draft.changes}
-        tone="green"
-      />
-
-      <SideBlock
-        title="Предупреждения"
-        icon={TriangleAlert}
-        items={draft.warnings}
-        tone="orange"
-      />
-
-      <SideBlock
-        title="Что не было добавлено"
-        icon={AlertCircle}
-        items={draft.forbiddenClaims}
-        tone="orange"
-      />
+      <SideBlock title="Что изменено" icon={Sparkles} items={draft.changes} tone="green" />
+      <SideBlock title="Предупреждения" icon={TriangleAlert} items={draft.warnings} tone="orange" />
+      <SideBlock title="Что не было добавлено" icon={AlertCircle} items={draft.forbiddenClaims} tone="orange" />
     </aside>
   );
 }

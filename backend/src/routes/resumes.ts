@@ -5,6 +5,7 @@ import {
   getLatestResumeAnalysis,
 } from "../controllers/resume-analysis.js";
 import { adaptResumeToVacancyController } from "../controllers/resume-adaptation.js";
+import { exportClassicResumeController } from "../controllers/resume-classic-export.js";
 import { extractResumeTextPreview } from "../controllers/resume-extraction.js";
 import { checkResumeVacancyFitController } from "../controllers/resume-vacancy-fit.js";
 import {
@@ -29,6 +30,7 @@ router.post("/:resumeId/extract-text", extractResumeTextPreview);
 router.post("/:resumeId/extract-profile", extractResumeProfileController);
 router.post("/:resumeId/vacancy-fit", checkResumeVacancyFitController);
 router.post("/:resumeId/adapt", adaptResumeToVacancyController);
+router.post("/:resumeId/export/classic", exportClassicResumeController);
 router.get("/:resumeId/download-url", getResumeDownloadUrl);
 router.get("/:resumeId", getResumeById);
 
