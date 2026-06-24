@@ -43,19 +43,9 @@ export const resumeRedFlagTypeSchema = z.enum([
 
 export const redFlagSeveritySchema = z.enum(["minor", "major", "critical"]);
 
-const normalizedRedFlagTypeSchema = z.preprocess(
-  normalizeRedFlagType,
-  resumeRedFlagTypeSchema
-);
-
-const normalizedRedFlagSeveritySchema = z.preprocess(
-  normalizeRedFlagSeverity,
-  redFlagSeveritySchema
-);
-
 export const resumeRedFlagSchema = z.object({
-  type: normalizedRedFlagTypeSchema,
-  severity: normalizedRedFlagSeveritySchema,
+  type: z.preprocess(normalizeRedFlagType, resumeRedFlagTypeSchema),
+  severity: z.preprocess(normalizeRedFlagSeverity, redFlagSeveritySchema),
   explanation: z.string().trim().min(10).max(500),
 });
 

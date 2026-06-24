@@ -14,29 +14,26 @@ const RED_FLAG_TYPES = [
 ] as const;
 
 const TYPE_ALIASES: Record<string, (typeof RED_FLAG_TYPES)[number]> = {
-  role_mismatches: "role_mismatch",
-  role_mismatch_detected: "role_mismatch",
-  level_inflation: "inflated_level",
-  inflated_seniority: "inflated_level",
-  weak_evidences: "weak_evidence",
-  weak_proof: "weak_evidence",
-  generic: "generic_responsibilities",
-  generic_responsibility: "generic_responsibilities",
-  keyword_stuff: "keyword_stuffing",
-  poor_ats_compatibility: "poor_ats",
+  ats: "poor_ats",
   ats_issue: "poor_ats",
   ats_issues: "poor_ats",
-  ats: "poor_ats",
+  poor_ats_compatibility: "poor_ats",
+  weak_proof: "weak_evidence",
+  weak_evidences: "weak_evidence",
+  no_metrics: "missing_metrics",
+  missing_metric: "missing_metrics",
+  weak_metrics: "missing_metrics",
+  generic: "generic_responsibilities",
+  generic_responsibility: "generic_responsibilities",
   unclear_focus: "unclear_positioning",
   unclear_role: "unclear_positioning",
-  missing_metric: "missing_metrics",
-  no_metrics: "missing_metrics",
-  weak_metrics: "missing_metrics",
-  scanability: "low_scanability",
   low_readability: "low_scanability",
+  scanability: "low_scanability",
   too_long: "overlong_resume",
   long_resume: "overlong_resume",
   inconsistent_title: "inconsistent_titles",
+  level_inflation: "inflated_level",
+  inflated_seniority: "inflated_level",
 };
 
 function normalizeKey(value: string) {
@@ -44,7 +41,6 @@ function normalizeKey(value: string) {
     .trim()
     .toLowerCase()
     .replace(/["'`]/g, "")
-    .replace(/([a-z])([A-Z])/g, "$1_$2")
     .replace(/[^a-z0-9а-яё]+/gi, "_")
     .replace(/^_+|_+$/g, "");
 }
@@ -70,11 +66,11 @@ export function normalizeRedFlagSeverity(value: unknown) {
 
   const key = normalizeKey(value);
 
-  if (key === "minor" || key === "low" || key === "small") {
+  if (["minor", "low", "small"].includes(key)) {
     return "minor";
   }
 
-  if (key === "critical" || key === "high" || key === "severe") {
+  if (["critical", "high", "severe"].includes(key)) {
     return "critical";
   }
 

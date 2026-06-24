@@ -8,6 +8,7 @@ import {
   ADAPT_RESUME_MAX_CHARS,
   ADAPT_VACANCY_MAX_CHARS,
 } from "./adaptation-generation/config.js";
+import { applyAdaptationFitGuard } from "./adaptation-generation/fit-guard.js";
 import { parseJsonFromModelResponse } from "./adaptation-generation/json-response.js";
 import { normalizeAdaptationResult } from "./adaptation-generation/normalize-adaptation-result.js";
 import { createUserPrompt, SYSTEM_PROMPT } from "./adaptation-generation/prompts.js";
@@ -65,9 +66,11 @@ export async function generateResumeAdaptation(
   });
 
   const parsedJson = parseJsonFromModelResponse(generationResult.text);
+  const normalized = normalizeAdaptationResult(parsedJson);
+  const guarded = applyAdaptationFitGuard(normalized, params.fit);
 
   return {
-    adaptation: normalizeAdaptationResult(parsedJson),
+    adaptation: guarded,
     generation: {
       provider: generationResult.provider,
       model: generationResult.model,

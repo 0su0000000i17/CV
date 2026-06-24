@@ -1,3 +1,4 @@
+import { normalizeResumeAnalysisPresentation } from "../schemas/resume-analysis-presentation.js";
 import type {
   AiResumeAnalysis,
   RedFlagSeverity,
@@ -125,10 +126,6 @@ function calculateSections(analysis: AiResumeAnalysis): ResumeAnalysis["sections
 
   if (hasFlag(analysis, "low_scanability") || hasFlag(analysis, "overlong_resume")) {
     scanability = Math.min(scanability, 45);
-    structurePenaltyToAts();
-  }
-
-  function structurePenaltyToAts() {
     ats = Math.min(ats, 70);
   }
 
@@ -224,22 +221,24 @@ export function scoreResumeAnalysis(
   const baseScore = calculateWeightedScore(sections);
   const cappedScore = applyCaps(aiAnalysis, baseScore);
 
+  const analysis = normalizeResumeAnalysisPresentation({
+    score: cappedScore.score,
+    summary: aiAnalysis.summary,
+    targetRole: aiAnalysis.targetRole,
+    targetLevel: aiAnalysis.targetLevel,
+    recentRoles: aiAnalysis.recentRoles,
+    strengths: aiAnalysis.strengths,
+    weaknesses: aiAnalysis.weaknesses,
+    atsIssues: aiAnalysis.atsIssues,
+    recommendations: aiAnalysis.recommendations,
+    missingKeywords: aiAnalysis.missingKeywords,
+    suggestedHeadline: aiAnalysis.suggestedHeadline,
+    redFlags: aiAnalysis.redFlags,
+    sections,
+  });
+
   return {
-    analysis: {
-      score: cappedScore.score,
-      summary: aiAnalysis.summary,
-      targetRole: aiAnalysis.targetRole,
-      targetLevel: aiAnalysis.targetLevel,
-      recentRoles: aiAnalysis.recentRoles,
-      strengths: aiAnalysis.strengths,
-      weaknesses: aiAnalysis.weaknesses,
-      atsIssues: aiAnalysis.atsIssues,
-      recommendations: aiAnalysis.recommendations,
-      missingKeywords: aiAnalysis.missingKeywords,
-      suggestedHeadline: aiAnalysis.suggestedHeadline,
-      redFlags: aiAnalysis.redFlags,
-      sections,
-    },
+    analysis,
     scoring: {
       baseScore,
       finalScore: cappedScore.score,
