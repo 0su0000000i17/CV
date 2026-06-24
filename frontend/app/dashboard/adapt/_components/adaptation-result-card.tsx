@@ -1,6 +1,7 @@
 'use client';
 
 import { ContactsSection } from './adaptation-result/contacts-section';
+import { CoverLetterPanel } from './adaptation-result/cover-letter-panel';
 import { EditorSection } from './adaptation-result/editor-section';
 import { EditorSidebar } from './adaptation-result/editor-sidebar';
 import { EducationSection } from './adaptation-result/education-section';
@@ -15,6 +16,8 @@ export function AdaptationResultCard({
   adaptationResponse,
   profileExtraction,
   sourceResume,
+  accessToken,
+  vacancyText,
   isAdapting,
   isError,
   isProfileLoading,
@@ -92,6 +95,13 @@ export function AdaptationResultCard({
           isEditing={editor.isAboutEditing}
           setIsEditing={editor.setIsAboutEditing}
           updateDraft={editor.updateDraft}
+        />
+
+        <CoverLetterPanel
+          draft={editor.draft}
+          sourceResume={sourceResume}
+          accessToken={accessToken}
+          vacancyText={vacancyText}
         />
       </div>
 

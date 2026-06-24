@@ -10,6 +10,8 @@ type Props = {
   adaptationResponse?: ResumeAdaptationResponse;
   profileExtraction?: ResumeProfileExtractionResponse;
   sourceResume?: UploadedResume;
+  accessToken?: string | null;
+  vacancyText: string;
   isAdapting: boolean;
   isError: boolean;
   isProfileLoading: boolean;
@@ -21,6 +23,8 @@ export function GeneratedResumeWorkspace({
   adaptationResponse,
   profileExtraction,
   sourceResume,
+  accessToken,
+  vacancyText,
   isAdapting,
   isError,
   isProfileLoading,
@@ -32,6 +36,8 @@ export function GeneratedResumeWorkspace({
       adaptationResponse={adaptationResponse}
       profileExtraction={profileExtraction}
       sourceResume={sourceResume}
+      accessToken={accessToken}
+      vacancyText={vacancyText}
       isAdapting={isAdapting}
       isError={isError}
       isProfileLoading={isProfileLoading}

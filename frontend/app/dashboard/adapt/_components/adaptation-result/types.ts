@@ -13,6 +13,8 @@ export type AdaptationResultCardProps = {
   adaptationResponse?: ResumeAdaptationResponse;
   profileExtraction?: ResumeProfileExtractionResponse;
   sourceResume?: UploadedResume;
+  accessToken?: string | null;
+  vacancyText: string;
   isAdapting: boolean;
   isError: boolean;
   isProfileLoading: boolean;

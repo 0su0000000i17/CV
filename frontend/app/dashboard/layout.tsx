@@ -8,6 +8,7 @@ import {
   FileText,
   Home,
   Loader2,
+  Mail,
   Settings,
   Sparkles,
 } from 'lucide-react';
@@ -32,6 +33,11 @@ const navItems = [
     title: 'Адаптация',
     href: '/dashboard/adapt',
     icon: Sparkles,
+  },
+  {
+    title: 'Сопроводительное',
+    href: '/dashboard/cover-letter',
+    icon: Mail,
   },
   {
     title: 'Оценка резюме',

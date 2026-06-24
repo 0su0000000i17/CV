@@ -120,6 +120,8 @@ export default function AdaptPage() {
           adaptationResponse={adaptationResponse}
           profileExtraction={currentProfileExtraction}
           sourceResume={selectedResume}
+          accessToken={accessToken}
+          vacancyText={vacancyState.preparedVacancyText || vacancyState.vacancyInput}
           isAdapting={isAdapting}
           isError={resumeAdaptationMutation.isError}
           isProfileLoading={isProfileLoading}
