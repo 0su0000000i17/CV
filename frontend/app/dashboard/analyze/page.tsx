@@ -15,8 +15,18 @@ import { useAuth } from '@/src/shared/hooks/use-auth';
 import { useAnalyzeResumeMutation } from '@/src/shared/hooks/use-analyze-resume-mutation';
 import { useResumeAnalysisQuery } from '@/src/shared/hooks/use-resume-analysis-query';
 import { useResumesQuery } from '@/src/shared/hooks/use-resumes-query';
+import type { UploadedResume } from '@/src/shared/api/resumes';
 
-const MIN_ANALYSIS_LOADING_MS = 30_000;
+const FIRST_ANALYSIS_MIN_LOADING_MS = 0;
+const REPEAT_ANALYSIS_MIN_LOADING_MS = 25_000;
+
+function isResumeAnalyzed(resume?: UploadedResume) {
+  return Boolean(
+    resume &&
+      resume.analysis_status === 'completed' &&
+      resume.last_score !== null
+  );
+}
 
 function createResumeRoute(
   path: '/dashboard/analyze' | '/dashboard/adapt',
@@ -65,6 +75,7 @@ export default function AnalyzePage() {
   const autoRunStartedRef = useRef<string | null>(null);
   const syntheticAnalyzeStartedAtRef = useRef<number | null>(null);
   const syntheticAnalyzeTimeoutRef = useRef<number | null>(null);
+  const activeAnalyzeMinLoadingMsRef = useRef(FIRST_ANALYSIS_MIN_LOADING_MS);
 
   const [isSyntheticAnalyzing, setIsSyntheticAnalyzing] = useState(false);
 
@@ -104,10 +115,15 @@ export default function AnalyzePage() {
 
   const mutationAnalysis = analyzeResumeMutation.data?.analysis;
   const savedAnalysis = latestAnalysisQuery.data?.analysis ?? undefined;
-  const analysis = mutationAnalysis ?? savedAnalysis;
 
   const isAnalyzeUiLoading =
     analyzeResumeMutation.isPending || isSyntheticAnalyzing;
+
+  const latestAvailableAnalysis = mutationAnalysis ?? savedAnalysis;
+  const analysis =
+    isAnalyzeUiLoading || analyzeResumeMutation.isError
+      ? undefined
+      : latestAvailableAnalysis;
 
   const shouldShowResultCard =
     Boolean(analysis) || isAnalyzeUiLoading || analyzeResumeMutation.isError;
@@ -140,12 +156,13 @@ export default function AnalyzePage() {
     );
   }, [autoRun, resumeId, router, searchParamsString, selectedResume?.id]);
 
-  function startSyntheticAnalyzeLoading() {
+  function startSyntheticAnalyzeLoading(minLoadingMs: number) {
     if (syntheticAnalyzeTimeoutRef.current !== null) {
       window.clearTimeout(syntheticAnalyzeTimeoutRef.current);
       syntheticAnalyzeTimeoutRef.current = null;
     }
 
+    activeAnalyzeMinLoadingMsRef.current = minLoadingMs;
     syntheticAnalyzeStartedAtRef.current = Date.now();
     setIsSyntheticAnalyzing(true);
   }
@@ -159,15 +176,27 @@ export default function AnalyzePage() {
     }
 
     const elapsedMs = Date.now() - startedAt;
-    const remainingMs = Math.max(0, MIN_ANALYSIS_LOADING_MS - elapsedMs);
+    const remainingMs = Math.max(
+      0,
+      activeAnalyzeMinLoadingMsRef.current - elapsedMs
+    );
 
     if (syntheticAnalyzeTimeoutRef.current !== null) {
       window.clearTimeout(syntheticAnalyzeTimeoutRef.current);
+      syntheticAnalyzeTimeoutRef.current = null;
+    }
+
+    if (remainingMs <= 0) {
+      syntheticAnalyzeStartedAtRef.current = null;
+      activeAnalyzeMinLoadingMsRef.current = FIRST_ANALYSIS_MIN_LOADING_MS;
+      setIsSyntheticAnalyzing(false);
+      return;
     }
 
     syntheticAnalyzeTimeoutRef.current = window.setTimeout(() => {
       syntheticAnalyzeStartedAtRef.current = null;
       syntheticAnalyzeTimeoutRef.current = null;
+      activeAnalyzeMinLoadingMsRef.current = FIRST_ANALYSIS_MIN_LOADING_MS;
       setIsSyntheticAnalyzing(false);
     }, remainingMs);
   }
@@ -179,7 +208,14 @@ export default function AnalyzePage() {
     }
 
     syntheticAnalyzeStartedAtRef.current = null;
+    activeAnalyzeMinLoadingMsRef.current = FIRST_ANALYSIS_MIN_LOADING_MS;
     setIsSyntheticAnalyzing(false);
+  }
+
+  function getAnalyzeMinLoadingMs(resume?: UploadedResume) {
+    return isResumeAnalyzed(resume)
+      ? REPEAT_ANALYSIS_MIN_LOADING_MS
+      : FIRST_ANALYSIS_MIN_LOADING_MS;
   }
 
   useEffect(() => {
@@ -200,7 +236,7 @@ export default function AnalyzePage() {
     }
 
     autoRunStartedRef.current = autoRunKey;
-    startSyntheticAnalyzeLoading();
+    startSyntheticAnalyzeLoading(getAnalyzeMinLoadingMs(selectedResume));
 
     analyzeResumeMutation.mutate(
       {
@@ -224,6 +260,7 @@ export default function AnalyzePage() {
     isSyntheticAnalyzing,
     router,
     searchParamsString,
+    selectedResume,
     selectedResume?.id,
   ]);
 
@@ -247,7 +284,8 @@ export default function AnalyzePage() {
       return;
     }
 
-    startSyntheticAnalyzeLoading();
+    analyzeResumeMutation.reset();
+    startSyntheticAnalyzeLoading(getAnalyzeMinLoadingMs(selectedResume));
 
     analyzeResumeMutation.mutate(
       {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { ResumeAdaptationResult } from '@/src/shared/api/resume-adaptation';
 
@@ -30,6 +30,9 @@ export function useEditorState({
   AdaptationResultCardProps,
   'adaptationResponse' | 'profileExtraction' | 'sourceResume'
 >) {
+  const appliedAdaptationRef = useRef<ResumeAdaptationResult | null>(null);
+  const copyStatusTimeoutRef = useRef<number | null>(null);
+
   const [draft, setDraft] = useState<ResumeAdaptationResult | null>(null);
   const [contacts, setContacts] = useState<ContactDraft>(emptyContacts);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
@@ -48,23 +51,43 @@ export function useEditorState({
   );
 
   useEffect(() => {
-    if (!adaptationResponse?.adaptation) {
+    return () => {
+      if (copyStatusTimeoutRef.current !== null) {
+        window.clearTimeout(copyStatusTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const nextAdaptation = adaptationResponse?.adaptation ?? null;
+
+    if (!nextAdaptation) {
+      appliedAdaptationRef.current = null;
       setDraft(null);
       return;
     }
 
-    const sourceData = extractSourceResumeData(sourceResume, profileExtraction);
+    if (appliedAdaptationRef.current === nextAdaptation) {
+      return;
+    }
 
-    setDraft(cloneAdaptation(adaptationResponse.adaptation));
-    setContacts(sourceData.contacts);
-    setPhotoUrl(sourceData.photoUrl);
+    appliedAdaptationRef.current = nextAdaptation;
+    setDraft(cloneAdaptation(nextAdaptation));
     setEditingExperienceIndex(null);
     setExpandedExperienceIndexes([]);
     setIsContactsEditing(false);
     setIsSkillsEditing(false);
     setIsEducationEditing(false);
     setIsAboutEditing(false);
-  }, [adaptationResponse, profileExtraction, sourceResume]);
+    setCopyStatus('idle');
+  }, [adaptationResponse?.adaptation]);
+
+  useEffect(() => {
+    const sourceData = extractSourceResumeData(sourceResume, profileExtraction);
+
+    setContacts(sourceData.contacts);
+    setPhotoUrl(sourceData.photoUrl);
+  }, [profileExtraction, sourceResume?.id]);
 
   const plainResumeText = useMemo(() => {
     return draft ? createPlainResumeText(draft, contacts) : '';
@@ -92,14 +115,22 @@ export function useEditorState({
   }
 
   async function copyResumeText() {
+    if (copyStatusTimeoutRef.current !== null) {
+      window.clearTimeout(copyStatusTimeoutRef.current);
+      copyStatusTimeoutRef.current = null;
+    }
+
     try {
       await navigator.clipboard.writeText(plainResumeText);
       setCopyStatus('copied');
     } catch {
       setCopyStatus('error');
-    } finally {
-      window.setTimeout(() => setCopyStatus('idle'), 1800);
     }
+
+    copyStatusTimeoutRef.current = window.setTimeout(() => {
+      setCopyStatus('idle');
+      copyStatusTimeoutRef.current = null;
+    }, 1800);
   }
 
   return {

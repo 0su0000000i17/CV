@@ -26,21 +26,38 @@ type SectionRow = {
   description: string;
 };
 
-function getSectionRows(analysis?: ResumeAnalysisResult): SectionRow[] {
+function getStatusLabel(params: {
+  hasAnalysis: boolean;
+  isAnalyzing: boolean;
+}) {
+  if (params.isAnalyzing) {
+    return 'Идёт проверка';
+  }
+
+  return params.hasAnalysis ? 'Проверено' : 'Ожидает проверки';
+}
+
+function getSectionRows(
+  analysis: ResumeAnalysisResult | undefined,
+  isAnalyzing: boolean
+): SectionRow[] {
+  const hasAnalysis = Boolean(analysis);
+  const status = getStatusLabel({ hasAnalysis, isAnalyzing });
+
   return [
     {
       key: 'positioning',
       title: 'Позиционирование',
       score: analysis?.sections.positioning ?? 0,
-      status: analysis ? 'Проверено' : 'Ожидает проверки',
+      status,
       description:
-        'Насколько понятно резюме продаёт кандидата под конкретную роль: кто он, на какую позицию претендует и не размыт ли фокус.',
+        'Насколько понятно резюме показывает кандидата под конкретную роль: кто он, на какую позицию претендует и не размыт ли фокус.',
     },
     {
       key: 'roleFit',
       title: 'Соответствие роли',
       score: analysis?.sections.roleFit ?? 0,
-      status: analysis ? 'Проверено' : 'Ожидает проверки',
+      status,
       description:
         'Показывает, подтверждают ли последние должности, задачи и опыт заявленную роль и уровень.',
     },
@@ -48,7 +65,7 @@ function getSectionRows(analysis?: ResumeAnalysisResult): SectionRow[] {
       key: 'experience',
       title: 'Релевантный опыт',
       score: analysis?.sections.experience ?? 0,
-      status: analysis ? 'Проверено' : 'Ожидает проверки',
+      status,
       description:
         'Оценивает, насколько опыт кандидата связан с целевой позицией: production-задачи, подходящий стек, карьерная линия и глубина опыта.',
     },
@@ -56,7 +73,7 @@ function getSectionRows(analysis?: ResumeAnalysisResult): SectionRow[] {
       key: 'evidence',
       title: 'Доказательность',
       score: analysis?.sections.evidence ?? 0,
-      status: analysis ? 'Проверено' : 'Ожидает проверки',
+      status,
       description:
         'Показывает, насколько резюме доказывает ценность кандидата: результаты, метрики, масштаб задач и влияние на продукт.',
     },
@@ -64,7 +81,7 @@ function getSectionRows(analysis?: ResumeAnalysisResult): SectionRow[] {
       key: 'scanability',
       title: 'Быстрый HR-скан',
       score: analysis?.sections.scanability ?? 0,
-      status: analysis ? 'Проверено' : 'Ожидает проверки',
+      status,
       description:
         'Показывает, насколько быстро рекрутер может понять роль, уровень, последний релевантный опыт и ключевую ценность кандидата.',
     },
@@ -72,7 +89,7 @@ function getSectionRows(analysis?: ResumeAnalysisResult): SectionRow[] {
       key: 'ats',
       title: 'ATS',
       score: analysis?.sections.ats ?? 0,
-      status: analysis ? 'Проверено' : 'Ожидает проверки',
+      status,
       description:
         'Оценивает пригодность резюме для автоматического отбора: стандартные секции, понятные должности, ключевые слова и парсинг.',
     },
@@ -80,7 +97,7 @@ function getSectionRows(analysis?: ResumeAnalysisResult): SectionRow[] {
       key: 'credibility',
       title: 'Риск-факторы',
       score: analysis?.sections.credibility ?? 0,
-      status: analysis ? 'Проверено' : 'Ожидает проверки',
+      status,
       description:
         'Показывает, нет ли завышенного уровня, несостыковки должностей, перегруза навыками или слабой доказательности.',
     },
@@ -101,7 +118,7 @@ function getScoreBarClass(score: number) {
 
 function getScoreTextClass(score?: number) {
   if (typeof score !== 'number') {
-    return 'text-foreground';
+    return 'text-muted-foreground';
   }
 
   if (score >= 80) {
@@ -123,8 +140,10 @@ export function AnalyzeSidebar({
 }: Props) {
   const [openedMetricKey, setOpenedMetricKey] = useState<string | null>(null);
 
-  const scoreLabel = analysis ? analysis.score : '—';
-  const sectionRows = getSectionRows(analysis);
+  const displayAnalysis = isAnalyzing ? undefined : analysis;
+  const hasAnalysis = Boolean(displayAnalysis);
+  const scoreLabel = displayAnalysis ? displayAnalysis.score : '—';
+  const sectionRows = getSectionRows(displayAnalysis, isAnalyzing);
 
   function toggleMetric(metricKey: string) {
     setOpenedMetricKey((currentKey) =>
@@ -140,7 +159,9 @@ export function AnalyzeSidebar({
         <div className="mt-5 flex items-end gap-2">
           <span
             className={`text-6xl font-semibold ${
-              analysis ? getScoreTextClass(analysis.score) : 'text-foreground'
+              displayAnalysis
+                ? getScoreTextClass(displayAnalysis.score)
+                : 'text-muted-foreground'
             }`}
           >
             {scoreLabel}
@@ -150,10 +171,10 @@ export function AnalyzeSidebar({
         </div>
 
         <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-          {analysis
-            ? 'Оценка рассчитана по роли, опыту, доказательности, быстрому HR-скану, ATS и риск-факторам.'
-            : isAnalyzing
-              ? 'Идёт оценка резюме. Результат появится автоматически.'
+          {isAnalyzing
+            ? 'Итоговая оценка появится после завершения анализа.'
+            : displayAnalysis
+              ? 'Оценка рассчитана по роли, опыту, доказательности, быстрому HR-скану, ATS и риск-факторам.'
               : 'Оценка появится после запуска анализа.'}
         </p>
 
@@ -168,7 +189,7 @@ export function AnalyzeSidebar({
               <Sparkles className="h-4 w-4 animate-pulse" />
               Оценка идёт...
             </>
-          ) : analysis ? (
+          ) : displayAnalysis ? (
             <>
               Повторить оценку
               <RotateCw className="h-4 w-4" />
@@ -188,6 +209,7 @@ export function AnalyzeSidebar({
         <div className="mt-5 space-y-2">
           {sectionRows.map((item) => {
             const isOpened = openedMetricKey === item.key;
+            const scoreWidth = hasAnalysis ? item.score : 0;
 
             return (
               <button
@@ -211,22 +233,24 @@ export function AnalyzeSidebar({
                   </div>
 
                   <span
-                    className={`shrink-0 ${
-                      analysis
+                    className={
+                      hasAnalysis
                         ? getScoreTextClass(item.score)
                         : 'text-muted-foreground'
-                    }`}
+                    }
                   >
-                    {analysis ? `${item.score}/100` : '—'}
+                    {hasAnalysis ? `${item.score}/100` : '—'}
                   </span>
                 </div>
 
                 <div className="h-1 rounded-full bg-muted">
                   <div
                     className={`h-1 rounded-full transition-all duration-500 ${
-                      analysis ? getScoreBarClass(item.score) : 'bg-foreground'
+                      hasAnalysis
+                        ? getScoreBarClass(item.score)
+                        : 'bg-muted-foreground/20'
                     }`}
-                    style={{ width: `${item.score}%` }}
+                    style={{ width: `${scoreWidth}%` }}
                   />
                 </div>
 

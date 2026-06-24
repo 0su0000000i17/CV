@@ -1,9 +1,9 @@
 import type { ComponentProps } from 'react';
 
 import { AdaptSidebar } from './adapt-sidebar';
+import { CollapsibleVacancyForm } from './collapsible-vacancy-form';
 import { ResumeVacancyFitCard } from './resume-vacancy-fit-card';
 import { SelectedResumeCard } from './selected-resume-card';
-import { VacancyForm } from './vacancy-form';
 
 import type { VacancyInputKind } from '../_lib/adapt-page-utils';
 import type { PageExtractionStatus } from '@/src/shared/api/vacancies';
@@ -57,6 +57,9 @@ export function AdaptSetupWorkspace({
   onPrepareVacancy,
   onCreateAdaptation,
 }: Props) {
+  const shouldCollapseVacancyForm =
+    Boolean(fitResponse) && !isFitError && !isPreparing && !isCheckingFit;
+
   return (
     <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
       <div className="space-y-6">
@@ -68,7 +71,8 @@ export function AdaptSetupWorkspace({
           onSelectResume={onSelectResume}
         />
 
-        <VacancyForm
+        <CollapsibleVacancyForm
+          shouldCollapseAfterValidation={shouldCollapseVacancyForm}
           vacancyInput={vacancyInput}
           vacancyInputKind={vacancyInputKind}
           preparedVacancyTextLength={preparedVacancyTextLength}
