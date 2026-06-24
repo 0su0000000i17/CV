@@ -4,13 +4,18 @@ import type {
   ResumeAdaptationResponse,
   ResumeAdaptationResult,
 } from '@/src/shared/api/resume-adaptation';
-import type { UploadedResume } from '@/src/shared/api/resumes';
+import type {
+  ResumeProfileExtractionResponse,
+  UploadedResume,
+} from '@/src/shared/api/resumes';
 
 export type AdaptationResultCardProps = {
   adaptationResponse?: ResumeAdaptationResponse;
+  profileExtraction?: ResumeProfileExtractionResponse;
   sourceResume?: UploadedResume;
   isAdapting: boolean;
   isError: boolean;
+  isProfileLoading: boolean;
   errorMessage?: string;
   onResetAdaptation: () => void;
 };

@@ -15,6 +15,7 @@ import {
   uploadResume,
 } from "../controllers/resumes.js";
 import { handleResumeUpload } from "../middleware/resume-upload.js";
+import { extractResumeProfileController } from "../resume-profile/resume-profile.js";
 
 const router = Router();
 
@@ -25,6 +26,7 @@ router.delete("/:resumeId", deleteResume);
 router.post("/:resumeId/analyze", analyzeResumePreview);
 router.get("/:resumeId/analysis", getLatestResumeAnalysis);
 router.post("/:resumeId/extract-text", extractResumeTextPreview);
+router.post("/:resumeId/extract-profile", extractResumeProfileController);
 router.post("/:resumeId/vacancy-fit", checkResumeVacancyFitController);
 router.post("/:resumeId/adapt", adaptResumeToVacancyController);
 router.get("/:resumeId/download-url", getResumeDownloadUrl);

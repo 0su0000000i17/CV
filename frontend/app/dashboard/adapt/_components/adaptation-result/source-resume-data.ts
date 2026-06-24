@@ -1,4 +1,7 @@
-import type { UploadedResume } from '@/src/shared/api/resumes';
+import type {
+  ResumeProfileExtractionResponse,
+  UploadedResume,
+} from '@/src/shared/api/resumes';
 
 import type { ContactDraft } from './types';
 
@@ -7,7 +10,55 @@ type SourceResumeData = {
   photoUrl: string | null;
 };
 
+const emptyContacts: ContactDraft = {
+  fullName: '',
+  gender: '',
+  age: '',
+  birthDate: '',
+  phone: '',
+  email: '',
+  city: '',
+  citizenship: '',
+  workPermit: '',
+  relocation: '',
+  businessTrips: '',
+};
+
 export function extractSourceResumeData(
+  resume?: UploadedResume,
+  profileExtraction?: ResumeProfileExtractionResponse
+): SourceResumeData {
+  if (profileExtraction?.profile) {
+    return {
+      contacts: profileToContacts(profileExtraction),
+      photoUrl: profileExtraction.photo?.dataUrl || null,
+    };
+  }
+
+  return extractSourceResumeDataFromText(resume);
+}
+
+function profileToContacts(
+  profileExtraction: ResumeProfileExtractionResponse
+): ContactDraft {
+  const profile = profileExtraction.profile;
+
+  return {
+    fullName: toStringValue(profile.fullName),
+    gender: toStringValue(profile.gender),
+    age: toStringValue(profile.age),
+    birthDate: toStringValue(profile.birthDate),
+    phone: toStringValue(profile.phone),
+    email: toStringValue(profile.email),
+    city: toStringValue(profile.city),
+    citizenship: toStringValue(profile.citizenship),
+    workPermit: toStringValue(profile.workPermit),
+    relocation: toStringValue(profile.relocation),
+    businessTrips: toStringValue(profile.businessTrips),
+  };
+}
+
+function extractSourceResumeDataFromText(
   resume?: UploadedResume
 ): SourceResumeData {
   const text = normalizeResumeText(resume?.extracted_text || '');
@@ -16,6 +67,7 @@ export function extractSourceResumeData(
 
   return {
     contacts: {
+      ...emptyContacts,
       fullName: extractFullName(text),
       gender: profile.gender,
       age: profile.age,
@@ -30,6 +82,10 @@ export function extractSourceResumeData(
     },
     photoUrl: null,
   };
+}
+
+function toStringValue(value: string | null | undefined) {
+  return value?.trim() || '';
 }
 
 function normalizeResumeText(value: string) {
@@ -72,10 +128,18 @@ function extractEmail(text: string) {
 }
 
 function extractPhone(text: string) {
+  const lines = getCleanLines(text);
+  const phoneLine = lines.find((line) => {
+    const digits = line.replace(/\D/g, '');
+
+    return digits.length >= 10 && digits.length <= 15;
+  });
+
   return (
-    text.match(/(?:\+7|8)[\s(]*\d{3}[\s)]*\d{3}[\s-]*\d{2}[\s-]*\d{2}/)
-      ?.[0]
-      ?.trim() || ''
+    phoneLine
+      ?.replace(/—.*$/, '')
+      .replace(/предпочитаемый способ связи/gi, '')
+      .trim() || ''
   );
 }
 

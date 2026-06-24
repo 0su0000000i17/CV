@@ -13,13 +13,19 @@ import { WorkSection } from './adaptation-result/work-section';
 
 export function AdaptationResultCard({
   adaptationResponse,
+  profileExtraction,
   sourceResume,
   isAdapting,
   isError,
+  isProfileLoading,
   errorMessage,
   onResetAdaptation,
 }: AdaptationResultCardProps) {
-  const editor = useEditorState(adaptationResponse, sourceResume);
+  const editor = useEditorState({
+    adaptationResponse,
+    profileExtraction,
+    sourceResume,
+  });
 
   if (isAdapting) {
     return <LoadingState />;
@@ -54,6 +60,7 @@ export function AdaptationResultCard({
           setContacts={editor.setContacts}
           setPhotoUrl={editor.setPhotoUrl}
           isEditing={editor.isContactsEditing}
+          isProfileLoading={isProfileLoading}
           setIsEditing={editor.setIsContactsEditing}
         />
 

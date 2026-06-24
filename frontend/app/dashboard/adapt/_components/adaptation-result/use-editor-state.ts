@@ -22,10 +22,14 @@ const emptyContacts: ContactDraft = {
   businessTrips: '',
 };
 
-export function useEditorState(
-  adaptationResponse: AdaptationResultCardProps['adaptationResponse'],
-  sourceResume: AdaptationResultCardProps['sourceResume']
-) {
+export function useEditorState({
+  adaptationResponse,
+  profileExtraction,
+  sourceResume,
+}: Pick<
+  AdaptationResultCardProps,
+  'adaptationResponse' | 'profileExtraction' | 'sourceResume'
+>) {
   const [draft, setDraft] = useState<ResumeAdaptationResult | null>(null);
   const [contacts, setContacts] = useState<ContactDraft>(emptyContacts);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
@@ -49,7 +53,7 @@ export function useEditorState(
       return;
     }
 
-    const sourceData = extractSourceResumeData(sourceResume);
+    const sourceData = extractSourceResumeData(sourceResume, profileExtraction);
 
     setDraft(cloneAdaptation(adaptationResponse.adaptation));
     setContacts(sourceData.contacts);
@@ -60,7 +64,7 @@ export function useEditorState(
     setIsSkillsEditing(false);
     setIsEducationEditing(false);
     setIsAboutEditing(false);
-  }, [adaptationResponse, sourceResume]);
+  }, [adaptationResponse, profileExtraction, sourceResume]);
 
   const plainResumeText = useMemo(() => {
     return draft ? createPlainResumeText(draft, contacts) : '';

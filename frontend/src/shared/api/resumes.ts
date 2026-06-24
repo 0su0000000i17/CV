@@ -17,6 +17,43 @@ export type UploadedResume = {
   updated_at: string;
 };
 
+export type ResumePersonalProfile = {
+  fullName: string | null;
+  gender: string | null;
+  age: string | null;
+  birthDate: string | null;
+  phone: string | null;
+  email: string | null;
+  preferredContactMethod: string | null;
+  city: string | null;
+  citizenship: string | null;
+  workPermit: string | null;
+  relocation: string | null;
+  businessTrips: string | null;
+  targetTitle: string | null;
+  salary: string | null;
+  specializations: string[];
+  employment: string | null;
+  workFormat: string | null;
+  travelTime: string | null;
+};
+
+export type ResumeProfileExtractionResponse = {
+  status: 'completed';
+  resumeId: string;
+  source: 'hh_pdf' | 'generic_resume';
+  profile: ResumePersonalProfile;
+  photo: {
+    contentType: string;
+    dataUrl: string;
+  } | null;
+  stats: {
+    rawChars: number;
+    normalizedChars: number;
+    photoFound: boolean;
+  };
+};
+
 export type DuplicateResume = {
   id: string;
   title: string | null;
@@ -111,4 +148,22 @@ export async function getResumeById(resumeId: string, accessToken: string) {
   });
 
   return parseApiResponse<ResumeResponse>(response, 'Failed to fetch resume');
+}
+
+export async function extractResumeProfile(
+  resumeId: string,
+  accessToken: string
+) {
+  const response = await fetch(
+    `${getApiUrl()}/api/resumes/${resumeId}/extract-profile`,
+    {
+      method: 'POST',
+      headers: createAuthHeaders(accessToken),
+    }
+  );
+
+  return parseApiResponse<ResumeProfileExtractionResponse>(
+    response,
+    'Failed to extract resume profile'
+  );
 }

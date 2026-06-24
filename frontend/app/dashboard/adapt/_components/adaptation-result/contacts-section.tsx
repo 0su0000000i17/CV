@@ -1,5 +1,6 @@
 import { ContactsDisplay } from './contacts-display';
 import { ContactsEditForm } from './contacts-edit-form';
+import { ContactsSectionSkeleton } from './contacts-section-skeleton';
 import { EditorSection } from './editor-section';
 import type { ContactDraft, ContactDraftSetter } from './types';
 
@@ -9,6 +10,7 @@ type Props = {
   setContacts: ContactDraftSetter;
   setPhotoUrl: (photoUrl: string | null) => void;
   isEditing: boolean;
+  isProfileLoading: boolean;
   setIsEditing: (value: boolean) => void;
 };
 
@@ -18,6 +20,7 @@ export function ContactsSection({
   setContacts,
   setPhotoUrl,
   isEditing,
+  isProfileLoading,
   setIsEditing,
 }: Props) {
   return (
@@ -25,7 +28,9 @@ export function ContactsSection({
       title="Контакты"
       description="Данные подтягиваются из исходного резюме. AI их не меняет."
     >
-      {isEditing ? (
+      {isProfileLoading ? (
+        <ContactsSectionSkeleton />
+      ) : isEditing ? (
         <ContactsEditForm
           contacts={contacts}
           photoUrl={photoUrl}
