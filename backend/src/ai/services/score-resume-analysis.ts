@@ -1,4 +1,3 @@
-import { normalizeResumeAnalysisPresentation } from "../schemas/resume-analysis-presentation.js";
 import type {
   AiResumeAnalysis,
   RedFlagSeverity,
@@ -6,6 +5,7 @@ import type {
   ResumeRedFlag,
   ResumeRedFlagType,
 } from "../schemas/resume-analysis-schema.js";
+import { normalizeResumeAnalysisPresentation } from "./resume-analysis-presentation.js";
 
 type ScoreResumeAnalysisResult = {
   analysis: ResumeAnalysis;
