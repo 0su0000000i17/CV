@@ -59,13 +59,42 @@ async function extractOriginalResumeMarkdown(resume: EditableResumeRecord) {
   });
 }
 
+async function persistEditableResume(params: {
+  resumeId: string;
+  userId: string;
+  markdown: string;
+  resumeJson: unknown;
+}) {
+  const { error } = await supabaseAdmin
+    .from("resumes")
+    .update({
+      extracted_text: params.markdown,
+      editable_resume_json: params.resumeJson,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", params.resumeId)
+    .eq("user_id", params.userId);
+
+  if (error) {
+    console.error("[resumeText] Failed to persist editable resume", error);
+  }
+}
+
 async function createEditableResponse(params: {
   resume: EditableResumeRecord;
+  userId: string;
   markdown: string;
   source: "saved_edit" | "original_file";
   stats: unknown | null;
 }) {
   const extracted = await extractEditableResume(params.markdown);
+
+  await persistEditableResume({
+    resumeId: params.resume.id,
+    userId: params.userId,
+    markdown: params.markdown,
+    resumeJson: extracted.resumeJson,
+  });
 
   return {
     status: "ok",
@@ -108,6 +137,7 @@ export async function getEditableResumeText(req: Request, res: Response) {
       return res.json(
         await createEditableResponse({
           resume,
+          userId: user.id,
           markdown: resume.extracted_text,
           source: "saved_edit",
           stats: null,
@@ -126,6 +156,7 @@ export async function getEditableResumeText(req: Request, res: Response) {
     return res.json(
       await createEditableResponse({
         resume,
+        userId: user.id,
         markdown: extraction.markdown,
         source: "original_file",
         stats: extraction.stats,
