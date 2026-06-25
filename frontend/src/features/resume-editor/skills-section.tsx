@@ -1,11 +1,11 @@
 import { Pencil } from 'lucide-react';
 
 import type { ResumeAdaptationResult } from '@/src/shared/api/resume-adaptation';
-import { DraftUpdater } from './types';
-import { listToText, textToList } from './utils';
-import { TextArea } from './form-controls';
-import { EditorSection } from './editor-section';
 
+import { EditorSection } from './editor-section';
+import { TextArea } from './form-controls';
+import type { DraftUpdater } from './types';
+import { listToText, textToList } from './utils';
 
 type Props = {
   draft: ResumeAdaptationResult;
@@ -54,7 +54,7 @@ export function SkillsSection({
           <button
             type="button"
             onClick={() => setIsEditing(false)}
-            className="rounded-xl border border-border px-4 py-2 text-sm text-foreground transition-colors hover:bg-muted"
+            className="cursor-pointer rounded-xl border border-border px-4 py-2 text-sm text-foreground transition-colors hover:bg-muted"
           >
             Готово
           </button>
@@ -67,7 +67,7 @@ export function SkillsSection({
             <button
               type="button"
               onClick={() => setIsEditing(true)}
-              className="shrink-0 rounded-xl border border-border p-2.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="shrink-0 cursor-pointer rounded-xl border border-border p-2.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               aria-label="Редактировать навыки"
             >
               <Pencil className="h-4 w-4" />
@@ -75,9 +75,9 @@ export function SkillsSection({
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {allVisibleSkills.map((skill) => (
+            {allVisibleSkills.map((skill, index) => (
               <span
-                key={skill}
+                key={`${skill}-${index}`}
                 className="rounded-lg bg-muted px-3 py-1.5 text-sm text-foreground"
               >
                 {skill}
