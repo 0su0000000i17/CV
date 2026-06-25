@@ -292,7 +292,7 @@ function createExperienceBlocks(value: string) {
   let current: string[] = [];
 
   lines.forEach((line) => {
-    if (isDateLine(line) && current.length) {
+    if (isDateLine(line) && current.length && current.some(hasContentBeforeDate)) {
       blocks.push(current);
       current = [line];
       return;
@@ -316,13 +316,24 @@ function parseExperienceBlock(block: string, sourceIndex: number) {
   }
 
   const dateIndex = lines.findIndex(isDateLine);
-  const dateLine = dateIndex >= 0 ? lines[dateIndex] : null;
-  const afterDateLines = dateIndex >= 0 ? lines.slice(dateIndex + 1) : lines;
-  const cleanRest = afterDateLines.filter((line) => !isDurationLine(line));
-  const company = cleanRest[0] || (dateIndex < 0 ? titleLine : null);
+
+  if (dateIndex > 0) {
+    return createExperienceWithDateAfterTitle(lines, dateIndex, sourceIndex);
+  }
+
+  if (dateIndex === 0) {
+    return createExperienceWithDateFirst(lines, sourceIndex);
+  }
+
+  return createExperienceWithoutDate(lines, sourceIndex);
+}
+
+function createExperienceWithDateFirst(lines: string[], sourceIndex: number) {
+  const dateLine = lines[0] || null;
+  const cleanRest = lines.slice(1).filter((line) => !isDurationLine(line));
+  const company = cleanRest[0] || null;
   const position = cleanRest[1] || null;
-  const contentLines = cleanRest.slice(position ? 2 : 1);
-  const bullets = contentLines.map(cleanBullet).filter(Boolean);
+  const bullets = cleanRest.slice(position ? 2 : 1).map(cleanBullet).filter(Boolean);
 
   return {
     sourceIndex,
@@ -330,7 +341,47 @@ function parseExperienceBlock(block: string, sourceIndex: number) {
     company,
     position,
     focus: null,
-    adaptedBullets: bullets.length ? bullets : cleanRest.slice(1).map(cleanBullet),
+    adaptedBullets: bullets,
+    preservedFacts: [],
+    warnings: [],
+  };
+}
+
+function createExperienceWithDateAfterTitle(
+  lines: string[],
+  dateIndex: number,
+  sourceIndex: number
+) {
+  const beforeDate = lines.slice(0, dateIndex).filter((line) => !isDurationLine(line));
+  const afterDate = lines.slice(dateIndex + 1).filter((line) => !isDurationLine(line));
+  const company = beforeDate[0] || null;
+  const position = beforeDate[1] || null;
+  const bullets = afterDate.map(cleanBullet).filter(Boolean);
+
+  return {
+    sourceIndex,
+    dates: lines[dateIndex] || null,
+    company,
+    position,
+    focus: null,
+    adaptedBullets: bullets,
+    preservedFacts: [],
+    warnings: [],
+  };
+}
+
+function createExperienceWithoutDate(lines: string[], sourceIndex: number) {
+  const company = lines[0] || null;
+  const position = lines[1] || null;
+  const bullets = lines.slice(position ? 2 : 1).map(cleanBullet).filter(Boolean);
+
+  return {
+    sourceIndex,
+    dates: null,
+    company,
+    position,
+    focus: null,
+    adaptedBullets: bullets,
     preservedFacts: [],
     warnings: [],
   };
@@ -375,6 +426,10 @@ function inferExperienceText(text: string) {
   return (nextSectionIndex > 0 ? rest.slice(0, nextSectionIndex) : rest)
     .join('\n')
     .trim();
+}
+
+function hasContentBeforeDate(value: string) {
+  return !isDurationLine(value) && !isDateLine(value);
 }
 
 function isDateLine(value: string) {
