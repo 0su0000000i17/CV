@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 
-import { StoredResumeEditorCard } from '@/src/features/resume-editor/stored-resume-editor-card';
+import { StoredResumeEditorCard } from '@/src/features/resume-editor/stored/editor-card';
 import { useAuth } from '@/src/shared/hooks/use-auth';
 import { useResumeQuery } from '@/src/shared/hooks/use-resume-query';
 
