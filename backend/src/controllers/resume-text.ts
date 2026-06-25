@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { z } from "zod";
 
 import { supabaseAdmin } from "../lib/supabase.js";
+import { extractEditableResume } from "../resume-editor/extract-editable-resume.js";
 import { extractResumeMarkdown } from "../resume-processing/extract-resume-markdown.js";
 import {
   getStringParam,
@@ -45,9 +46,7 @@ async function extractOriginalResumeMarkdown(resume: EditableResumeRecord) {
     .from("resumes")
     .download(resume.file_path);
 
-  if (downloadError) {
-    throw downloadError;
-  }
+  if (downloadError) throw downloadError;
 
   return extractResumeMarkdown({
     fileBuffer: Buffer.from(await fileData.arrayBuffer()),
@@ -55,6 +54,26 @@ async function extractOriginalResumeMarkdown(resume: EditableResumeRecord) {
     filePath: resume.file_path,
     mimeType: resume.file_type,
   });
+}
+
+async function createEditableResponse(params: {
+  resume: EditableResumeRecord;
+  markdown: string;
+  source: "saved_edit" | "original_file";
+  stats: unknown | null;
+}) {
+  const extracted = await extractEditableResume(params.markdown);
+
+  return {
+    status: "ok",
+    resumeId: params.resume.id,
+    source: params.source,
+    markdown: params.markdown,
+    resumeJson: extracted.resumeJson,
+    contacts: extracted.contacts,
+    stats: params.stats,
+    extractor: extracted.extractor,
+  };
 }
 
 export async function getEditableResumeText(req: Request, res: Response) {
@@ -69,16 +88,30 @@ export async function getEditableResumeText(req: Request, res: Response) {
 
     if (!resume) return sendError(res, 404, "Resume not found");
 
-    if (resume.extracted_text?.trim()) {
+    if (resume.extracted_text?.trim() && resume.editable_resume_json) {
+      const extracted = await extractEditableResume(resume.extracted_text);
+
       return res.json({
         status: "ok",
         resumeId: resume.id,
-        source: resume.editable_resume_json ? "saved_json" : "saved_edit",
+        source: "saved_json",
         markdown: resume.extracted_text,
         resumeJson: resume.editable_resume_json,
-        contacts: null,
+        contacts: extracted.contacts,
         stats: null,
+        extractor: { mode: "saved_json", provider: null, model: null },
       });
+    }
+
+    if (resume.extracted_text?.trim()) {
+      return res.json(
+        await createEditableResponse({
+          resume,
+          markdown: resume.extracted_text,
+          source: "saved_edit",
+          stats: null,
+        })
+      );
     }
 
     let extraction: Awaited<ReturnType<typeof extractResumeMarkdown>>;
@@ -89,15 +122,14 @@ export async function getEditableResumeText(req: Request, res: Response) {
       return sendServerError(res, "Failed to download resume file", error);
     }
 
-    return res.json({
-      status: "ok",
-      resumeId: resume.id,
-      source: "original_file",
-      markdown: extraction.markdown,
-      resumeJson: null,
-      contacts: null,
-      stats: extraction.stats,
-    });
+    return res.json(
+      await createEditableResponse({
+        resume,
+        markdown: extraction.markdown,
+        source: "original_file",
+        stats: extraction.stats,
+      })
+    );
   } catch (error) {
     return sendServerError(res, "Failed to get editable resume text", error);
   }
