@@ -4,14 +4,12 @@ import { useMemo, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 
 import type { UploadedResume } from '@/src/shared/api/resumes';
-import { useResumeProfileExtractionQuery } from '@/src/shared/hooks/use-resume-profile-extraction-query';
 import { useResumeTextQuery } from '@/src/shared/hooks/use-resume-text-query';
 import { useUpdateResumeTextMutation } from '@/src/shared/hooks/use-update-resume-text-mutation';
 
 import { ResumeEditorContent } from './resume-editor-content';
 import { StoredResumeEditorActions } from './stored-resume-editor-actions';
 import {
-  createAdaptationFromPlainText,
   createPlainResumeText,
   normalizeResumeEditorDraft,
 } from './utils';
@@ -22,16 +20,8 @@ type Props = {
   accessToken: string;
 };
 
-function createInitialTitle(resume: UploadedResume) {
-  return resume.role || resume.title || resume.file_name || 'Резюме';
-}
-
 export function StoredResumeEditorCard({ resume, accessToken }: Props) {
   const resumeTextQuery = useResumeTextQuery(resume.id, accessToken);
-  const profileExtractionQuery = useResumeProfileExtractionQuery(
-    resume.id,
-    accessToken
-  );
   const updateResumeTextMutation = useUpdateResumeTextMutation();
 
   const [saveStatus, setSaveStatus] =
@@ -39,28 +29,14 @@ export function StoredResumeEditorCard({ resume, accessToken }: Props) {
 
   const initialText = resumeTextQuery.data?.markdown ?? '';
   const initialDraft = useMemo(() => {
-    const savedJson = resumeTextQuery.data?.resumeJson;
+    const resumeJson = resumeTextQuery.data?.resumeJson;
 
-    if (savedJson) {
-      return normalizeResumeEditorDraft(savedJson);
-    }
-
-    if (!initialText) {
-      return null;
-    }
-
-    return createAdaptationFromPlainText(initialText, createInitialTitle(resume));
-  }, [
-    initialText,
-    resume.file_name,
-    resume.role,
-    resume.title,
-    resumeTextQuery.data?.resumeJson,
-  ]);
+    return resumeJson ? normalizeResumeEditorDraft(resumeJson) : null;
+  }, [resumeTextQuery.data?.resumeJson]);
 
   const editor = useEditorState({
     initialDraft,
-    profileExtraction: profileExtractionQuery.data,
+    initialContacts: resumeTextQuery.data?.contacts,
     resetKey: `${resume.id}-${resumeTextQuery.data?.source ?? 'loading'}`,
     sourceResume: {
       ...resume,
@@ -113,11 +89,12 @@ export function StoredResumeEditorCard({ resume, accessToken }: Props) {
         <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-5 text-sm text-red-500">
           Не удалось загрузить текст резюме.
         </div>
+      ) : editor.draft ? (
+        <ResumeEditorContent editor={editor} isProfileLoading={false} />
       ) : (
-        <ResumeEditorContent
-          editor={editor}
-          isProfileLoading={profileExtractionQuery.isPending}
-        />
+        <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-5 text-sm text-red-500">
+          Не удалось подготовить структуру резюме для редактора.
+        </div>
       )}
     </section>
   );
