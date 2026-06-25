@@ -1,4 +1,4 @@
-import { AdaptationResultCard } from '@/src/features/resume-editor/adaptation-result-card';
+import { AdaptationResultCard } from '@/src/features/resume-editor/adaptation/result-card';
 
 import type { ResumeAdaptationResponse } from '@/src/shared/api/resume-adaptation';
 import type {
@@ -14,8 +14,8 @@ type Props = {
   vacancyText: string;
   isAdapting: boolean;
   isError: boolean;
-  isProfileLoading: boolean;
   error: unknown;
+  isProfileLoading: boolean;
   onResetAdaptation: () => void;
 };
 
@@ -27,8 +27,8 @@ export function GeneratedResumeWorkspace({
   vacancyText,
   isAdapting,
   isError,
-  isProfileLoading,
   error,
+  isProfileLoading,
   onResetAdaptation,
 }: Props) {
   return (
