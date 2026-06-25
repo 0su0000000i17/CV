@@ -1,9 +1,9 @@
 import { Pencil } from 'lucide-react';
 
-import { WorkEditForm } from './work-edit-form';
-import { WorkPreview } from './work-preview';
 import type { DraftUpdater } from './types';
 import { getCompanyInitials } from './utils';
+import { WorkEditForm } from './work-edit-form';
+import { WorkPreview } from './work-preview';
 
 type WorkItemDraft = {
   sourceIndex: number;
@@ -63,7 +63,7 @@ export function WorkItem({
             <button
               type="button"
               onClick={onToggleEditing}
-              className="shrink-0 rounded-xl border border-border p-2.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="shrink-0 cursor-pointer rounded-xl border border-border p-2.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               aria-label="Редактировать опыт"
             >
               <Pencil className="h-4 w-4" />
