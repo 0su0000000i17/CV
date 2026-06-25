@@ -13,11 +13,18 @@ export type EditableResumeExtractionResult = {
   };
 };
 
+export function extractEditableResumeContacts(
+  markdown: string
+): EditableResumeContacts {
+  const sections = splitResumeIntoSections(markdown);
+
+  return parseContacts(sections.header);
+}
+
 export async function extractEditableResume(
   markdown: string
 ): Promise<EditableResumeExtractionResult> {
-  const sections = splitResumeIntoSections(markdown);
-  const contacts = parseContacts(sections.header);
+  const contacts = extractEditableResumeContacts(markdown);
 
   try {
     const aiResult = await extractEditableResumeWithAi(markdown);
