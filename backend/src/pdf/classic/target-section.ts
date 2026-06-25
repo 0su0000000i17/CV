@@ -3,14 +3,12 @@ import type { ClassicExportDocument, SourceSnapshot } from "./types.js";
 import type { ClassicWriter } from "./writer.js";
 
 function fallbackLines(doc: ClassicExportDocument) {
-  return [
-    doc.adaptation.adaptedResume.headline || doc.adaptation.target.title || "",
-    "Специализации:",
-    "—  Программист, разработчик",
-    "Занятость: полная занятость",
-    "График работы: полный день",
-    "Желательное время в пути до работы: не имеет значения",
-  ].filter(Boolean);
+  const title =
+    doc.adaptation.adaptedResume.headline ||
+    doc.adaptation.target.title ||
+    "";
+
+  return [title].filter(Boolean);
 }
 
 export function drawTarget(
@@ -18,8 +16,14 @@ export function drawTarget(
   doc: ClassicExportDocument,
   snapshot: SourceSnapshot
 ) {
-  const lines = snapshot.targetLines.length ? snapshot.targetLines : fallbackLines(doc);
+  const lines = snapshot.targetLines.length
+    ? snapshot.targetLines
+    : fallbackLines(doc);
   const [title, ...details] = lines;
+
+  if (!title && !details.length) {
+    return;
+  }
 
   writer.section("Желаемая должность и зарплата", 10);
 

@@ -5,6 +5,19 @@ import type {
   SourceSnapshot,
 } from "./types.js";
 
+const targetHeadings = ["Желаемая должность"];
+const experienceHeadings = ["Опыт работы"];
+const educationHeadings = ["Образование"];
+const skillsHeadings = ["Ключевые навыки", "Навыки"];
+const detailsHeadings = ["Дополнительная информация", "О себе"];
+const contentHeadings = [
+  ...targetHeadings,
+  ...experienceHeadings,
+  ...educationHeadings,
+  ...skillsHeadings,
+  ...detailsHeadings,
+];
+
 function toLines(text: string) {
   return text
     .replace(/\r/g, "\n")
@@ -13,17 +26,24 @@ function toLines(text: string) {
     .filter(Boolean);
 }
 
-function sliceBetween(lines: string[], start: string, endList: string[]) {
-  const startIndex = lines.findIndex((line) => line.startsWith(start));
+function startsWithAny(line: string, headings: string[]) {
+  return headings.some((heading) => line.startsWith(heading));
+}
+
+function findHeadingIndex(lines: string[], headings: string[]) {
+  return lines.findIndex((line) => startsWithAny(line, headings));
+}
+
+function sliceAfter(lines: string[], startList: string[], endList: string[]) {
+  const startIndex = findHeadingIndex(lines, startList);
 
   if (startIndex < 0) {
     return [];
   }
 
-  const endIndex = lines.findIndex(
-    (line, index) =>
-      index > startIndex && endList.some((end) => line.startsWith(end))
-  );
+  const endIndex = lines.findIndex((line, index) => {
+    return index > startIndex && startsWithAny(line, endList);
+  });
 
   return lines.slice(startIndex + 1, endIndex > 0 ? endIndex : lines.length);
 }
@@ -32,32 +52,40 @@ function fallbackContacts(contacts: ClassicContacts) {
   const personal = [contacts.gender, contacts.age, contacts.birthDate]
     .filter(Boolean)
     .join(", ");
+  const citizenship =
+    contacts.citizenship && contacts.workPermit
+      ? `Гражданство: ${contacts.citizenship}, есть разрешение на работу: ${contacts.workPermit}`
+      : contacts.citizenship
+        ? `Гражданство: ${contacts.citizenship}`
+        : null;
+  const mobility = [contacts.relocation, contacts.businessTrips]
+    .filter(Boolean)
+    .join(", ");
 
   return [
     personal,
     contacts.phone,
     contacts.email,
     contacts.city ? `Проживает: ${contacts.city}` : null,
-    contacts.citizenship && contacts.workPermit
-      ? `Гражданство: ${contacts.citizenship}, есть разрешение на работу: ${contacts.workPermit}`
-      : null,
-    [contacts.relocation, contacts.businessTrips].filter(Boolean).join(", "),
+    citizenship,
+    mobility,
   ].filter(Boolean) as string[];
 }
 
 function getContactLines(lines: string[], contacts: ClassicContacts) {
-  const endIndex = lines.findIndex((line) =>
-    line.startsWith("Желаемая должность")
-  );
+  const targetIndex = findHeadingIndex(lines, targetHeadings);
 
-  const result = lines.slice(1, endIndex > 0 ? endIndex : 12);
+  if (targetIndex > 0) {
+    return lines.slice(1, targetIndex);
+  }
 
-  return result.length ? result : fallbackContacts(contacts);
+  return fallbackContacts(contacts);
 }
 
 function getLanguageLines(lines: string[]) {
-  const section = sliceBetween(lines, "Ключевые навыки", [
-    "Дополнительная информация",
+  const section = sliceAfter(lines, ["Ключевые навыки"], [
+    ...detailsHeadings,
+    ...educationHeadings,
   ]);
   const result: string[] = [];
 
@@ -72,41 +100,47 @@ function getLanguageLines(lines: string[]) {
   return result.filter(Boolean);
 }
 
-function getSkillItems(lines: string[]) {
-  const section = sliceBetween(lines, "Ключевые навыки", [
-    "Дополнительная информация",
-  ]);
+function splitSkillText(text: string) {
+  const value = text.replace(/^Навыки\s*/i, "").trim();
 
-  const skillLineIndex = section.findIndex((line) => line.startsWith("Навыки"));
-
-  if (skillLineIndex < 0) {
+  if (!value) {
     return [];
   }
 
-  const text = section
-    .slice(skillLineIndex)
-    .join(" ")
-    .replace(/^Навыки\s+/i, "")
-    .trim();
+  const separator =
+    value.includes(",") || value.includes(";")
+      ? /[,;]\s*/
+      : /\s{2,}| (?=[A-ZА-ЯЁ][\wА-Яа-яЁё/+#.-]{2,})/;
 
-  return text
-    .split(/\s{2,}| (?=[A-ZА-ЯЁ][\wА-Яа-яЁё/+-]{2,})/)
+  return value
+    .split(separator)
     .map((item) => item.trim())
     .filter(Boolean);
 }
 
+function getSkillItems(lines: string[]) {
+  const section = sliceAfter(lines, skillsHeadings, [
+    ...educationHeadings,
+    ...detailsHeadings,
+  ]);
+
+  if (!section.length) {
+    return [];
+  }
+
+  const skillLineIndex = section.findIndex((line) => line.startsWith("Навыки"));
+  const text =
+    skillLineIndex >= 0
+      ? section.slice(skillLineIndex).join(" ")
+      : section.join(" ");
+
+  return splitSkillText(text);
+}
+
 function isLikelyCompanyCity(line: string, item: ClassicExperienceItem) {
-  if (!line || line === item.position) {
-    return false;
-  }
-
-  if (line.startsWith("-") || line.startsWith("•")) {
-    return false;
-  }
-
-  if (line.length > 60) {
-    return false;
-  }
+  if (!line || line === item.position) return false;
+  if (line.startsWith("-") || line.startsWith("•")) return false;
+  if (line.length > 60) return false;
 
   return !/[.!?]$/.test(line);
 }
@@ -115,17 +149,15 @@ function getExperienceMeta(
   lines: string[],
   items: ClassicExperienceItem[]
 ): SourceExperienceMeta[] {
-  const section = sliceBetween(lines, "Опыт работы", [
-    "Образование",
-    "Ключевые навыки",
-    "Дополнительная информация",
+  const section = sliceAfter(lines, experienceHeadings, [
+    ...educationHeadings,
+    ...skillsHeadings,
+    ...detailsHeadings,
   ]);
 
   return items
     .map((item) => {
-      if (!item.company) {
-        return null;
-      }
+      if (!item.company) return null;
 
       const index = section.findIndex((line) => line === item.company);
       const nextLine = index >= 0 ? section[index + 1] : null;
@@ -149,12 +181,11 @@ export function createSourceSnapshot(params: {
 
   return {
     contactLines: getContactLines(lines, params.contacts),
-    targetLines: sliceBetween(lines, "Желаемая должность", ["Опыт работы"]),
+    targetLines: sliceAfter(lines, targetHeadings, experienceHeadings),
     experienceTitle,
-    educationLines: sliceBetween(lines, "Образование", [
-      "Ключевые навыки",
-      "Навыки",
-      "Дополнительная информация",
+    educationLines: sliceAfter(lines, educationHeadings, [
+      ...skillsHeadings,
+      ...detailsHeadings,
     ]),
     languageLines: getLanguageLines(lines),
     skillItems: getSkillItems(lines),

@@ -37,5 +37,5 @@ export function drawHeader(
     });
   });
 
-  writer.y = 216;
+  writer.y = Math.max(writer.y + 16, 216);
 }
