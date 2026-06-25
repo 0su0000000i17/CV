@@ -1,8 +1,8 @@
 import type { ResumeAdaptationResult } from '@/src/shared/api/resume-adaptation';
-import { DraftUpdater } from './types';
-import { EditorSection } from './editor-section';
-import { WorkItem } from './work-item';
 
+import { EditorSection } from './editor-section';
+import type { DraftUpdater } from './types';
+import { WorkItem } from './work-item';
 
 type Props = {
   draft: ResumeAdaptationResult;
@@ -23,26 +23,34 @@ export function WorkSection({
 }: Props) {
   return (
     <EditorSection title="Опыт работы">
-      <div className="divide-y divide-border">
-        {draft.adaptedResume.experience.map((item, index) => {
-          const isExpanded = expandedIndexes.includes(index);
-          const isEditing = editingIndex === index;
+      {draft.adaptedResume.experience.length ? (
+        <div className="divide-y divide-border">
+          {draft.adaptedResume.experience.map((item, index) => {
+            const isExpanded = expandedIndexes.includes(index);
+            const isEditing = editingIndex === index;
 
-          return (
-            <WorkItem
-              key={`${item.sourceIndex}-${item.company}-${item.position}`}
-              item={item}
-              index={index}
-              isExpanded={isExpanded}
-              isEditing={isEditing}
-              onToggleExpanded={() => toggleExpanded(index)}
-              onToggleEditing={() => setEditingIndex(isEditing ? null : index)}
-              onStopEditing={() => setEditingIndex(null)}
-              updateDraft={updateDraft}
-            />
-          );
-        })}
-      </div>
+            return (
+              <WorkItem
+                key={`${item.sourceIndex}-${item.company}-${item.position}-${index}`}
+                item={item}
+                index={index}
+                isExpanded={isExpanded}
+                isEditing={isEditing}
+                onToggleExpanded={() => toggleExpanded(index)}
+                onToggleEditing={() => setEditingIndex(isEditing ? null : index)}
+                onStopEditing={() => setEditingIndex(null)}
+                updateDraft={updateDraft}
+              />
+            );
+          })}
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-dashed border-border bg-background/60 p-5">
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            Опыт работы не распознан автоматически. Проверьте исходный текст резюме.
+          </p>
+        </div>
+      )}
     </EditorSection>
   );
 }
