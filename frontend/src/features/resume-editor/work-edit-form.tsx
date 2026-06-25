@@ -1,10 +1,18 @@
 import { SmallInput, TextArea } from './form-controls';
 import type { DraftUpdater } from './types';
-import { textToList } from './utils';
+import { normalizeCompanyUrl, textToList } from './utils';
+
+type EditableWorkField =
+  | 'company'
+  | 'companyUrl'
+  | 'position'
+  | 'dates'
+  | 'focus';
 
 type Props = {
   item: {
     company?: string | null;
+    companyUrl?: string | null;
     position?: string | null;
     dates?: string | null;
     focus?: string | null;
@@ -16,51 +24,65 @@ type Props = {
 };
 
 export function WorkEditForm({ item, index, updateDraft, onDone }: Props) {
-  function updateField(
-    field: 'company' | 'position' | 'dates' | 'focus',
-    value: string
-  ) {
+  function updateField(field: EditableWorkField, value: string) {
     updateDraft((current) => {
       const entry = current.adaptedResume.experience[index];
 
       if (!entry) return;
 
-      entry[field] = value.trim() ? value : null;
+      entry[field] =
+        field === 'companyUrl'
+          ? normalizeCompanyUrl(value)
+          : value.trim()
+            ? value
+            : null;
     });
   }
 
   return (
     <div className="mt-4 space-y-4">
-      <div className="grid gap-4 md:grid-cols-3">
-        <SmallInput
-          label="Даты"
-          value={item.dates || ''}
-          onChange={(value) => updateField('dates', value)}
-        />
-
+      <div className="grid gap-4 md:grid-cols-2">
         <SmallInput
           label="Компания"
           value={item.company || ''}
+          placeholder="Название компании"
           onChange={(value) => updateField('company', value)}
         />
 
         <SmallInput
           label="Должность"
           value={item.position || ''}
+          placeholder="Frontend-разработчик"
           onChange={(value) => updateField('position', value)}
+        />
+
+        <SmallInput
+          label="Даты"
+          value={item.dates || ''}
+          placeholder="Апрель 2024 — декабрь 2025"
+          onChange={(value) => updateField('dates', value)}
+        />
+
+        <SmallInput
+          label="Сайт компании"
+          value={item.companyUrl || ''}
+          placeholder="company.example"
+          onChange={(value) => updateField('companyUrl', value)}
         />
       </div>
 
       <TextArea
+        label="Краткое описание роли / проекта"
         value={item.focus || ''}
-        rows={3}
-        placeholder="Акцент блока"
+        rows={2}
+        placeholder="Проект: высоконагруженная система визуализации данных."
         onChange={(value) => updateField('focus', value)}
       />
 
       <TextArea
+        label="Обязанности и достижения"
         value={item.adaptedBullets.join('\n')}
-        rows={8}
+        rows={6}
         placeholder="Каждый пункт опыта — с новой строки"
         onChange={(value) =>
           updateDraft((current) => {

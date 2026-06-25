@@ -1,10 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import type { ResumeAdaptationResult } from '@/src/shared/api/resume-adaptation';
 import { updateResumeText } from '@/src/shared/api/resumes';
 
 type UpdateResumeTextVariables = {
   resumeId: string;
   markdown: string;
+  resumeJson: ResumeAdaptationResult | null;
   accessToken: string;
 };
 

@@ -3,11 +3,16 @@ import { z } from "zod";
 
 import { supabaseAdmin } from "../lib/supabase.js";
 import { extractResumeMarkdown } from "../resume-processing/extract-resume-markdown.js";
-import { getStringParam, sendError, sendServerError } from "../utils/api-responses.js";
+import {
+  getStringParam,
+  sendError,
+  sendServerError,
+} from "../utils/api-responses.js";
 import { getUserFromRequest } from "../utils/auth.js";
 
 const updateResumeTextSchema = z.object({
   markdown: z.string().trim().min(40).max(80_000),
+  resumeJson: z.unknown().nullable().optional(),
 });
 
 type EditableResumeRecord = {
@@ -17,12 +22,15 @@ type EditableResumeRecord = {
   file_type: string;
   file_size: number;
   extracted_text: string | null;
+  editable_resume_json: unknown | null;
 };
 
 async function findEditableResume(userId: string, resumeId: string) {
   const { data, error } = await supabaseAdmin
     .from("resumes")
-    .select("id, file_name, file_path, file_type, file_size, extracted_text")
+    .select(
+      "id, file_name, file_path, file_type, file_size, extracted_text, editable_resume_json"
+    )
     .eq("id", resumeId)
     .eq("user_id", userId)
     .maybeSingle();
@@ -30,6 +38,23 @@ async function findEditableResume(userId: string, resumeId: string) {
   if (error) throw error;
 
   return data as EditableResumeRecord | null;
+}
+
+async function extractOriginalResumeMarkdown(resume: EditableResumeRecord) {
+  const { data: fileData, error: downloadError } = await supabaseAdmin.storage
+    .from("resumes")
+    .download(resume.file_path);
+
+  if (downloadError) {
+    throw downloadError;
+  }
+
+  return extractResumeMarkdown({
+    fileBuffer: Buffer.from(await fileData.arrayBuffer()),
+    fileName: resume.file_name,
+    filePath: resume.file_path,
+    mimeType: resume.file_type,
+  });
 }
 
 export async function getEditableResumeText(req: Request, res: Response) {
@@ -48,32 +73,29 @@ export async function getEditableResumeText(req: Request, res: Response) {
       return res.json({
         status: "ok",
         resumeId: resume.id,
-        source: "saved_edit",
+        source: resume.editable_resume_json ? "saved_json" : "saved_edit",
         markdown: resume.extracted_text,
+        resumeJson: resume.editable_resume_json,
+        contacts: null,
         stats: null,
       });
     }
 
-    const { data: fileData, error: downloadError } = await supabaseAdmin.storage
-      .from("resumes")
-      .download(resume.file_path);
+    let extraction: Awaited<ReturnType<typeof extractResumeMarkdown>>;
 
-    if (downloadError) {
-      return sendServerError(res, "Failed to download resume file", downloadError);
+    try {
+      extraction = await extractOriginalResumeMarkdown(resume);
+    } catch (error) {
+      return sendServerError(res, "Failed to download resume file", error);
     }
-
-    const extraction = await extractResumeMarkdown({
-      fileBuffer: Buffer.from(await fileData.arrayBuffer()),
-      fileName: resume.file_name,
-      filePath: resume.file_path,
-      mimeType: resume.file_type,
-    });
 
     return res.json({
       status: "ok",
       resumeId: resume.id,
       source: "original_file",
       markdown: extraction.markdown,
+      resumeJson: null,
+      contacts: null,
       stats: extraction.stats,
     });
   } catch (error) {
@@ -101,6 +123,7 @@ export async function updateEditableResumeText(req: Request, res: Response) {
       .from("resumes")
       .update({
         extracted_text: parsedBody.data.markdown,
+        editable_resume_json: parsedBody.data.resumeJson ?? null,
         analysis_status: "needs_update",
         last_score: null,
         updated_at: updatedAt,

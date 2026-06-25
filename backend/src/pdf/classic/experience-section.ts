@@ -15,17 +15,22 @@ function findCity(snapshot: SourceSnapshot, company: string | null) {
   return snapshot.experienceMeta.find((item) => item.company === company)?.city ?? null;
 }
 
-function drawExperienceItem(
+function drawMutedLine(writer: ClassicWriter, text: string) {
+  writer.paragraph({
+    text,
+    x: PAGE.mainX,
+    width: PAGE.mainWidth,
+    size: FONT.body,
+    lineHeight: LINE.body,
+    color: COLORS.muted,
+  });
+}
+
+function drawCompanyBlock(
   writer: ClassicWriter,
   item: ClassicExperienceItem,
   snapshot: SourceSnapshot
 ) {
-  writer.ensure(70);
-
-  const startY = writer.y;
-
-  drawDateColumn(writer, item.dates, startY);
-
   if (item.company) {
     writer.paragraph({
       text: item.company,
@@ -37,18 +42,28 @@ function drawExperienceItem(
     });
   }
 
+  if (item.companyUrl?.trim()) {
+    drawMutedLine(writer, item.companyUrl.trim());
+  }
+
   const city = findCity(snapshot, item.company);
 
   if (city) {
-    writer.paragraph({
-      text: city,
-      x: PAGE.mainX,
-      width: PAGE.mainWidth,
-      size: FONT.body,
-      lineHeight: LINE.body,
-      color: COLORS.muted,
-    });
+    drawMutedLine(writer, city);
   }
+}
+
+function drawExperienceItem(
+  writer: ClassicWriter,
+  item: ClassicExperienceItem,
+  snapshot: SourceSnapshot
+) {
+  writer.ensure(70);
+
+  const startY = writer.y;
+
+  drawDateColumn(writer, item.dates, startY);
+  drawCompanyBlock(writer, item, snapshot);
 
   if (item.position) {
     writer.paragraph({
@@ -57,6 +72,16 @@ function drawExperienceItem(
       width: PAGE.mainWidth,
       size: FONT.position,
       lineHeight: 18,
+    });
+  }
+
+  if (item.focus?.trim()) {
+    writer.paragraph({
+      text: item.focus.trim(),
+      x: PAGE.mainX,
+      width: PAGE.mainWidth,
+      size: FONT.body,
+      lineHeight: LINE.body,
     });
   }
 

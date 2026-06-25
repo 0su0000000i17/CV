@@ -23,7 +23,7 @@ export function WorkPreview({
         {focus ? <p className="text-muted-foreground">{focus}</p> : null}
 
         {bullets.map((bullet, bulletIndex) => (
-          <p key={bullet + bulletIndex}>- {bullet}</p>
+          <p key={`${bullet}-${bulletIndex}`}>- {bullet}</p>
         ))}
       </div>
 
@@ -31,7 +31,7 @@ export function WorkPreview({
         <button
           type="button"
           onClick={onToggleExpanded}
-          className="mt-3 inline-flex items-center gap-1 text-sm text-blue-400 transition-colors hover:text-blue-300"
+          className="mt-3 inline-flex cursor-pointer items-center gap-1 text-sm text-blue-400 transition-colors hover:text-blue-300"
         >
           {isExpanded ? 'Свернуть' : 'Развернуть'}
           {isExpanded ? (

@@ -14,6 +14,7 @@ export type ClassicContacts = {
 
 export type ClassicExperienceItem = {
   company: string | null;
+  companyUrl?: string | null;
   position: string | null;
   dates: string | null;
   adaptedBullets: string[];

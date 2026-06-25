@@ -1,3 +1,4 @@
+import type { ResumeAdaptationResult } from './resume-adaptation';
 import { createAuthHeaders, getApiUrl, parseApiResponse } from './http';
 
 export type UploadedResume = {
@@ -11,6 +12,7 @@ export type UploadedResume = {
   file_size: number;
   source_file_hash: string | null;
   extracted_text: string | null;
+  editable_resume_json?: ResumeAdaptationResult | null;
   analysis_status: string;
   last_score: number | null;
   created_at: string;
@@ -54,12 +56,33 @@ export type ResumeProfileExtractionResponse = {
   };
 };
 
+export type ResumeTextContacts = {
+  fullName: string;
+  gender: string;
+  age: string;
+  birthDate: string;
+  phone: string;
+  email: string;
+  city: string;
+  citizenship: string;
+  workPermit: string;
+  relocation: string;
+  businessTrips: string;
+};
+
 export type ResumeTextResponse = {
   status: 'ok';
   resumeId: string;
-  source: 'saved_edit' | 'original_file';
+  source: 'saved_json' | 'saved_edit' | 'original_file';
   markdown: string;
+  resumeJson: ResumeAdaptationResult | null;
+  contacts?: ResumeTextContacts | null;
   stats: unknown | null;
+  extractor?: {
+    mode: 'ai' | 'local_fallback' | 'saved_json';
+    provider: string | null;
+    model: string | null;
+  };
 };
 
 export type DuplicateResume = {
@@ -177,6 +200,7 @@ export async function getResumeText(resumeId: string, accessToken: string) {
 export async function updateResumeText(params: {
   resumeId: string;
   markdown: string;
+  resumeJson: ResumeAdaptationResult | null;
   accessToken: string;
 }) {
   const response = await fetch(
@@ -189,6 +213,7 @@ export async function updateResumeText(params: {
       },
       body: JSON.stringify({
         markdown: params.markdown,
+        resumeJson: params.resumeJson,
       }),
     }
   );

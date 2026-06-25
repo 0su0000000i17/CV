@@ -16,6 +16,7 @@ const contactsSchema = z.object({
 
 const experienceSchema = z.object({
   company: z.string().nullable(),
+  companyUrl: z.string().nullable().optional().default(null),
   position: z.string().nullable(),
   dates: z.string().nullable(),
   adaptedBullets: z.array(z.string()).default([]),

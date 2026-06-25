@@ -8,6 +8,7 @@ import { WorkPreview } from './work-preview';
 type WorkItemDraft = {
   sourceIndex: number;
   company?: string | null;
+  companyUrl?: string | null;
   position?: string | null;
   dates?: string | null;
   focus?: string | null;
@@ -55,9 +56,10 @@ export function WorkItem({
                 {item.company || 'Компания не указана'}
               </h3>
 
-              <p className="mt-1 text-sm text-muted-foreground">
-                {item.dates || 'Даты не указаны'}
-              </p>
+              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                {item.companyUrl ? <span>{item.companyUrl}</span> : null}
+                {item.dates ? <span>{item.dates}</span> : null}
+              </div>
             </div>
 
             <button

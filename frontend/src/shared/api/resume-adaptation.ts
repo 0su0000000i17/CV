@@ -12,6 +12,7 @@ export type AdaptedResumeSkills = {
 export type AdaptedResumeExperienceItem = {
   sourceIndex: number;
   company: string | null;
+  companyUrl?: string | null;
   position: string | null;
   dates: string | null;
   adaptedBullets: string[];

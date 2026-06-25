@@ -3,10 +3,7 @@ import { z } from "zod";
 
 import { checkResumeVacancyFit } from "../resume-adaptation/check-resume-vacancy-fit.js";
 import { extractResumeMarkdown } from "../resume-processing/extract-resume-markdown.js";
-import {
-  findResumeFileRecord,
-  setResumeAnalysisStatus,
-} from "../resume-analysis/repositories/resumes-repository.js";
+import { findResumeFileRecord } from "../resume-analysis/repositories/resumes-repository.js";
 import { downloadResumeFileBuffer } from "../resume-analysis/repositories/resume-files-repository.js";
 import { formatVacancyForAdaptation } from "../vacancy-ai/format-vacancy-for-adaptation.js";
 import type { NormalizedVacancy } from "../vacancy-ai/types.js";
@@ -22,7 +19,6 @@ const nullableStringSchema = z.string().trim().min(1).nullable();
 const normalizedVacancySchema = z.object({
   isVacancy: z.boolean(),
   rejectionReason: nullableStringSchema,
-
   title: nullableStringSchema,
   company: nullableStringSchema,
   location: nullableStringSchema,
@@ -31,14 +27,12 @@ const normalizedVacancySchema = z.object({
   workFormat: nullableStringSchema,
   schedule: nullableStringSchema,
   seniority: nullableStringSchema,
-
   summary: nullableStringSchema,
   responsibilities: z.array(z.string()).default([]),
   requirements: z.array(z.string()).default([]),
   niceToHave: z.array(z.string()).default([]),
   conditions: z.array(z.string()).default([]),
   skills: z.array(z.string()).default([]),
-
   warnings: z.array(z.string()).default([]),
   confidence: z.number().min(0).max(1).nullable(),
 });
@@ -56,13 +50,8 @@ export async function checkResumeVacancyFitController(
     const { user } = await getUserFromRequest(req);
     const resumeId = getStringParam(req.params.resumeId);
 
-    if (!user) {
-      return sendError(res, 401, "Unauthorized");
-    }
-
-    if (!resumeId) {
-      return sendError(res, 400, "Invalid resume id");
-    }
+    if (!user) return sendError(res, 401, "Unauthorized");
+    if (!resumeId) return sendError(res, 400, "Invalid resume id");
 
     const parsedBody = checkResumeVacancyFitSchema.safeParse(req.body);
 
@@ -101,9 +90,7 @@ export async function checkResumeVacancyFitController(
       resumeId,
     });
 
-    if (!resume) {
-      return sendError(res, 404, "Resume not found");
-    }
+    if (!resume) return sendError(res, 404, "Resume not found");
 
     let fileBuffer: Buffer;
 
@@ -124,8 +111,10 @@ export async function checkResumeVacancyFitController(
       mimeType: resume.file_type,
     });
 
+    const resumeMarkdown = resume.extracted_text?.trim() || extraction.markdown;
+
     const result = await checkResumeVacancyFit({
-      resumeMarkdown: extraction.markdown,
+      resumeMarkdown,
       vacancy,
       vacancyText: preparedVacancyText,
     });
@@ -136,8 +125,8 @@ export async function checkResumeVacancyFitController(
       fit: result.fit,
       meta: {
         ...result.meta,
-        markdownChars: extraction.stats.returnedChars,
-        markdownLimited: extraction.stats.limited,
+        markdownChars: resumeMarkdown.length,
+        markdownLimited: !resume.extracted_text && extraction.stats.limited,
         provider: result.generation.provider,
         model: result.generation.model,
       },
