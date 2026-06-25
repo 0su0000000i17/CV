@@ -7,5 +7,7 @@ export function useResumeTextQuery(resumeId?: string, accessToken?: string) {
     queryKey: ['resume-text', resumeId],
     queryFn: () => getResumeText(resumeId as string, accessToken as string),
     enabled: Boolean(resumeId && accessToken),
+    staleTime: 1000 * 60 * 10,
+    refetchOnWindowFocus: false,
   });
 }
