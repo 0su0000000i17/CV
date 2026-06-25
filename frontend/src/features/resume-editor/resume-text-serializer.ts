@@ -1,7 +1,7 @@
 import type { ResumeAdaptationResult } from '@/src/shared/api/resume-adaptation';
 
 import type { ContactDraft } from './types';
-import { normalizeCompanyUrl } from './utils';
+import { normalizeCompanyUrl } from './resume-text-cleanup';
 
 export function createPlainResumeText(
   adaptation: ResumeAdaptationResult,
