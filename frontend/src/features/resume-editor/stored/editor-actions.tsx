@@ -17,6 +17,7 @@ type Props = {
   editor: ReturnType<typeof useEditorState>;
   isLoading: boolean;
   isSaving: boolean;
+  hasUnsavedChanges: boolean;
   saveStatus: 'idle' | 'saved' | 'error';
   onSave: () => Promise<void>;
 };
@@ -47,6 +48,7 @@ export function StoredResumeEditorActions({
   editor,
   isLoading,
   isSaving,
+  hasUnsavedChanges,
   saveStatus,
   onSave,
 }: Props) {
@@ -78,6 +80,9 @@ export function StoredResumeEditorActions({
     }
   }
 
+  const saveButtonDisabled =
+    !editor.draft || isSaving || isLoading || !hasUnsavedChanges;
+
   return (
     <div className="rounded-2xl border border-border bg-card/60 p-5">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -89,13 +94,21 @@ export function StoredResumeEditorActions({
           <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
             Изменения сохраняются только после нажатия кнопки «Сохранить».
           </p>
+
+          {hasUnsavedChanges ? (
+            <p className="mt-2 text-sm text-orange-300">
+              Есть несохранённые изменения.
+            </p>
+          ) : saveStatus === 'saved' ? (
+            <p className="mt-2 text-sm text-emerald-400">Резюме сохранено.</p>
+          ) : null}
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row">
           <button
             type="button"
             onClick={onSave}
-            disabled={!editor.draft || isSaving || isLoading}
+            disabled={saveButtonDisabled}
             className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3 text-sm font-medium text-background transition-colors hover:bg-foreground/80 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSaving ? (
@@ -121,10 +134,6 @@ export function StoredResumeEditorActions({
           </button>
         </div>
       </div>
-
-      {saveStatus === 'saved' ? (
-        <p className="mt-3 text-sm text-emerald-400">Резюме сохранено.</p>
-      ) : null}
 
       {saveStatus === 'error' || downloadStatus === 'error' ? (
         <p className="mt-3 text-sm text-red-500">

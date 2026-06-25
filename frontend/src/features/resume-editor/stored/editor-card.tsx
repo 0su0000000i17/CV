@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { UploadedResume } from '@/src/shared/api/resumes';
 import { useResumeTextQuery } from '@/src/shared/hooks/use-resume-text-query';
@@ -8,6 +8,7 @@ import { useUpdateResumeTextMutation } from '@/src/shared/hooks/use-update-resum
 import { ResumeEditorContent } from '@/src/features/resume-editor/editor/resume-editor-content';
 import { normalizeResumeEditorDraft } from '@/src/features/resume-editor/model/normalizer';
 import { createPlainResumeText } from '@/src/features/resume-editor/model/serializer';
+import type { ContactDraft } from '@/src/features/resume-editor/model/types';
 import { useEditorState } from '@/src/features/resume-editor/model/use-editor-state';
 
 import { StoredResumeEditorActions } from './editor-actions';
@@ -18,12 +19,26 @@ type Props = {
   accessToken: string;
 };
 
+function createEditorSnapshot(
+  draft: ReturnType<typeof normalizeResumeEditorDraft>,
+  contacts: ContactDraft
+) {
+  return JSON.stringify({
+    draft,
+    contacts,
+  });
+}
+
 export function StoredResumeEditorCard({ resume, accessToken }: Props) {
   const resumeTextQuery = useResumeTextQuery(resume.id, accessToken);
   const updateResumeTextMutation = useUpdateResumeTextMutation();
+  const initializedResumeIdRef = useRef<string | null>(null);
 
   const [saveStatus, setSaveStatus] =
     useState<'idle' | 'saved' | 'error'>('idle');
+  const [lastSavedSnapshot, setLastSavedSnapshot] = useState<string | null>(
+    null
+  );
 
   const initialText = resumeTextQuery.data?.markdown ?? '';
   const initialDraft = useMemo(() => {
@@ -42,14 +57,51 @@ export function StoredResumeEditorCard({ resume, accessToken }: Props) {
     },
   });
 
+  const loadedSnapshot = useMemo(() => {
+    if (!initialDraft || !resumeTextQuery.data?.contacts) return null;
+
+    return createEditorSnapshot(initialDraft, resumeTextQuery.data.contacts);
+  }, [initialDraft, resumeTextQuery.data?.contacts]);
+
+  const currentSnapshot = useMemo(() => {
+    if (!editor.draft) return null;
+
+    return createEditorSnapshot(
+      normalizeResumeEditorDraft(editor.draft),
+      editor.contacts
+    );
+  }, [editor.contacts, editor.draft]);
+
+  const hasUnsavedChanges = Boolean(
+    currentSnapshot &&
+      lastSavedSnapshot &&
+      currentSnapshot !== lastSavedSnapshot
+  );
+
   const isLoading = resumeTextQuery.isPending;
   const isSaving = updateResumeTextMutation.isPending;
+
+  useEffect(() => {
+    if (!loadedSnapshot) return;
+    if (initializedResumeIdRef.current === resume.id) return;
+
+    initializedResumeIdRef.current = resume.id;
+    setLastSavedSnapshot(loadedSnapshot);
+    setSaveStatus('idle');
+  }, [loadedSnapshot, resume.id]);
+
+  useEffect(() => {
+    if (hasUnsavedChanges && saveStatus === 'saved') {
+      setSaveStatus('idle');
+    }
+  }, [hasUnsavedChanges, saveStatus]);
 
   async function handleSave() {
     if (!editor.draft) return;
 
     const normalizedDraft = normalizeResumeEditorDraft(editor.draft);
     const markdown = createPlainResumeText(normalizedDraft, editor.contacts);
+    const nextSnapshot = createEditorSnapshot(normalizedDraft, editor.contacts);
 
     if (!markdown.trim()) return;
 
@@ -61,6 +113,7 @@ export function StoredResumeEditorCard({ resume, accessToken }: Props) {
         accessToken,
       });
 
+      setLastSavedSnapshot(nextSnapshot);
       setSaveStatus('saved');
     } catch {
       setSaveStatus('error');
@@ -75,6 +128,7 @@ export function StoredResumeEditorCard({ resume, accessToken }: Props) {
         editor={editor}
         isLoading={isLoading}
         isSaving={isSaving}
+        hasUnsavedChanges={hasUnsavedChanges}
         saveStatus={saveStatus}
         onSave={handleSave}
       />
