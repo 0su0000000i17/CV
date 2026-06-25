@@ -73,10 +73,10 @@ export function ResumeDetailsHeader({ resume }: Props) {
 
   return (
     <>
-      <div className="mb-8">
+      <div className="mb-8 min-w-0">
         <Link
           href="/dashboard/resumes"
-          className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          className="mb-6 inline-flex cursor-pointer items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
           Назад к резюме
@@ -86,25 +86,31 @@ export function ResumeDetailsHeader({ resume }: Props) {
           Личный кабинет / Резюме
         </p>
 
-        <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-          <div>
-            <h1 className="max-w-3xl text-4xl font-normal tracking-tight text-foreground md:text-5xl">
+        <div className="flex min-w-0 flex-col justify-between gap-6 md:flex-row md:items-end">
+          <div className="min-w-0 flex-1">
+            <h1
+              title={resume.title}
+              className="max-w-full truncate text-4xl font-normal tracking-tight text-foreground md:text-5xl"
+            >
               {resume.title}
             </h1>
 
-            <p className="mt-4 text-muted-foreground">
+            <p
+              title={resume.role || 'Роль не указана'}
+              className="mt-4 max-w-full truncate text-muted-foreground"
+            >
               {resume.role || 'Роль не указана'} ·{' '}
               {getFileType(resume.file_type)} ·{' '}
               {formatFileSize(resume.file_size)}
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex shrink-0 flex-wrap gap-3">
             <button
               type="button"
               onClick={handleDownload}
               disabled={downloadResumeMutation.isPending}
-              className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-border px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Download className="h-4 w-4" />
               Скачать
@@ -114,7 +120,7 @@ export function ResumeDetailsHeader({ resume }: Props) {
               type="button"
               onClick={() => setIsDeleteDialogOpen(true)}
               disabled={deleteResumeMutation.isPending}
-              className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-border px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Trash2 className="h-4 w-4" />
               Удалить
