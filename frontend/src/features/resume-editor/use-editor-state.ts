@@ -30,21 +30,32 @@ type Params = Pick<
   'adaptationResponse' | 'profileExtraction' | 'sourceResume'
 > & {
   initialDraft?: ResumeAdaptationResult | null;
+  initialContacts?: Partial<ContactDraft> | null;
   resetKey?: string;
 };
+
+function normalizeContacts(value?: Partial<ContactDraft> | null): ContactDraft {
+  return {
+    ...emptyContacts,
+    ...value,
+  };
+}
 
 export function useEditorState({
   adaptationResponse,
   profileExtraction,
   sourceResume,
   initialDraft = null,
+  initialContacts = null,
   resetKey,
 }: Params) {
   const appliedDraftRef = useRef<ResumeAdaptationResult | null>(null);
   const copyStatusTimeoutRef = useRef<number | null>(null);
 
   const [draft, setDraft] = useState<ResumeAdaptationResult | null>(null);
-  const [contacts, setContacts] = useState<ContactDraft>(emptyContacts);
+  const [contacts, setContacts] = useState<ContactDraft>(
+    normalizeContacts(initialContacts)
+  );
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [editingExperienceIndex, setEditingExperienceIndex] = useState<
     number | null
@@ -93,11 +104,21 @@ export function useEditorState({
   }, [adaptationResponse?.adaptation, initialDraft, resetKey]);
 
   useEffect(() => {
+    if (initialContacts) {
+      setContacts(normalizeContacts(initialContacts));
+      return;
+    }
+
     const sourceData = extractSourceResumeData(sourceResume, profileExtraction);
 
     setContacts(sourceData.contacts);
     setPhotoUrl(sourceData.photoUrl);
-  }, [profileExtraction, sourceResume?.id, sourceResume?.extracted_text]);
+  }, [
+    initialContacts,
+    profileExtraction,
+    sourceResume?.id,
+    sourceResume?.extracted_text,
+  ]);
 
   const plainResumeText = useMemo(() => {
     return draft ? createPlainResumeText(draft, contacts) : '';
