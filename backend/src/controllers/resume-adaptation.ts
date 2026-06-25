@@ -64,10 +64,28 @@ const fitSchema = z.object({
   riskFlags: z.array(fitRiskFlagSchema).default([]),
 });
 
+const adaptationSettingsSchema = z
+  .object({
+    preserveAuthorStyle: z.boolean().optional(),
+    strengthenAchievements: z.boolean().optional(),
+    optimizeForAts: z.boolean().optional(),
+    tailorSkillsToVacancy: z.boolean().optional(),
+    makeTextMoreSpecific: z.boolean().optional(),
+  })
+  .optional()
+  .transform((value) => ({
+    preserveAuthorStyle: value?.preserveAuthorStyle ?? true,
+    strengthenAchievements: value?.strengthenAchievements ?? true,
+    optimizeForAts: value?.optimizeForAts ?? true,
+    tailorSkillsToVacancy: value?.tailorSkillsToVacancy ?? true,
+    makeTextMoreSpecific: value?.makeTextMoreSpecific ?? true,
+  }));
+
 const adaptResumeSchema = z.object({
   vacancy: normalizedVacancySchema,
   vacancyText: z.string().trim().max(40_000).optional(),
   fit: fitSchema,
+  adaptationSettings: adaptationSettingsSchema,
 });
 
 export async function adaptResumeToVacancyController(req: Request, res: Response) {
@@ -152,6 +170,7 @@ export async function adaptResumeToVacancyController(req: Request, res: Response
       vacancy,
       vacancyText: preparedVacancyText,
       fit,
+      settings: parsedBody.data.adaptationSettings,
     });
 
     return res.json({

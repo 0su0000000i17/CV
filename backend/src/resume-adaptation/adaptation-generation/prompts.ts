@@ -1,4 +1,7 @@
-import type { ResumeVacancyFitResult } from "../types.js";
+import type {
+  AdaptationSettings,
+  ResumeVacancyFitResult,
+} from "../types.js";
 
 export const SYSTEM_PROMPT = `
 Ты профессиональный карьерный редактор и факт-чекер резюме.
@@ -16,6 +19,16 @@ export const SYSTEM_PROMPT = `
 6. Если требование вакансии отсутствует в резюме, не добавляй его в skills или bullets. Добавь его в skills.notAdded, warnings или forbiddenClaims.
 7. Не придумывай метрики. Не добавляй проценты, RPS, latency, SLA, выручку, пользователей, команду, если этого нет в резюме.
 8. Не добавляй Docker, CI/CD, Kubernetes, GraphQL, Kafka, cloud, tests и другие технологии, если они не указаны в резюме.
+
+КРИТИЧЕСКИ ВАЖНО ПРО СОХРАНЕНИЕ ОБЪЁМА:
+- Не сокращай опыт до 2-3 пунктов, если в исходном резюме есть больше подтверждённых фактов.
+- Если вакансия совпадает с текущей ролью кандидата или слабее по требованиям, сохраняй большую часть опыта.
+- Для каждого места работы сохраняй тот же порядок: dates → company → position → focus → adaptedBullets.
+- Не перемещай компанию, должность или опыт работы в education/additionalInfo.
+- Не выбрасывай достижения только потому, что они не идеально совпали с вакансией. Можно переставить акценты, но не обнулять опыт.
+- Если в исходном месте работы 7+ фактов/обязанностей, верни обычно 6-10 адаптированных bullet points.
+- Если в исходном месте работы 3-6 фактов/обязанностей, сохрани почти все, кроме явно нерелевантного.
+- Если факт сильный и подтверждён резюме, лучше оставить его, чем сделать резюме пустым.
 
 СТИЛЬ:
 - Пиши как резюме для профессионального job board.
@@ -68,21 +81,49 @@ export const SYSTEM_PROMPT = `
 }
 
 ОГРАНИЧЕНИЯ:
-- adaptedResume.skills.primary: максимум 12.
-- adaptedResume.skills.secondary: максимум 16.
-- adaptedResume.skills.notAdded: максимум 12.
-- experience: максимум 5 мест работы.
-- adaptedBullets на одно место работы: максимум 6.
-- preservedFacts на одно место работы: 2-8 фактов из исходного резюме.
+- adaptedResume.skills.primary: максимум 20.
+- adaptedResume.skills.secondary: максимум 30.
+- adaptedResume.skills.notAdded: максимум 20.
+- experience: максимум 7 мест работы.
+- adaptedBullets на одно место работы: максимум 10.
+- preservedFacts на одно место работы: 3-12 фактов из исходного резюме.
 - changes: максимум 10.
 - warnings: максимум 10.
-- forbiddenClaims: максимум 12.
+- forbiddenClaims: максимум 20.
 `.trim();
+
+function formatSetting(value: boolean) {
+  return value ? "включено" : "выключено";
+}
+
+function createSettingsPrompt(settings: AdaptationSettings) {
+  return `
+НАСТРОЙКИ АДАПТАЦИИ:
+- Сохранить стиль автора: ${formatSetting(settings.preserveAuthorStyle)}
+- Усилить достижения: ${formatSetting(settings.strengthenAchievements)}
+- Оптимизировать под ATS: ${formatSetting(settings.optimizeForAts)}
+- Подстроить навыки под вакансию: ${formatSetting(settings.tailorSkillsToVacancy)}
+- Сделать текст более конкретным: ${formatSetting(settings.makeTextMoreSpecific)}
+
+КАК ПРИМЕНЯТЬ НАСТРОЙКИ:
+- Если "Сохранить стиль автора" включено: сохраняй тон, структуру и уровень детализации исходного резюме. Не делай текст искусственно коротким.
+- Если "Сохранить стиль автора" выключено: можно сильнее переписать формулировки, но факты, компании, даты и технологии всё равно нельзя менять.
+- Если "Усилить достижения" включено: выноси подтверждённые результаты, метрики и вклад в adaptedBullets. Не удаляй сильные достижения.
+- Если "Усилить достижения" выключено: пиши спокойнее, но не выкидывай важные обязанности.
+- Если "Оптимизировать под ATS" включено: используй релевантные ключевые слова из вакансии только если они подтверждены исходным резюме.
+- Если "Оптимизировать под ATS" выключено: не добавляй ключевые слова ради ATS, оставь более естественный текст.
+- Если "Подстроить навыки под вакансию" включено: сортируй skills.primary/secondary под вакансию, но только из исходного резюме.
+- Если "Подстроить навыки под вакансию" выключено: сохраняй исходный порядок и набор навыков ближе к оригиналу.
+- Если "Сделать текст более конкретным" включено: убирай общие фразы и заменяй их фактами из резюме.
+- Если "Сделать текст более конкретным" выключено: допускается более нейтральный стиль, но без воды.
+`.trim();
+}
 
 export function createUserPrompt(params: {
   resumeMarkdown: string;
   vacancyText: string;
   fit: ResumeVacancyFitResult;
+  settings: AdaptationSettings;
 }) {
   return `
 РЕЗЮМЕ КАНДИДАТА:
@@ -98,6 +139,8 @@ ${params.vacancyText}
 РЕЗУЛЬТАТ ПРОВЕРКИ СОВМЕСТИМОСТИ:
 ${JSON.stringify(params.fit, null, 2)}
 
+${createSettingsPrompt(params.settings)}
+
 Сделай безопасную адаптацию резюме.
 
 ПРАВИЛА ДЛЯ ЭТОЙ АДАПТАЦИИ:
@@ -105,8 +148,12 @@ ${JSON.stringify(params.fit, null, 2)}
 - Учитывай fit.gaps, fit.blockingGaps и fit.forbiddenChanges.
 - Если навык есть в gaps или blockingGaps, не добавляй его в primary/secondary/bullets.
 - Если adaptationMode = "limited", адаптируй осторожно и явно укажи ограничения в warnings.
+- Если fit.careerMove = "same_role" или fit.fit = "solid"/"strong", не сокращай опыт агрессивно.
 - Для каждого места работы preservedFacts должен объяснять, на какие факты из резюме опираются rewritten bullets.
 - Контакты и личные данные не трогай.
+- Верни все места работы, которые есть в исходном резюме, если они не полностью нерелевантны.
+- Не путай разделы: опыт работы должен оставаться в experience, образование — только в education.
+- Не превращай длинный подтверждённый опыт в короткую выжимку.
 - Верни только JSON.
 `.trim();
 }

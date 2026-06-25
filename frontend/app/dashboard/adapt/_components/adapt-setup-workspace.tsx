@@ -1,5 +1,7 @@
 import type { ComponentProps } from 'react';
 
+import type { AdaptationSettings } from '@/src/shared/api/resume-adaptation';
+
 import { AdaptSidebar } from './adapt-sidebar';
 import { CollapsibleVacancyForm } from './collapsible-vacancy-form';
 import { ResumeVacancyFitCard } from './resume-vacancy-fit-card';
@@ -24,6 +26,7 @@ type Props = {
   extractionMessage: string;
   fitResponse?: ResumeVacancyFitResponse;
   adaptationResponse?: ResumeAdaptationResponse;
+  adaptationSettings: AdaptationSettings;
   isPreparing: boolean;
   isCheckingFit: boolean;
   isAdapting: boolean;
@@ -33,6 +36,8 @@ type Props = {
   onVacancyInputChange: (value: string) => void;
   onPrepareVacancy: () => void;
   onCreateAdaptation: () => void;
+  onChooseAnotherVacancy: () => void;
+  onAdaptationSettingsChange: (settings: AdaptationSettings) => void;
 };
 
 export function AdaptSetupWorkspace({
@@ -47,6 +52,7 @@ export function AdaptSetupWorkspace({
   extractionMessage,
   fitResponse,
   adaptationResponse,
+  adaptationSettings,
   isPreparing,
   isCheckingFit,
   isAdapting,
@@ -56,6 +62,8 @@ export function AdaptSetupWorkspace({
   onVacancyInputChange,
   onPrepareVacancy,
   onCreateAdaptation,
+  onChooseAnotherVacancy,
+  onAdaptationSettingsChange,
 }: Props) {
   const shouldCollapseVacancyForm =
     Boolean(fitResponse) && !isFitError && !isPreparing && !isCheckingFit;
@@ -82,6 +90,7 @@ export function AdaptSetupWorkspace({
           extractionMessage={extractionMessage}
           onVacancyInputChange={onVacancyInputChange}
           onPrepareVacancy={onPrepareVacancy}
+          onChooseAnotherVacancy={onChooseAnotherVacancy}
         />
 
         <ResumeVacancyFitCard
@@ -95,9 +104,11 @@ export function AdaptSetupWorkspace({
       <AdaptSidebar
         fitResponse={fitResponse}
         adaptationResponse={adaptationResponse}
+        adaptationSettings={adaptationSettings}
         isAdapting={isAdapting}
         isCheckingFit={isCheckingFit}
         onCreateAdaptation={onCreateAdaptation}
+        onAdaptationSettingsChange={onAdaptationSettingsChange}
       />
     </div>
   );

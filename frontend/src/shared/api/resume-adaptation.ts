@@ -2,6 +2,14 @@ import type { ResumeVacancyFitResult } from './resume-vacancy-fit';
 import type { NormalizedVacancy } from './vacancies';
 import { createAuthHeaders, getApiUrl, parseApiResponse } from './http';
 
+export type AdaptationSettings = {
+  preserveAuthorStyle: boolean;
+  strengthenAchievements: boolean;
+  optimizeForAts: boolean;
+  tailorSkillsToVacancy: boolean;
+  makeTextMoreSpecific: boolean;
+};
+
 export type AdaptedResumeSkills = {
   primary: string[];
   secondary: string[];
@@ -65,6 +73,7 @@ export async function adaptResumeToVacancy(params: {
   vacancy: NormalizedVacancy;
   vacancyText: string;
   fit: ResumeVacancyFitResult;
+  adaptationSettings: AdaptationSettings;
   accessToken: string;
 }): Promise<ResumeAdaptationResponse> {
   const response = await fetch(
@@ -79,6 +88,7 @@ export async function adaptResumeToVacancy(params: {
         vacancy: params.vacancy,
         vacancyText: params.vacancyText,
         fit: params.fit,
+        adaptationSettings: params.adaptationSettings,
       }),
     }
   );

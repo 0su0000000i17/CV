@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+
+import type { AdaptationSettings } from '@/src/shared/api/resume-adaptation';
 
 import { AdaptHeader } from './_components/adapt-header';
 import { AdaptSetupWorkspace } from './_components/adapt-setup-workspace';
@@ -21,6 +23,14 @@ import { useResumeProfileExtractionMutation } from '@/src/shared/hooks/use-resum
 import { useResumeVacancyFitMutation } from '@/src/shared/hooks/use-resume-vacancy-fit-mutation';
 import { useResumesQuery } from '@/src/shared/hooks/use-resumes-query';
 
+const defaultAdaptationSettings: AdaptationSettings = {
+  preserveAuthorStyle: true,
+  strengthenAchievements: true,
+  optimizeForAts: true,
+  tailorSkillsToVacancy: true,
+  makeTextMoreSpecific: true,
+};
+
 export default function AdaptPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -34,8 +44,16 @@ export default function AdaptPage() {
   const resumeAdaptationMutation = useResumeAdaptationMutation();
   const resumeProfileMutation = useResumeProfileExtractionMutation();
 
+  const [adaptationSettings, setAdaptationSettings] =
+    useState<AdaptationSettings>(defaultAdaptationSettings);
+
   function resetGeneratedResults() {
     resumeVacancyFitMutation.reset();
+    resumeAdaptationMutation.reset();
+    resumeProfileMutation.reset();
+  }
+
+  function resetAdaptationOnly() {
     resumeAdaptationMutation.reset();
     resumeProfileMutation.reset();
   }
@@ -108,7 +126,12 @@ export default function AdaptPage() {
       preparedVacancyText: vacancyState.preparedVacancyText,
       fitMutation: resumeVacancyFitMutation,
       adaptationMutation: resumeAdaptationMutation,
+      adaptationSettings,
     });
+  }
+
+  function handleChooseAnotherVacancy() {
+    vacancyState.handleVacancyInputChange('');
   }
 
   return (
@@ -126,7 +149,7 @@ export default function AdaptPage() {
           isError={resumeAdaptationMutation.isError}
           isProfileLoading={isProfileLoading}
           error={resumeAdaptationMutation.error}
-          onResetAdaptation={resetGeneratedResults}
+          onResetAdaptation={resetAdaptationOnly}
         />
       ) : (
         <AdaptSetupWorkspace
@@ -141,6 +164,7 @@ export default function AdaptPage() {
           extractionMessage={vacancyState.extractionMessage}
           fitResponse={fitResponse}
           adaptationResponse={adaptationResponse}
+          adaptationSettings={adaptationSettings}
           isPreparing={prepareVacancyMutation.isPending}
           isCheckingFit={resumeVacancyFitMutation.isPending}
           isAdapting={isAdapting}
@@ -154,6 +178,8 @@ export default function AdaptPage() {
           onVacancyInputChange={vacancyState.handleVacancyInputChange}
           onPrepareVacancy={handlePrepareVacancy}
           onCreateAdaptation={handleCreateAdaptation}
+          onChooseAnotherVacancy={handleChooseAnotherVacancy}
+          onAdaptationSettingsChange={setAdaptationSettings}
         />
       )}
     </div>

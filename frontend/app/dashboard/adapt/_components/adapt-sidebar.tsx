@@ -1,4 +1,7 @@
-import type { ResumeAdaptationResponse } from '@/src/shared/api/resume-adaptation';
+import type {
+  AdaptationSettings,
+  ResumeAdaptationResponse,
+} from '@/src/shared/api/resume-adaptation';
 import type { ResumeVacancyFitResponse } from '@/src/shared/api/resume-vacancy-fit';
 
 import { AdaptSettings } from './adapt-settings';
@@ -10,18 +13,22 @@ import { SidebarStatusMessages } from './adapt-sidebar/sidebar-status-messages';
 type Props = {
   fitResponse?: ResumeVacancyFitResponse;
   adaptationResponse?: ResumeAdaptationResponse;
+  adaptationSettings: AdaptationSettings;
   isAdapting: boolean;
   isCheckingFit: boolean;
   onCreateAdaptation: () => void;
+  onAdaptationSettingsChange: (settings: AdaptationSettings) => void;
 };
 
 export function AdaptSidebar(props: Props) {
   const {
     fitResponse,
     adaptationResponse,
+    adaptationSettings,
     isAdapting,
     isCheckingFit,
     onCreateAdaptation,
+    onAdaptationSettingsChange,
   } = props;
 
   const canContinue = fitResponse?.fit.canAdapt === true;
@@ -46,7 +53,10 @@ export function AdaptSidebar(props: Props) {
         />
       </div>
 
-      <AdaptSettings />
+      <AdaptSettings
+        settings={adaptationSettings}
+        onSettingsChange={onAdaptationSettingsChange}
+      />
     </aside>
   );
 }

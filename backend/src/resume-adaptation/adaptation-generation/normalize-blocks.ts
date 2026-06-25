@@ -13,7 +13,7 @@ export function normalizeTarget(value: unknown): ResumeAdaptationTarget {
     title: toNullableString(source.title),
     company: toNullableString(source.company),
     seniority: toNullableString(source.seniority),
-    keywordsUsed: toStringArray(source.keywordsUsed, 20),
+    keywordsUsed: toStringArray(source.keywordsUsed, 30),
   };
 }
 
@@ -21,10 +21,10 @@ export function normalizeSkills(value: unknown): AdaptedResumeSkills {
   const source = isRecord(value) ? value : {};
 
   return {
-    primary: toStringArray(source.primary, 12),
-    secondary: toStringArray(source.secondary, 16),
-    deprioritized: toStringArray(source.deprioritized, 12),
-    notAdded: toStringArray(source.notAdded, 12),
+    primary: toStringArray(source.primary, 20),
+    secondary: toStringArray(source.secondary, 30),
+    deprioritized: toStringArray(source.deprioritized, 20),
+    notAdded: toStringArray(source.notAdded, 20),
   };
 }
 
@@ -47,14 +47,14 @@ export function normalizeExperience(value: unknown): AdaptedResumeExperienceItem
         company: toNullableString(item.company),
         position: toNullableString(item.position),
         dates: toNullableString(item.dates),
-        adaptedBullets: toStringArray(item.adaptedBullets, 6),
+        adaptedBullets: toStringArray(item.adaptedBullets, 10),
         focus: toNullableString(item.focus),
-        preservedFacts: toStringArray(item.preservedFacts, 8),
-        warnings: toStringArray(item.warnings, 6),
+        preservedFacts: toStringArray(item.preservedFacts, 12),
+        warnings: toStringArray(item.warnings, 8),
       };
     })
     .filter((item): item is AdaptedResumeExperienceItem => Boolean(item))
-    .slice(0, 5);
+    .slice(0, 7);
 }
 
 export function normalizeEducation(value: unknown): AdaptedResumeEducation {
@@ -68,6 +68,6 @@ export function normalizeEducation(value: unknown): AdaptedResumeEducation {
       policy === "not_found"
         ? policy
         : "unchanged",
-    notes: toStringArray(source.notes, 6),
+    notes: toStringArray(source.notes, 8),
   };
 }

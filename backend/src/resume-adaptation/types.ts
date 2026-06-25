@@ -14,6 +14,14 @@ export type ResumeVacancyCareerMove =
 
 export type ResumeVacancyAdaptationMode = "safe" | "limited" | "blocked";
 
+export type AdaptationSettings = {
+  preserveAuthorStyle: boolean;
+  strengthenAchievements: boolean;
+  optimizeForAts: boolean;
+  tailorSkillsToVacancy: boolean;
+  makeTextMoreSpecific: boolean;
+};
+
 export type ResumeVacancyFitRiskFlag = {
   type:
     | "role_mismatch"
