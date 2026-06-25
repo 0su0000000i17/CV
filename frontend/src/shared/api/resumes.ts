@@ -199,8 +199,7 @@ export async function getResumeText(resumeId: string, accessToken: string) {
 
 export async function updateResumeText(params: {
   resumeId: string;
-  markdown: string;
-  resumeJson: ResumeAdaptationResult | null;
+  resumeJson: ResumeAdaptationResult;
   accessToken: string;
 }) {
   const response = await fetch(
@@ -212,7 +211,6 @@ export async function updateResumeText(params: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        markdown: params.markdown,
         resumeJson: params.resumeJson,
       }),
     }

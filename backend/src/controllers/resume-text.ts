@@ -15,8 +15,13 @@ import {
 import { getUserFromRequest } from "../utils/auth.js";
 
 const updateResumeTextSchema = z.object({
-  markdown: z.string().trim().min(40).max(80_000),
-  resumeJson: z.unknown().nullable().optional(),
+  markdown: z.string().max(80_000).optional(),
+  resumeJson: z
+    .unknown()
+    .refine(
+      (value) => Boolean(value) && typeof value === "object",
+      "Resume editor data is required"
+    ),
 });
 
 type EditableResumeRecord = {
@@ -205,7 +210,7 @@ export async function updateEditableResumeText(req: Request, res: Response) {
     const parsedBody = updateResumeTextSchema.safeParse(req.body);
 
     if (!parsedBody.success) {
-      return sendError(res, 400, "Некорректный текст резюме.");
+      return sendError(res, 400, "Некорректные данные редактора резюме.");
     }
 
     const updatedAt = new Date().toISOString();
@@ -213,8 +218,7 @@ export async function updateEditableResumeText(req: Request, res: Response) {
     const { data, error } = await supabaseAdmin
       .from("resumes")
       .update({
-        extracted_text: parsedBody.data.markdown,
-        editable_resume_json: parsedBody.data.resumeJson ?? null,
+        editable_resume_json: parsedBody.data.resumeJson,
         analysis_status: "needs_update",
         last_score: null,
         updated_at: updatedAt,

@@ -7,7 +7,6 @@ import { useResumeTextQuery } from '@/src/shared/hooks/use-resume-text-query';
 import { useUpdateResumeTextMutation } from '@/src/shared/hooks/use-update-resume-text-mutation';
 import { ResumeEditorContent } from '@/src/features/resume-editor/editor/resume-editor-content';
 import { normalizeResumeEditorDraft } from '@/src/features/resume-editor/model/normalizer';
-import { createPlainResumeText } from '@/src/features/resume-editor/model/serializer';
 import type { ContactDraft } from '@/src/features/resume-editor/model/types';
 import { useEditorState } from '@/src/features/resume-editor/model/use-editor-state';
 
@@ -99,19 +98,15 @@ export function StoredResumeEditorCard({ resume, accessToken }: Props) {
   async function handleSave() {
     if (!editor.draft) return;
 
-    const normalizedDraft = normalizeResumeEditorDraft(editor.draft);
-    const markdown = createPlainResumeText(normalizedDraft, editor.contacts);
-    const nextSnapshot = createEditorSnapshot(normalizedDraft, editor.contacts);
+   const normalizedDraft = normalizeResumeEditorDraft(editor.draft);
+const nextSnapshot = createEditorSnapshot(normalizedDraft, editor.contacts);
 
-    if (!markdown.trim()) return;
-
-    try {
-      await updateResumeTextMutation.mutateAsync({
-        resumeId: resume.id,
-        markdown,
-        resumeJson: normalizedDraft,
-        accessToken,
-      });
+try {
+  await updateResumeTextMutation.mutateAsync({
+    resumeId: resume.id,
+    resumeJson: normalizedDraft,
+    accessToken,
+  });
 
       setLastSavedSnapshot(nextSnapshot);
       setSaveStatus('saved');

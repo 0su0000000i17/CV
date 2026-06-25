@@ -8,8 +8,7 @@ import {
 
 type UpdateResumeTextVariables = {
   resumeId: string;
-  markdown: string;
-  resumeJson: ResumeAdaptationResult | null;
+  resumeJson: ResumeAdaptationResult;
   accessToken: string;
 };
 
@@ -27,7 +26,7 @@ export function useUpdateResumeTextMutation() {
           status: 'ok',
           resumeId: variables.resumeId,
           source: 'saved_json',
-          markdown: variables.markdown,
+          markdown: current?.markdown ?? '',
           resumeJson: variables.resumeJson,
           contacts: current?.contacts ?? null,
           stats: current?.stats ?? null,
