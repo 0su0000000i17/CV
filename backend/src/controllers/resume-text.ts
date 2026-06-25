@@ -80,6 +80,25 @@ async function persistEditableResume(params: {
   }
 }
 
+async function persistExtractedText(params: {
+  resumeId: string;
+  userId: string;
+  markdown: string;
+}) {
+  const { error } = await supabaseAdmin
+    .from("resumes")
+    .update({
+      extracted_text: params.markdown,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", params.resumeId)
+    .eq("user_id", params.userId);
+
+  if (error) {
+    console.error("[resumeText] Failed to persist extracted text", error);
+  }
+}
+
 async function createEditableResponse(params: {
   resume: EditableResumeRecord;
   userId: string;
@@ -89,12 +108,20 @@ async function createEditableResponse(params: {
 }) {
   const extracted = await extractEditableResume(params.markdown);
 
-  await persistEditableResume({
-    resumeId: params.resume.id,
-    userId: params.userId,
-    markdown: params.markdown,
-    resumeJson: extracted.resumeJson,
-  });
+  if (extracted.extractor.mode === "ai") {
+    await persistEditableResume({
+      resumeId: params.resume.id,
+      userId: params.userId,
+      markdown: params.markdown,
+      resumeJson: extracted.resumeJson,
+    });
+  } else if (params.source === "original_file") {
+    await persistExtractedText({
+      resumeId: params.resume.id,
+      userId: params.userId,
+      markdown: params.markdown,
+    });
+  }
 
   return {
     status: "ok",
