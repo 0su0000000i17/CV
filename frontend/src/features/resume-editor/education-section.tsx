@@ -52,7 +52,7 @@ export function EducationSection({
                 : 'Образование сохранено без изменений.'}
             </p>
 
-            <div className="mt-3 max-h-[72px] space-y-2 overflow-hidden">
+            <div className="mt-3 space-y-2">
               {draft.adaptedResume.education.notes.length ? (
                 draft.adaptedResume.education.notes.map((note, index) => (
                   <p
@@ -64,7 +64,7 @@ export function EducationSection({
                 ))
               ) : (
                 <p className="text-sm leading-relaxed text-muted-foreground">
-                  Блок можно будет заполнить вручную перед сохранением версии.
+                  Блок можно заполнить вручную.
                 </p>
               )}
             </div>
