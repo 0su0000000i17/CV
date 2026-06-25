@@ -2,16 +2,16 @@
 
 import { useParams } from 'next/navigation';
 
+import { StoredResumeEditorCard } from '@/src/features/resume-editor/stored-resume-editor-card';
 import { useAuth } from '@/src/shared/hooks/use-auth';
 import { useResumeQuery } from '@/src/shared/hooks/use-resume-query';
 
 import { ResumeActionsPanel } from './_components/resume-actions-panel';
+import { ResumeAdaptationsCard } from './_components/resume-adaptations-card';
 import { ResumeDetailsHeader } from './_components/resume-details-header';
 import { ResumeDetailsSkeleton } from './_components/resume-details-skeleton';
 import { ResumeFileInfoCard } from './_components/resume-file-info-card';
 import { ResumeNotFoundState } from './_components/resume-not-found-state';
-import { ResumeStatsCards } from './_components/resume-stats-cards';
-import { ResumeVersionsCard } from './_components/resume-versions-card';
 
 function getResumeId(value: string | string[] | undefined) {
   if (typeof value === 'string') {
@@ -33,21 +33,23 @@ export default function ResumeDetailsPage() {
     return <ResumeDetailsSkeleton />;
   }
 
-  if (!resumeId || resumeQuery.isError || !resume) {
+  if (!resumeId || resumeQuery.isError || !resume || !accessToken) {
     return <ResumeNotFoundState />;
   }
 
   return (
-    <div>
+    <div className="space-y-6">
       <ResumeDetailsHeader resume={resume} />
-      <ResumeStatsCards resume={resume} />
 
-      <div className="mb-8 grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
-        <ResumeActionsPanel resume={resume} />
-        <ResumeFileInfoCard resume={resume} />
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <StoredResumeEditorCard resume={resume} accessToken={accessToken} />
+
+        <aside className="space-y-5">
+          <ResumeActionsPanel resume={resume} />
+          <ResumeAdaptationsCard resume={resume} />
+          <ResumeFileInfoCard resume={resume} />
+        </aside>
       </div>
-
-      <ResumeVersionsCard resume={resume} />
     </div>
   );
 }

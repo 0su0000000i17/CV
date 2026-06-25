@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { BarChart3, WandSparkles } from 'lucide-react';
+import { BarChart3, FileSearch, LayoutDashboard, Mail, WandSparkles } from 'lucide-react';
 
 import type { UploadedResume } from '@/src/shared/api/resumes';
 
@@ -25,6 +25,13 @@ function createActionItems(resume: UploadedResume) {
 
   return [
     {
+      title: 'Обзор',
+      description: 'Вернуться на главный экран кабинета.',
+      href: '/dashboard',
+      icon: LayoutDashboard,
+      badge: null,
+    },
+    {
       title: analyzed ? 'Резюме уже оценено' : 'Оценить резюме',
       description: analyzed
         ? 'Нажмите, чтобы запустить повторную проверку.'
@@ -40,6 +47,13 @@ function createActionItems(resume: UploadedResume) {
       icon: WandSparkles,
       badge: null,
     },
+    {
+      title: 'Сопроводительное письмо',
+      description: 'Сгенерировать профессиональный отклик к вакансии.',
+      href: `/dashboard/cover-letter?resumeId=${resume.id}`,
+      icon: Mail,
+      badge: null,
+    },
   ];
 }
 
@@ -48,9 +62,14 @@ export function ResumeActionsPanel({ resume }: Props) {
 
   return (
     <div className="rounded-2xl border border-border bg-card/60 p-6">
-      <h2 className="text-xl font-medium text-foreground">
-        Что можно сделать дальше
-      </h2>
+      <div className="flex items-start gap-3">
+        <div className="rounded-xl bg-muted p-2.5">
+          <FileSearch className="h-5 w-5 text-foreground" />
+        </div>
+        <h2 className="text-xl font-medium text-foreground">
+          Что можно сделать дальше
+        </h2>
+      </div>
 
       <div className="mt-5 space-y-3">
         {actions.map((action) => {
@@ -60,7 +79,7 @@ export function ResumeActionsPanel({ resume }: Props) {
             <Link
               key={action.title}
               href={action.href}
-              className="flex items-start gap-4 rounded-2xl border border-border bg-background p-4 transition-colors hover:bg-muted"
+              className="flex cursor-pointer items-start gap-4 rounded-2xl border border-border bg-background p-4 transition-colors hover:bg-muted"
             >
               <div className="rounded-xl bg-muted p-3">
                 <Icon className="h-5 w-5 text-foreground" />
@@ -69,7 +88,6 @@ export function ResumeActionsPanel({ resume }: Props) {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-medium text-foreground">{action.title}</p>
-
                   {action.badge ? (
                     <span className="rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-widest text-muted-foreground">
                       {action.badge}

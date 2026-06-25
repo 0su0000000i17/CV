@@ -54,6 +54,14 @@ export type ResumeProfileExtractionResponse = {
   };
 };
 
+export type ResumeTextResponse = {
+  status: 'ok';
+  resumeId: string;
+  source: 'saved_edit' | 'original_file';
+  markdown: string;
+  stats: unknown | null;
+};
+
 export type DuplicateResume = {
   id: string;
   title: string | null;
@@ -86,6 +94,11 @@ type DeleteResumeResponse = {
 
 type ResumeDownloadUrlResponse = {
   downloadUrl: string;
+};
+
+type UpdateResumeTextResponse = {
+  status: 'updated';
+  resume: UploadedResume;
 };
 
 export async function getResumes(accessToken: string) {
@@ -148,6 +161,42 @@ export async function getResumeById(resumeId: string, accessToken: string) {
   });
 
   return parseApiResponse<ResumeResponse>(response, 'Failed to fetch resume');
+}
+
+export async function getResumeText(resumeId: string, accessToken: string) {
+  const response = await fetch(`${getApiUrl()}/api/resumes/${resumeId}/text`, {
+    headers: createAuthHeaders(accessToken),
+  });
+
+  return parseApiResponse<ResumeTextResponse>(
+    response,
+    'Failed to fetch resume text'
+  );
+}
+
+export async function updateResumeText(params: {
+  resumeId: string;
+  markdown: string;
+  accessToken: string;
+}) {
+  const response = await fetch(
+    `${getApiUrl()}/api/resumes/${params.resumeId}/text`,
+    {
+      method: 'PATCH',
+      headers: {
+        ...createAuthHeaders(params.accessToken),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        markdown: params.markdown,
+      }),
+    }
+  );
+
+  return parseApiResponse<UpdateResumeTextResponse>(
+    response,
+    'Failed to update resume text'
+  );
 }
 
 export async function extractResumeProfile(

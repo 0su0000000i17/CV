@@ -38,7 +38,7 @@ export function EducationSection({
           <button
             type="button"
             onClick={() => setIsEditing(false)}
-            className="rounded-xl border border-border px-4 py-2 text-sm text-foreground transition-colors hover:bg-muted"
+            className="cursor-pointer rounded-xl border border-border px-4 py-2 text-sm text-foreground transition-colors hover:bg-muted"
           >
             Готово
           </button>
@@ -54,8 +54,11 @@ export function EducationSection({
 
             <div className="mt-3 max-h-[72px] space-y-2 overflow-hidden">
               {draft.adaptedResume.education.notes.length ? (
-                draft.adaptedResume.education.notes.map((note) => (
-                  <p key={note} className="text-sm leading-relaxed text-foreground">
+                draft.adaptedResume.education.notes.map((note, index) => (
+                  <p
+                    key={`${note}-${index}`}
+                    className="text-sm leading-relaxed text-foreground"
+                  >
                     {note}
                   </p>
                 ))
@@ -70,7 +73,7 @@ export function EducationSection({
           <button
             type="button"
             onClick={() => setIsEditing(true)}
-            className="shrink-0 rounded-xl border border-border p-2.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="shrink-0 cursor-pointer rounded-xl border border-border p-2.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             aria-label="Редактировать образование"
           >
             <Pencil className="h-4 w-4" />

@@ -63,8 +63,10 @@ export async function generateCoverLetterController(
       mimeType: resume.file_type,
     });
 
+    const resumeMarkdown = resume.extracted_text?.trim() || extraction.markdown;
+
     const result = await generateCoverLetter({
-      resumeMarkdown: extraction.markdown,
+      resumeMarkdown,
       vacancyText: parsedBody.data.vacancyText,
       tone: parsedBody.data.tone as CoverLetterTone,
       adaptation: parsedBody.data.adaptation as never,
@@ -82,7 +84,7 @@ export async function generateCoverLetterController(
       meta: {
         ...result.meta,
         contactSignatureAppended: Boolean(signature),
-        markdownChars: extraction.stats.returnedChars,
+        markdownChars: resumeMarkdown.length,
         markdownLimited: extraction.stats.limited,
         provider: result.generation.provider,
         model: result.generation.model,

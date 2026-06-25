@@ -1,10 +1,10 @@
 import { Pencil } from 'lucide-react';
 
 import type { ResumeAdaptationResult } from '@/src/shared/api/resume-adaptation';
-
 import { EditorSection } from './editor-section';
 import { TextArea } from './form-controls';
-import type { DraftUpdater } from './types';
+import { DraftUpdater } from './types';
+
 
 type Props = {
   draft: ResumeAdaptationResult;

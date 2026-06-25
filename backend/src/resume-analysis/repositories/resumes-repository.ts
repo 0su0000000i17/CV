@@ -25,7 +25,7 @@ export async function findResumeFileRecord(params: {
 }) {
   const { data, error } = await supabaseAdmin
     .from("resumes")
-    .select("id, file_name, file_path, file_type, file_size")
+    .select("id, file_name, file_path, file_type, file_size, extracted_text")
     .eq("id", params.resumeId)
     .eq("user_id", params.userId)
     .maybeSingle();

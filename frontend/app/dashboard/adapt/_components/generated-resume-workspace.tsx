@@ -1,4 +1,4 @@
-import { AdaptationResultCard } from './adaptation-result-card';
+import { AdaptationResultCard } from '@/src/features/resume-editor/adaptation-result-card';
 
 import type { ResumeAdaptationResponse } from '@/src/shared/api/resume-adaptation';
 import type {

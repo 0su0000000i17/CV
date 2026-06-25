@@ -1,6 +1,11 @@
 import type { extractResumeMarkdown } from "../resume-processing/extract-resume-markdown.js";
 
-export type AnalysisStatus = "idle" | "analyzing" | "completed" | "failed";
+export type AnalysisStatus =
+  | "idle"
+  | "analyzing"
+  | "completed"
+  | "failed"
+  | "needs_update";
 
 export type ResumeFileRecord = {
   id: string;
@@ -8,6 +13,7 @@ export type ResumeFileRecord = {
   file_path: string;
   file_type: string;
   file_size: number | null;
+  extracted_text: string | null;
 };
 
 export type ResumeAnalysisRow = {

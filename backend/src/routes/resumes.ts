@@ -7,6 +7,10 @@ import {
 import { adaptResumeToVacancyController } from "../controllers/resume-adaptation.js";
 import { exportClassicResumeController } from "../controllers/resume-classic-export.js";
 import { extractResumeTextPreview } from "../controllers/resume-extraction.js";
+import {
+  getEditableResumeText,
+  updateEditableResumeText,
+} from "../controllers/resume-text.js";
 import { checkResumeVacancyFitController } from "../controllers/resume-vacancy-fit.js";
 import {
   deleteResume,
@@ -24,6 +28,8 @@ router.get("/", getResumes);
 router.post("/upload", handleResumeUpload, uploadResume);
 
 router.delete("/:resumeId", deleteResume);
+router.get("/:resumeId/text", getEditableResumeText);
+router.patch("/:resumeId/text", updateEditableResumeText);
 router.post("/:resumeId/analyze", analyzeResumePreview);
 router.get("/:resumeId/analysis", getLatestResumeAnalysis);
 router.post("/:resumeId/extract-text", extractResumeTextPreview);

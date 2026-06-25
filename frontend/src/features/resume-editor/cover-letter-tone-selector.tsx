@@ -1,6 +1,6 @@
 import type { CoverLetterTone } from '@/src/shared/api/cover-letters';
-
 import { adaptationCoverLetterToneOptions } from './cover-letter-tones';
+
 
 type Props = {
   selectedTone: CoverLetterTone;

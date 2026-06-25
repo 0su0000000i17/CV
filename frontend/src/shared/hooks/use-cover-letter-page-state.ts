@@ -9,6 +9,11 @@ import { useCoverLetterMutation } from '@/src/shared/hooks/use-cover-letter-muta
 import { usePrepareVacancyInputMutation } from '@/src/shared/hooks/use-prepare-vacancy-input-mutation';
 import { useResumesQuery } from '@/src/shared/hooks/use-resumes-query';
 
+function getResumeIdFromUrl() {
+  if (typeof window === 'undefined') return '';
+  return new URLSearchParams(window.location.search).get('resumeId') ?? '';
+}
+
 export function useCoverLetterPageState() {
   const { accessToken } = useAuth();
   const resumesQuery = useResumesQuery(accessToken);
@@ -16,10 +21,12 @@ export function useCoverLetterPageState() {
   const coverLetterMutation = useCoverLetterMutation();
 
   const resumes = resumesQuery.data?.resumes ?? [];
+
+  const [resumeIdFromUrl, setResumeIdFromUrl] = useState('');
   const [selectedResumeId, setSelectedResumeId] = useState('');
   const [vacancyInput, setVacancyInput] = useState('');
   const [selectedTone, setSelectedTone] =
-    useState<CoverLetterTone>('friendly_neutral');
+    useState<CoverLetterTone>('strict_professional');
   const [coverLetterDraft, setCoverLetterDraft] = useState('');
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>(
     'idle'
@@ -36,9 +43,16 @@ export function useCoverLetterPageState() {
     prepareVacancyMutation.isPending || coverLetterMutation.isPending;
 
   useEffect(() => {
-    if (selectedResumeId || !resumes[0]?.id) return;
-    setSelectedResumeId(resumes[0].id);
-  }, [resumes, selectedResumeId]);
+    setResumeIdFromUrl(getResumeIdFromUrl());
+  }, []);
+
+  useEffect(() => {
+    if (selectedResumeId || resumes.length === 0) return;
+
+    const resumeFromUrl = resumes.find((resume) => resume.id === resumeIdFromUrl);
+
+    setSelectedResumeId(resumeFromUrl?.id ?? resumes[0].id);
+  }, [resumeIdFromUrl, resumes, selectedResumeId]);
 
   useEffect(() => {
     if (!coverLetterMutation.data?.coverLetter) return;

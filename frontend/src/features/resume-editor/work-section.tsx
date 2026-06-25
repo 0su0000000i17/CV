@@ -1,8 +1,8 @@
 import type { ResumeAdaptationResult } from '@/src/shared/api/resume-adaptation';
-
+import { DraftUpdater } from './types';
 import { EditorSection } from './editor-section';
-import type { DraftUpdater } from './types';
 import { WorkItem } from './work-item';
+
 
 type Props = {
   draft: ResumeAdaptationResult;
