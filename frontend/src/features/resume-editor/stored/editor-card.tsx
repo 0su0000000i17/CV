@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Loader2 } from 'lucide-react';
 
 import type { UploadedResume } from '@/src/shared/api/resumes';
 import { useResumeTextQuery } from '@/src/shared/hooks/use-resume-text-query';
@@ -12,6 +11,7 @@ import { createPlainResumeText } from '@/src/features/resume-editor/model/serial
 import { useEditorState } from '@/src/features/resume-editor/model/use-editor-state';
 
 import { StoredResumeEditorActions } from './editor-actions';
+import { EditorLoadingState } from './editor-loading-state';
 
 type Props = {
   resume: UploadedResume;
@@ -80,9 +80,7 @@ export function StoredResumeEditorCard({ resume, accessToken }: Props) {
       />
 
       {isLoading ? (
-        <div className="flex min-h-[420px] items-center justify-center rounded-2xl border border-border bg-card/60">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
+        <EditorLoadingState />
       ) : resumeTextQuery.isError ? (
         <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-5 text-sm text-red-500">
           Не удалось загрузить текст резюме.

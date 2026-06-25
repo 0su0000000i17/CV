@@ -24,7 +24,7 @@ export function SummarySection({
         <div className="space-y-4">
           <TextArea
             value={draft.adaptedResume.summary}
-            rows={7}
+            rows={8}
             onChange={(value) =>
               updateDraft((current) => {
                 current.adaptedResume.summary = value;
@@ -41,9 +41,9 @@ export function SummarySection({
           </button>
         </div>
       ) : (
-        <div className="flex min-h-[120px] items-start justify-between gap-4">
-          <p className="max-h-[84px] min-w-0 flex-1 overflow-hidden text-sm leading-relaxed text-foreground">
-            {draft.adaptedResume.summary}
+        <div className="flex items-start justify-between gap-4">
+          <p className="min-w-0 flex-1 whitespace-pre-line text-sm leading-relaxed text-foreground">
+            {draft.adaptedResume.summary || 'Блок можно заполнить вручную.'}
           </p>
 
           <button
