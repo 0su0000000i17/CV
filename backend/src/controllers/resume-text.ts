@@ -2,7 +2,10 @@ import type { Request, Response } from "express";
 import { z } from "zod";
 
 import { supabaseAdmin } from "../lib/supabase.js";
-import { extractEditableResume } from "../resume-editor/extract-editable-resume.js";
+import {
+  extractEditableResume,
+  extractEditableResumeContacts,
+} from "../resume-editor/extract-editable-resume.js";
 import { extractResumeMarkdown } from "../resume-processing/extract-resume-markdown.js";
 import {
   getStringParam,
@@ -89,15 +92,13 @@ export async function getEditableResumeText(req: Request, res: Response) {
     if (!resume) return sendError(res, 404, "Resume not found");
 
     if (resume.extracted_text?.trim() && resume.editable_resume_json) {
-      const extracted = await extractEditableResume(resume.extracted_text);
-
       return res.json({
         status: "ok",
         resumeId: resume.id,
         source: "saved_json",
         markdown: resume.extracted_text,
         resumeJson: resume.editable_resume_json,
-        contacts: extracted.contacts,
+        contacts: extractEditableResumeContacts(resume.extracted_text),
         stats: null,
         extractor: { mode: "saved_json", provider: null, model: null },
       });
