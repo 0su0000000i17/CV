@@ -37,67 +37,6 @@ type GenerateResumeAdaptationOutput = {
   };
 };
 
-function normalizeLine(value: string) {
-  return value.replace(/\s+/g, " ").trim();
-}
-
-function extractSourceContactLines(resumeMarkdown: string) {
-  const lines = resumeMarkdown
-    .replace(/\r/g, "\n")
-    .split("\n")
-    .map(normalizeLine)
-    .filter(Boolean);
-
-  return lines.filter((line) => {
-    const lower = line.toLowerCase();
-    const hasTelegram =
-      lower.includes("telegram") ||
-      lower.includes("t.me/") ||
-      /^@[\w\d_]{3,}$/i.test(line) ||
-      /^\(@[\w\d_]{3,}\)$/i.test(line);
-
-    const hasProfessionalLink =
-      lower.includes("github") ||
-      lower.includes("gitlab") ||
-      lower.includes("linkedin") ||
-      lower.includes("habr") ||
-      lower.includes("stackoverflow");
-
-    return hasTelegram || hasProfessionalLink;
-  });
-}
-
-function appendSourceContactLines(
-  adaptation: ResumeAdaptationResult,
-  resumeMarkdown: string
-): ResumeAdaptationResult {
-  const contactLines = extractSourceContactLines(resumeMarkdown);
-
-  if (!contactLines.length) return adaptation;
-
-  const existing = new Set(
-    adaptation.adaptedResume.additionalInfo.map((item) =>
-      normalizeLine(item).toLowerCase()
-    )
-  );
-
-  const extraLines = contactLines.filter((line) => {
-    const key = normalizeLine(line).toLowerCase();
-
-    return key && !existing.has(key);
-  });
-
-  if (!extraLines.length) return adaptation;
-
-  return {
-    ...adaptation,
-    adaptedResume: {
-      ...adaptation.adaptedResume,
-      additionalInfo: [...adaptation.adaptedResume.additionalInfo, ...extraLines],
-    },
-  };
-}
-
 export async function generateResumeAdaptation(
   params: GenerateResumeAdaptationParams
 ): Promise<GenerateResumeAdaptationOutput> {
@@ -135,13 +74,9 @@ export async function generateResumeAdaptation(
   const parsedJson = parseJsonFromModelResponse(generationResult.text);
   const normalized = normalizeAdaptationResult(parsedJson);
   const guarded = applyAdaptationFitGuard(normalized, params.fit);
-  const withSourceContacts = appendSourceContactLines(
-    guarded,
-    params.resumeMarkdown
-  );
 
   return {
-    adaptation: withSourceContacts,
+    adaptation: guarded,
     generation: {
       provider: generationResult.provider,
       model: generationResult.model,
