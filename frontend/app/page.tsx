@@ -23,11 +23,16 @@ export default function Home() {
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[2fr_1fr] xl:gap-12">
           <div className="space-y-6">
             <h1 className="text-4xl font-normal leading-[1.1] tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl">
-              Интеллектуальный сервис <br className="hidden sm:inline" />
-              для создания, анализа <br className="hidden sm:inline" />
-              и кастомизации твоего <br className="hidden sm:inline" />
-              <span className="font-medium text-foreground">IT-резюме</span>
+              <span className="font-medium text-foreground">AI-сервис,</span>{' '}
+              <br className="hidden sm:inline" />
+              который усиливает <br className="hidden sm:inline" />
+              твоё резюме
             </h1>
+
+            <p className="max-w-2xl text-lg leading-8 text-muted-foreground md:text-xl">
+              Оценивай, адаптируй и создавай сильные сопроводительные под
+              конкретные вакансии.
+            </p>
           </div>
 
           <div className="flex flex-col items-end justify-between pt-1 pb-0 xl:-ml-20 xl:pr-40">
