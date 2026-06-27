@@ -130,35 +130,37 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               })}
             </nav>
 
-            <div className="mt-6 rounded-2xl border border-border bg-background p-4 xl:mt-auto">
-              <p className="text-sm font-medium text-foreground">
-                Тариф:{' '}
-                <span className="font-semibold uppercase tracking-wide text-emerald-500">
-                  Free
-                </span>
-              </p>
+            <div className="mt-5 rounded-xl border border-border bg-background p-3 xl:mt-auto">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-medium text-foreground">
+                  Тариф:{' '}
+                  <span className="font-semibold uppercase tracking-wide text-emerald-500">
+                    Free
+                  </span>
+                </p>
 
-              <p className="mt-3 text-xs text-muted-foreground">
-                Адаптации в этом месяце
-              </p>
-
-              <div className="mt-3 flex items-end gap-1">
-                <span className="text-2xl font-semibold text-foreground">
-                  0
-                </span>
-
-                <span className="pb-1 text-sm text-muted-foreground">
-                  / 10
+                <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-500">
+                  5 / мес
                 </span>
               </div>
 
-              <div className="mt-3 h-2 rounded-full bg-muted">
-                <div className="h-2 w-0 rounded-full bg-foreground" />
+              <div className="mt-3 flex items-end justify-between gap-3">
+                <p className="text-xs text-muted-foreground">
+                  Бесплатные генерации
+                </p>
+
+                <p className="whitespace-nowrap text-sm font-semibold text-foreground">
+                  0<span className="text-muted-foreground"> / 5</span>
+                </p>
+              </div>
+
+              <div className="mt-2 h-1.5 rounded-full bg-muted">
+                <div className="h-1.5 w-0 rounded-full bg-foreground" />
               </div>
 
               <Link
                 href="/dashboard/billing"
-                className="mt-4 block text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                className="mt-3 block text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
                 Улучшить тариф →
               </Link>
