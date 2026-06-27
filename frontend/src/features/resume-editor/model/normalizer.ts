@@ -13,6 +13,12 @@ export function normalizeResumeEditorDraft(
       title: normalizeTextValue(draft.target.title) || headline,
       company: normalizeTextValue(draft.target.company),
       seniority: normalizeTextValue(draft.target.seniority),
+      salary: normalizeTextValue(draft.target.salary),
+      specializations: normalizeStringList(draft.target.specializations),
+      employment: normalizeTextValue(draft.target.employment),
+      schedule: normalizeTextValue(draft.target.schedule),
+      workFormat: normalizeTextValue(draft.target.workFormat),
+      commuteTime: normalizeTextValue(draft.target.commuteTime),
       keywordsUsed: normalizeStringList(draft.target.keywordsUsed),
     },
     adaptedResume: {
@@ -50,24 +56,20 @@ export function normalizeResumeEditorDraft(
 }
 
 function normalizeTextValue(value?: string | null) {
-  const normalized = value?.trim();
-
-  return normalized || null;
+  return value?.trim() || null;
 }
 
-function normalizeStringList(value: string[]) {
+function normalizeStringList(value: string[] = []) {
   const seen = new Set<string>();
   const result: string[] = [];
 
-  value.forEach((item) => {
+  for (const item of value) {
     const normalized = item.trim();
     const key = normalized.toLowerCase();
-
-    if (!normalized || seen.has(key)) return;
-
+    if (!normalized || seen.has(key)) continue;
     seen.add(key);
     result.push(normalized);
-  });
+  }
 
   return result;
 }
