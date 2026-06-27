@@ -1,54 +1,83 @@
 import type { SourceResumeDocument } from "../resume-document/types.js";
 import { sourceDocumentToEditableResume } from "../resume-editor/source-document-to-editable.js";
-import type { ResumeAdaptationResult } from "./types.js";
+import type { AdaptedResumeSkills, ResumeAdaptationResult } from "./types.js";
 
 type ExperienceItem = ResumeAdaptationResult["adaptedResume"]["experience"][number];
 
-function findAdaptedExperience(
-  adaptedItems: ExperienceItem[],
-  sourceIndex: number,
-  fallbackIndex: number
-) {
-  return (
-    adaptedItems.find((item) => item.sourceIndex === sourceIndex) ||
-    adaptedItems[fallbackIndex] ||
-    null
-  );
+function clean(value?: string | null) {
+  return value?.replace(/\s+/g, " ").trim() || "";
 }
 
-function mergeExperienceItem(
-  original: ExperienceItem,
-  adapted: ExperienceItem | null
-): ExperienceItem {
-  const adaptedBullets = adapted?.adaptedBullets?.filter(Boolean) || [];
-  const preservedFacts = adapted?.preservedFacts?.filter(Boolean) || [];
+function key(value: string) {
+  return clean(value).toLowerCase().replace(/[^a-zа-яё0-9+#.]+/giu, "");
+}
 
+function unique(values: string[]) {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const value of values) {
+    const normalized = clean(value);
+    const itemKey = key(normalized);
+    if (!normalized || seen.has(itemKey)) continue;
+    seen.add(itemKey);
+    result.push(normalized);
+  }
+  return result;
+}
+
+function findAdapted(items: ExperienceItem[], sourceIndex: number, fallbackIndex: number) {
+  return items.find((item) => item.sourceIndex === sourceIndex) || items[fallbackIndex] || null;
+}
+
+function mergeBullets(original: string[], adapted: string[]) {
+  const result = unique(adapted);
+  const seen = new Set(result.map(key));
+  const targetCount = Math.min(unique(original).length, 16);
+
+  for (const bullet of unique(original)) {
+    if (result.length >= targetCount) break;
+    const bulletKey = key(bullet);
+    if (seen.has(bulletKey)) continue;
+    seen.add(bulletKey);
+    result.push(bullet);
+  }
+
+  return result.length ? result : unique(original);
+}
+
+function mergeExperienceItem(original: ExperienceItem, adapted: ExperienceItem | null): ExperienceItem {
+  const adaptedBullets = adapted?.adaptedBullets || [];
+  const preservedFacts = adapted?.preservedFacts?.length ? adapted.preservedFacts : original.preservedFacts;
   return {
     sourceIndex: original.sourceIndex,
     company: original.company,
     companyUrl: original.companyUrl,
     position: original.position,
     dates: original.dates,
-    adaptedBullets: adaptedBullets.length ? adaptedBullets : original.adaptedBullets,
-    focus: adapted?.focus || original.focus,
-    preservedFacts: preservedFacts.length ? preservedFacts : original.preservedFacts,
+    adaptedBullets: mergeBullets(original.adaptedBullets, adaptedBullets),
+    focus: clean(adapted?.focus) || original.focus,
+    preservedFacts: unique(preservedFacts).slice(0, 16),
     warnings: adapted?.warnings || [],
   };
 }
 
-function unique(values: string[]) {
-  const seen = new Set<string>();
-  const result: string[] = [];
+function mergeSkills(original: AdaptedResumeSkills, adapted: AdaptedResumeSkills) {
+  const originalSkills = unique([...original.primary, ...original.secondary]);
+  const canonical = new Map(originalSkills.map((skill) => [key(skill), skill]));
+  const addSupported = (items: string[]) =>
+    unique(items)
+      .map((item) => canonical.get(key(item)))
+      .filter((item): item is string => Boolean(item));
+  const primary = unique(addSupported([...adapted.primary, ...adapted.secondary]));
+  const used = new Set(primary.map(key));
+  const secondary = originalSkills.filter((skill) => !used.has(key(skill)));
 
-  for (const value of values) {
-    const normalized = value.trim();
-    const key = normalized.toLowerCase();
-    if (!normalized || seen.has(key)) continue;
-    seen.add(key);
-    result.push(normalized);
-  }
-
-  return result;
+  return {
+    primary: primary.length ? primary : original.primary,
+    secondary,
+    deprioritized: unique(adapted.deprioritized).filter((item) => canonical.has(key(item))),
+    notAdded: unique(adapted.notAdded),
+  };
 }
 
 export function applySourceResumeStructure(params: {
@@ -57,43 +86,24 @@ export function applySourceResumeStructure(params: {
 }): ResumeAdaptationResult {
   const original = sourceDocumentToEditableResume(params.sourceDocument).resumeJson;
   const adapted = params.adaptation;
-  const originalTarget = original.target;
-
   const experience = original.adaptedResume.experience.map((item, index) =>
-    mergeExperienceItem(
-      item,
-      findAdaptedExperience(adapted.adaptedResume.experience, item.sourceIndex, index)
-    )
+    mergeExperienceItem(item, findAdapted(adapted.adaptedResume.experience, item.sourceIndex, index))
   );
 
   return {
     ...adapted,
     target: {
-      title: originalTarget.title,
+      ...original.target,
       company: adapted.target.company,
       seniority: adapted.target.seniority,
-      salary: originalTarget.salary || null,
-      specializations: originalTarget.specializations || [],
-      employment: originalTarget.employment || null,
-      schedule: originalTarget.schedule || null,
-      workFormat: originalTarget.workFormat || null,
-      commuteTime: originalTarget.commuteTime || null,
-      keywordsUsed: adapted.target.keywordsUsed,
+      keywordsUsed: unique(adapted.target.keywordsUsed),
     },
     adaptedResume: {
       ...adapted.adaptedResume,
       experience,
-      skills: {
-        primary: unique([
-          ...adapted.adaptedResume.skills.primary,
-          ...original.adaptedResume.skills.primary,
-        ]),
-        secondary: unique(adapted.adaptedResume.skills.secondary),
-        deprioritized: unique(adapted.adaptedResume.skills.deprioritized),
-        notAdded: unique(adapted.adaptedResume.skills.notAdded),
-      },
+      skills: mergeSkills(original.adaptedResume.skills, adapted.adaptedResume.skills),
       education: original.adaptedResume.education,
-      additionalInfo: original.adaptedResume.additionalInfo,
+      additionalInfo: [],
     },
   };
 }
