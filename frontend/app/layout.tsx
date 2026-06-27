@@ -37,7 +37,7 @@ export default function RootLayout({
             </main>
 
             <footer className="mx-auto w-full max-w-[1400px] px-6 md:px-12">
-              <div className="border-t border-border py-8">
+              <div className="border-t border-border pb-8 pt-12">
                 <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
                   <div className="text-sm leading-6 text-muted-foreground">
                     <p>© 2026 CVPro. Все права защищены.</p>
