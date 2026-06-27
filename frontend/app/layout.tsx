@@ -45,34 +45,23 @@ export default function RootLayout({
 
             <footer className="mx-auto w-full max-w-[1400px] px-6 md:px-12">
               <div className="border-t border-border py-8">
-                <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_360px] md:items-start">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">CV Pro</p>
-                    <p className="mt-2 max-w-md text-xs leading-5 text-muted-foreground">
-                      AI-сервис для анализа и адаптации IT-резюме.
-                    </p>
-                    <p className="mt-4 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-                      v1.0.0 · © 2026 CV PRO
-                    </p>
+                <div className="flex flex-col gap-5 text-xs font-medium uppercase tracking-widest text-muted-foreground lg:flex-row lg:items-center lg:justify-between">
+                  <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+                    <span>v1.0.0</span>
+                    <span>© 2026 CV PRO</span>
                   </div>
 
-                  <div className="md:justify-self-end">
-                    <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground md:text-right">
-                      Документы
-                    </p>
-
-                    <nav className="mt-4 grid gap-2 text-sm text-muted-foreground md:text-right">
-                      {legalLinks.map((link) => (
-                        <Link
-                          key={link.href}
-                          href={link.href}
-                          className="transition-colors hover:text-foreground"
-                        >
-                          {link.label}
-                        </Link>
-                      ))}
-                    </nav>
-                  </div>
+                  <nav className="flex flex-wrap items-center gap-x-5 gap-y-3">
+                    {legalLinks.map((link) => (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        className="transition-colors hover:text-foreground"
+                      >
+                        {link.label}
+                      </Link>
+                    ))}
+                  </nav>
                 </div>
               </div>
             </footer>
