@@ -5,6 +5,7 @@ import {
   CreditCard,
   FileText,
   Home,
+  Mail,
   Settings,
   Sparkles,
 } from "lucide-react";
@@ -21,9 +22,14 @@ const dashboardNavItems = [
     icon: FileText,
   },
   {
-    title: "Адаптация",
+    title: "Адаптировать под вакансию",
     href: "/dashboard/adapt",
     icon: Sparkles,
+  },
+  {
+    title: "Сопроводительное письмо",
+    href: "/dashboard/cover-letter",
+    icon: Mail,
   },
   {
     title: "Оценка резюме",
@@ -85,14 +91,14 @@ export function DashboardMobileMenu({ onNavigate }: Props) {
               }`}
             >
               <Icon
-                className={`h-4 w-4 ${
+                className={`h-4 w-4 shrink-0 ${
                   active
                     ? "text-background"
                     : "text-muted-foreground group-hover:text-foreground"
                 }`}
               />
 
-              <span>{item.title}</span>
+              <span className="min-w-0 break-words">{item.title}</span>
             </Link>
           );
         })}
