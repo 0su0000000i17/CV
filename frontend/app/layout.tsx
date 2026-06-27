@@ -15,48 +15,6 @@ export const metadata: Metadata = {
   description: 'AI-сервис для анализа и адаптации резюме',
 };
 
-const rawMobileDebugScript = `
-(function () {
-  window.__cvproRawDebugCount = 0;
-
-  function createButton() {
-    if (document.getElementById('cvpro-raw-debug-button')) {
-      return;
-    }
-
-    var button = document.createElement('button');
-    button.id = 'cvpro-raw-debug-button';
-    button.type = 'button';
-    button.textContent = 'RAW JS TEST 0';
-    button.style.position = 'fixed';
-    button.style.right = '16px';
-    button.style.bottom = '16px';
-    button.style.zIndex = '2147483647';
-    button.style.padding = '12px 16px';
-    button.style.borderRadius = '999px';
-    button.style.border = '2px solid #22c55e';
-    button.style.background = '#16a34a';
-    button.style.color = '#ffffff';
-    button.style.font = '700 12px system-ui, -apple-system, BlinkMacSystemFont, sans-serif';
-
-    button.addEventListener('click', function () {
-      window.__cvproRawDebugCount = window.__cvproRawDebugCount + 1;
-      button.textContent = 'RAW JS TEST ' + window.__cvproRawDebugCount;
-      window.alert('CVPro raw JS click ' + window.__cvproRawDebugCount);
-    });
-
-    document.body.appendChild(button);
-    window.alert('CVPro raw JS mounted');
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', createButton);
-  } else {
-    createButton();
-  }
-})();
-`;
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -68,7 +26,6 @@ export default function RootLayout({
         <link rel="icon" href="/favicon-dark.svg" type="image/svg+xml" />
       </head>
       <body className={`${inter.variable} min-h-screen antialiased`}>
-        <script dangerouslySetInnerHTML={{ __html: rawMobileDebugScript }} />
         <ThemeProvider>
           <ThemeFavicon />
           <div className="flex min-h-screen flex-col bg-background text-foreground">
