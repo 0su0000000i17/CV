@@ -17,28 +17,28 @@ const updateResumeTextSchema = z.object({
 type EditableResumeRecord = {
   id: string;
   file_name: string;
-  file_path: string;
+  file_path: string | null;
   file_type: string;
   extracted_text: string | null;
   editable_resume_json: unknown | null;
+  source_resume_document: unknown | null;
 };
 
 async function findEditableResume(userId: string, resumeId: string) {
   const { data, error } = await supabaseAdmin
     .from("resumes")
-    .select("id, file_name, file_path, file_type, extracted_text, editable_resume_json")
+    .select("id, file_name, file_path, file_type, extracted_text, editable_resume_json, source_resume_document")
     .eq("id", resumeId)
     .eq("user_id", userId)
     .maybeSingle();
-
   if (error) throw error;
   return data as EditableResumeRecord | null;
 }
 
 async function extractOriginalMarkdown(resume: EditableResumeRecord) {
+  if (!resume.file_path) throw new Error("Resume has no legacy source file");
   const { data, error } = await supabaseAdmin.storage.from("resumes").download(resume.file_path);
   if (error) throw error;
-
   return extractResumeMarkdown({
     fileBuffer: Buffer.from(await data.arrayBuffer()),
     fileName: resume.file_name,
@@ -52,17 +52,18 @@ async function persistParsedResume(params: {
   resumeId: string;
   markdown: string;
   resumeJson: unknown;
+  sourceDocument: unknown;
 }) {
   const { error } = await supabaseAdmin
     .from("resumes")
     .update({
       extracted_text: params.markdown,
       editable_resume_json: params.resumeJson,
+      source_resume_document: params.sourceDocument,
       updated_at: new Date().toISOString(),
     })
     .eq("id", params.resumeId)
     .eq("user_id", params.userId);
-
   if (error) console.error("[resumeText] Failed to persist parsed resume", error);
 }
 
@@ -74,7 +75,7 @@ function createResponse(params: {
 }) {
   const extracted = extractEditableResume(params.markdown);
   const resumeJson = params.resume.editable_resume_json || extracted.resumeJson;
-
+  const document = params.resume.source_resume_document || extracted.document;
   return {
     status: "ok",
     resumeId: params.resume.id,
@@ -82,7 +83,7 @@ function createResponse(params: {
     markdown: params.markdown,
     resumeJson,
     contacts: extracted.contacts,
-    document: extracted.document,
+    document,
     stats: params.stats,
     extractor: extracted.extractor,
   };
@@ -92,7 +93,6 @@ export async function getEditableResumeText(req: Request, res: Response) {
   try {
     const { user } = await getUserFromRequest(req);
     const resumeId = getStringParam(req.params.resumeId);
-
     if (!user) return sendError(res, 401, "Unauthorized");
     if (!resumeId) return sendError(res, 400, "Invalid resume id");
 
@@ -108,14 +108,13 @@ export async function getEditableResumeText(req: Request, res: Response) {
     const extraction = await extractOriginalMarkdown(resume);
     const markdown = extraction.normalizedMarkdown;
     const response = createResponse({ resume, markdown, source: "original_file", stats: extraction.stats });
-
     await persistParsedResume({
       userId: user.id,
       resumeId: resume.id,
       markdown,
       resumeJson: response.resumeJson,
+      sourceDocument: response.document,
     });
-
     return res.json(response);
   } catch (error) {
     return sendServerError(res, "Failed to get editable resume text", error);
@@ -127,27 +126,19 @@ export async function updateEditableResumeText(req: Request, res: Response) {
     const { user } = await getUserFromRequest(req);
     const resumeId = getStringParam(req.params.resumeId);
     const parsedBody = updateResumeTextSchema.safeParse(req.body);
-
     if (!user) return sendError(res, 401, "Unauthorized");
     if (!resumeId) return sendError(res, 400, "Invalid resume id");
     if (!parsedBody.success) return sendError(res, 400, "Некорректные данные редактора резюме.");
 
     const { data, error } = await supabaseAdmin
       .from("resumes")
-      .update({
-        editable_resume_json: parsedBody.data.resumeJson,
-        analysis_status: "needs_update",
-        last_score: null,
-        updated_at: new Date().toISOString(),
-      })
+      .update({ editable_resume_json: parsedBody.data.resumeJson, analysis_status: "needs_update", last_score: null, updated_at: new Date().toISOString() })
       .eq("id", resumeId)
       .eq("user_id", user.id)
       .select()
       .maybeSingle();
-
     if (error) return sendServerError(res, "Failed to update resume text", error);
     if (!data) return sendError(res, 404, "Resume not found");
-
     return res.json({ status: "updated", resume: data });
   } catch (error) {
     return sendServerError(res, "Unexpected resume text update error", error);
