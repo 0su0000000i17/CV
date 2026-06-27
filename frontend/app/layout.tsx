@@ -12,10 +12,10 @@ const inter = Inter({
 });
 
 const legalLinks = [
-  { href: '/privacy', label: 'Конфиденциальность' },
-  { href: '/terms', label: 'Соглашение' },
+  { href: '/privacy', label: 'Политика конфиденциальности' },
+  { href: '/terms', label: 'Пользовательское соглашение' },
   { href: '/offer', label: 'Оферта' },
-  { href: '/personal-data', label: 'Персональные данные' },
+  { href: '/personal-data', label: 'Согласие на обработку данных' },
 ];
 
 export const metadata: Metadata = {
@@ -44,24 +44,35 @@ export default function RootLayout({
             </main>
 
             <footer className="mx-auto w-full max-w-[1400px] px-6 md:px-12">
-              <div className="border-t border-border pt-8">
-                <div className="flex flex-col gap-5 pb-8 pt-4 text-xs font-medium uppercase tracking-widest text-muted-foreground md:flex-row md:items-center md:justify-between">
-                  <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-                    <span>v1.0.0</span>
-                    <span>© 2026 CV PRO</span>
+              <div className="border-t border-border py-8">
+                <div className="grid gap-8 md:grid-cols-[1fr_2fr] md:items-start">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">CV Pro</p>
+                    <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                      AI-сервис для анализа и адаптации IT-резюме.
+                    </p>
+                    <p className="mt-4 text-xs font-medium uppercase tracking-widest text-muted-foreground">
+                      v1.0.0 · © 2026 CV PRO
+                    </p>
                   </div>
 
-                  <nav className="flex flex-wrap items-center gap-x-5 gap-y-3">
-                    {legalLinks.map((link) => (
-                      <Link
-                        key={link.href}
-                        href={link.href}
-                        className="transition-colors hover:text-foreground"
-                      >
-                        {link.label}
-                      </Link>
-                    ))}
-                  </nav>
+                  <div className="md:justify-self-end md:text-right">
+                    <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+                      Документы
+                    </p>
+
+                    <nav className="mt-4 flex flex-col gap-3 text-sm text-muted-foreground sm:flex-row sm:flex-wrap md:justify-end">
+                      {legalLinks.map((link) => (
+                        <Link
+                          key={link.href}
+                          href={link.href}
+                          className="transition-colors hover:text-foreground"
+                        >
+                          {link.label}
+                        </Link>
+                      ))}
+                    </nav>
+                  </div>
                 </div>
               </div>
             </footer>
