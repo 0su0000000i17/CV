@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
+    "backfill:resume-json": "tsx src/scripts/backfill-resume-json.ts",
     "cleanup:resume-files": "tsx src/scripts/cleanup-legacy-resume-files.ts"
   },
   "dependencies": {
