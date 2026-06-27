@@ -15,7 +15,7 @@ export type EditableResumeContacts = {
 export type EditableResumeExperienceItem = {
   sourceIndex: number;
   company: string | null;
-  companyUrl: string | null;
+  companyUrl?: string | null;
   position: string | null;
   dates: string | null;
   adaptedBullets: string[];
@@ -24,13 +24,21 @@ export type EditableResumeExperienceItem = {
   warnings: string[];
 };
 
+export type EditableResumeTarget = {
+  title: string | null;
+  company: string | null;
+  seniority: string | null;
+  salary: string | null;
+  specializations: string[];
+  employment: string | null;
+  schedule: string | null;
+  workFormat: string | null;
+  commuteTime: string | null;
+  keywordsUsed: string[];
+};
+
 export type EditableResumeJson = {
-  target: {
-    title: string | null;
-    company: string | null;
-    seniority: string | null;
-    keywordsUsed: string[];
-  };
+  target: EditableResumeTarget;
   adaptedResume: {
     headline: string;
     summary: string;
