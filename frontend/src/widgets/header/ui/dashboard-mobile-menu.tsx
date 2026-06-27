@@ -73,7 +73,7 @@ export function DashboardMobileMenu({ onNavigate }: Props) {
         <p className="mt-1 text-xs text-muted-foreground">Личный кабинет</p>
       </div>
 
-      <nav className="flex flex-col gap-1">
+      <nav className="flex flex-col gap-1.5">
         {dashboardNavItems.map((item) => {
           const Icon = item.icon;
           const active = isActiveRoute(pathname, item.href);
@@ -104,19 +104,13 @@ export function DashboardMobileMenu({ onNavigate }: Props) {
         })}
       </nav>
 
-      <div className="mt-6 rounded-xl border border-border bg-card/60 p-3">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-medium text-foreground">
-            Тариф:{" "}
-            <span className="font-semibold uppercase tracking-wide text-emerald-500">
-              Free
-            </span>
-          </p>
-
-          <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-500">
-            5 / мес
+      <div className="mt-6 rounded-xl border border-border bg-card/60 p-3.5">
+        <p className="text-sm font-medium text-foreground">
+          Тариф:{" "}
+          <span className="font-semibold uppercase tracking-wide text-emerald-500">
+            Free
           </span>
-        </div>
+        </p>
 
         <div className="mt-3 flex items-end justify-between gap-3">
           <p className="text-xs text-muted-foreground">Бесплатные генерации</p>
