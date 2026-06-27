@@ -1,16 +1,10 @@
-import type {
-  ResumeTextBlock,
-  SourceResumeDocument,
-} from "../resume-document/types.js";
+import type { ResumeTextBlock, SourceResumeDocument } from "../resume-document/types.js";
 import type { EditableResumeContacts, EditableResumeJson } from "./types.js";
 
 type ExperienceItem = SourceResumeDocument["experience"]["items"][number];
 
 export function sourceDocumentToEditableResume(document: SourceResumeDocument) {
-  return {
-    contacts: documentToContacts(document),
-    resumeJson: documentToResumeJson(document),
-  };
+  return { contacts: documentToContacts(document), resumeJson: documentToResumeJson(document) };
 }
 
 function documentToContacts(document: SourceResumeDocument): EditableResumeContacts {
@@ -56,10 +50,10 @@ function documentToResumeJson(document: SourceResumeDocument): EditableResumeJso
       },
       experience: document.experience.items.map(toExperienceItem),
       education: {
-        policy: document.education.items.length ? "unchanged" : "not_found",
+        policy: document.education.items.length || document.education.level ? "unchanged" : "not_found",
         notes: educationToNotes(document),
       },
-      additionalInfo: cleanList(document.additional.about),
+      additionalInfo: [],
     },
     changes: [],
     warnings: document.diagnostics.warnings,
@@ -77,19 +71,16 @@ function toExperienceItem(item: ExperienceItem, index: number) {
     dates: formatDates(item.dates),
     adaptedBullets: bullets,
     focus: item.company.industries.join(", ") || null,
-    preservedFacts: bullets.slice(0, 12),
+    preservedFacts: bullets.slice(0, 16),
     warnings: [],
   };
 }
 
 function educationToNotes(document: SourceResumeDocument) {
   const items = document.education.items.map((item) =>
-    [item.year, item.institution, item.faculty, item.specialization]
-      .map(text)
-      .filter(Boolean)
-      .join(" — ")
+    [item.year, item.institution, item.faculty, item.specialization].map(text).filter(Boolean).join(" — ")
   );
-  return cleanList([document.education.level || "", ...items, ...document.education.raw]);
+  return cleanList([document.education.level || "", ...items]);
 }
 
 function blocksToBullets(blocks: ResumeTextBlock[]) {
@@ -97,7 +88,7 @@ function blocksToBullets(blocks: ResumeTextBlock[]) {
 }
 
 function formatBlock(block: ResumeTextBlock) {
-  if (block.type === "sectionTitle") return `${block.title}:`;
+  if (block.type === "sectionTitle") return "";
   if (block.type === "stack") return `${block.label}: ${block.items.join(", ")}`;
   return block.text;
 }
