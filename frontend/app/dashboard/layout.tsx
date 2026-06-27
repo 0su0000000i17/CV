@@ -87,8 +87,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     <DashboardResumeSelectionProvider>
       <div className="grid min-h-[calc(100vh-64px)] grid-cols-1 gap-6 lg:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)] xl:gap-8">
         <aside className="hidden min-w-0 lg:block">
-          <div className="sticky top-20 flex max-h-[calc(100vh-6rem)] min-h-0 flex-col overflow-y-auto rounded-2xl border border-border bg-card/60 p-3 lg:w-[240px] xl:w-[280px] xl:p-4">
-            <div className="px-3 pb-5 pt-2">
+          <div className="fixed bottom-6 top-20 flex min-h-0 flex-col overflow-y-auto rounded-2xl border border-border bg-card/60 p-4 lg:w-[240px] xl:w-[280px] xl:p-5">
+            <div className="px-3 pb-6 pt-2">
               <p className="text-lg font-semibold tracking-tight text-foreground">
                 CV<span className="text-emerald-500">Pro</span>
               </p>
@@ -98,7 +98,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               </p>
             </div>
 
-            <nav className="flex min-h-0 flex-col gap-1">
+            <nav className="flex min-h-0 flex-col gap-1.5">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const active = isActiveRoute(pathname, item.href);
@@ -108,7 +108,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     key={item.href}
                     href={item.href}
                     aria-current={active ? 'page' : undefined}
-                    className={`group flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors xl:py-2.5 ${
+                    className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors xl:py-3 ${
                       active
                         ? 'bg-foreground text-background shadow-sm'
                         : 'text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -130,19 +130,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               })}
             </nav>
 
-            <div className="mt-5 rounded-xl border border-border bg-background p-3 xl:mt-auto">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-medium text-foreground">
-                  Тариф:{' '}
-                  <span className="font-semibold uppercase tracking-wide text-emerald-500">
-                    Free
-                  </span>
-                </p>
-
-                <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-500">
-                  5 / мес
+            <div className="mt-6 rounded-xl border border-border bg-background p-3.5 xl:mt-auto">
+              <p className="text-sm font-medium text-foreground">
+                Тариф:{' '}
+                <span className="font-semibold uppercase tracking-wide text-emerald-500">
+                  Free
                 </span>
-              </div>
+              </p>
 
               <div className="mt-3 flex items-end justify-between gap-3">
                 <p className="text-xs text-muted-foreground">
