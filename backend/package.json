@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "cleanup:resume-files": "tsx src/scripts/cleanup-legacy-resume-files.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.2",
