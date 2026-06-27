@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from './providers';
@@ -9,6 +10,13 @@ const inter = Inter({
   subsets: ['latin', 'cyrillic'],
   variable: '--font-sans',
 });
+
+const legalLinks = [
+  { href: '/privacy', label: 'Конфиденциальность' },
+  { href: '/terms', label: 'Соглашение' },
+  { href: '/offer', label: 'Оферта' },
+  { href: '/personal-data', label: 'Персональные данные' },
+];
 
 export const metadata: Metadata = {
   title: 'CV Pro',
@@ -37,9 +45,23 @@ export default function RootLayout({
 
             <footer className="mx-auto w-full max-w-[1400px] px-6 md:px-12">
               <div className="border-t border-border pt-8">
-                <div className="flex items-center justify-between pb-8 pt-4 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-                  <span>v1.0.0</span>
-                  <span>© 2026 CV PRO</span>
+                <div className="flex flex-col gap-5 pb-8 pt-4 text-xs font-medium uppercase tracking-widest text-muted-foreground md:flex-row md:items-center md:justify-between">
+                  <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+                    <span>v1.0.0</span>
+                    <span>© 2026 CV PRO</span>
+                  </div>
+
+                  <nav className="flex flex-wrap items-center gap-x-5 gap-y-3">
+                    {legalLinks.map((link) => (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        className="transition-colors hover:text-foreground"
+                      >
+                        {link.label}
+                      </Link>
+                    ))}
+                  </nav>
                 </div>
               </div>
             </footer>
