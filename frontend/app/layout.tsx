@@ -51,12 +51,12 @@ export default function RootLayout({
                     <span>© 2026 CV PRO</span>
                   </div>
 
-                  <nav className="flex flex-wrap items-center gap-x-5 gap-y-3">
+                  <nav className="flex flex-wrap items-center gap-y-3">
                     {legalLinks.map((link) => (
                       <Link
                         key={link.href}
                         href={link.href}
-                        className="transition-colors hover:text-foreground"
+                        className="mr-8 whitespace-nowrap transition-colors last:mr-0 hover:text-foreground"
                       >
                         {link.label}
                       </Link>
