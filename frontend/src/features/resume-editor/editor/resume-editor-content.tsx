@@ -2,6 +2,7 @@
 
 import { ContactsSection } from '@/src/features/resume-editor/contacts/contacts-section';
 import { WorkSection } from '@/src/features/resume-editor/experience/work-section';
+import { TargetSection } from '@/src/features/resume-editor/sections/target-section';
 import { EducationSection } from '@/src/features/resume-editor/sections/education-section';
 import { SkillsSection } from '@/src/features/resume-editor/sections/skills-section';
 import { SummarySection } from '@/src/features/resume-editor/sections/summary-section';
@@ -39,6 +40,8 @@ export function ResumeEditorContent({ editor, isProfileLoading }: Props) {
         isProfileLoading={isProfileLoading}
         setIsEditing={editor.setIsContactsEditing}
       />
+
+      <TargetSection draft={editor.draft} updateDraft={editor.updateDraft} />
 
       <WorkSection
         draft={editor.draft}
