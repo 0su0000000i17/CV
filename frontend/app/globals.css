@@ -32,6 +32,11 @@ html.light {
     @apply bg-background text-foreground antialiased;
   }
 
+  #mobile-navigation-menu {
+    z-index: 8900 !important;
+    max-height: calc(100svh - 64px) !important;
+  }
+
   :where(p, span, h1, h2, h3, h4, h5, h6, li, a, button, label, input, textarea, td, th, code, pre) {
     overflow-wrap: anywhere;
     word-break: normal;
