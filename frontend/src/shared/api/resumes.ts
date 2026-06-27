@@ -7,11 +7,12 @@ export type UploadedResume = {
   title: string;
   role: string | null;
   file_name: string;
-  file_path: string;
+  file_path: string | null;
   file_type: string;
-  file_size: number;
+  file_size: number | null;
   source_file_hash: string | null;
   extracted_text: string | null;
+  source_resume_document?: SourceResumeDocument | null;
   editable_resume_json?: ResumeAdaptationResult | null;
   analysis_status: string;
   last_score: number | null;
