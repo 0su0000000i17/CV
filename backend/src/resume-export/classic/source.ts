@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "../../lib/supabase.js";
+import type { SourceResumeDocument } from "../../resume-document/types.js";
 import { extractResumeMarkdown } from "../../resume-processing/extract-resume-markdown.js";
 
 export type ResumeSourceRecord = {
@@ -8,22 +9,20 @@ export type ResumeSourceRecord = {
   file_path: string | null;
   file_type: string | null;
   extracted_text: string | null;
+  source_resume_document: unknown | null;
 };
 
 export type ResumeExportSource = ResumeSourceRecord & {
   sourceText: string;
+  sourceDocument: SourceResumeDocument | null;
 };
 
 async function readOriginalText(resume: ResumeSourceRecord) {
   const savedText = resume.extracted_text?.trim();
   if (savedText) return savedText;
-
   if (!resume.file_path) return "";
 
-  const result = await supabaseAdmin.storage
-    .from("resumes")
-    .download(resume.file_path);
-
+  const result = await supabaseAdmin.storage.from("resumes").download(resume.file_path);
   if (result.error) throw result.error;
 
   const fileBuffer = Buffer.from(await result.data.arrayBuffer());
@@ -43,7 +42,7 @@ export async function getResumeExportSource(params: {
 }): Promise<ResumeExportSource | null> {
   const result = await supabaseAdmin
     .from("resumes")
-    .select("id, title, file_name, file_path, file_type, extracted_text")
+    .select("id, title, file_name, file_path, file_type, extracted_text, source_resume_document")
     .eq("id", params.resumeId)
     .eq("user_id", params.userId)
     .maybeSingle();
@@ -56,5 +55,6 @@ export async function getResumeExportSource(params: {
   return {
     ...resume,
     sourceText: await readOriginalText(resume),
+    sourceDocument: resume.source_resume_document as SourceResumeDocument | null,
   };
 }
