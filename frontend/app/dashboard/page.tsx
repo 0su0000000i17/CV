@@ -157,7 +157,10 @@ function getLatestCheckedResume(resumes: UploadedResume[]) {
   )[0];
 }
 
-function createResumeActionHref(path: '/dashboard/analyze' | '/dashboard/adapt', resumeId?: string) {
+function createResumeActionHref(
+  path: '/dashboard/analyze' | '/dashboard/adapt',
+  resumeId?: string
+) {
   if (!resumeId) {
     return path;
   }
@@ -208,21 +211,25 @@ function ResumeRow({ resume }: { resume: UploadedResume }) {
       : 0;
 
   return (
-    <div className="flex flex-col gap-4 px-4 py-4 transition-colors hover:bg-muted/30 2xl:flex-row 2xl:items-center 2xl:justify-between">
-      <div className="flex min-w-0 items-start gap-4">
+    <div className="flex flex-col gap-4 px-4 py-4 transition-colors hover:bg-muted/30 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex min-w-0 flex-1 items-start gap-4 lg:pr-5">
         <div className="shrink-0 rounded-xl bg-blue-500/10 p-3 text-blue-300 ring-1 ring-blue-500/20">
           <FileText className="h-5 w-5" />
         </div>
 
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <Link
             href={`/dashboard/resumes/${resume.id}`}
+            title={resume.title}
             className="block max-w-full truncate text-sm font-medium text-foreground hover:underline"
           >
             {resume.title}
           </Link>
 
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p
+            title={resume.role || 'Роль не указана'}
+            className="mt-1 max-w-full truncate text-xs text-muted-foreground"
+          >
             {resume.role || 'Роль не указана'}
           </p>
 
@@ -243,7 +250,7 @@ function ResumeRow({ resume }: { resume: UploadedResume }) {
               {getResumeScoreLabel(resume)}
             </span>
 
-            <span className="text-xs text-muted-foreground">
+            <span className="whitespace-nowrap text-xs text-muted-foreground">
               {formatDate(resume.created_at)}
             </span>
           </div>
@@ -257,7 +264,7 @@ function ResumeRow({ resume }: { resume: UploadedResume }) {
         </div>
       </div>
 
-      <div className="flex shrink-0 flex-wrap gap-2 2xl:justify-end">
+      <div className="flex shrink-0 flex-wrap gap-2 lg:justify-end">
         <Link
           href={`/dashboard/resumes/${resume.id}`}
           className="inline-flex items-center justify-center rounded-xl border border-border px-4 py-2 text-xs font-medium text-foreground transition-colors hover:bg-muted"
