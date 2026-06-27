@@ -38,5 +38,6 @@ export function useVacancyState(onResetResult: () => void) {
     setExtractionStatus,
     setPreparedVacancy,
     setPreparedVacancyText,
+    setVacancyInput,
   };
 }
