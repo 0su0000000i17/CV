@@ -40,7 +40,7 @@ const navItems = [
     icon: Mail,
   },
   {
-    title: 'Оценка резюме',
+    title: 'Оценить резюме',
     href: '/dashboard/analyze',
     icon: BarChart3,
   },
