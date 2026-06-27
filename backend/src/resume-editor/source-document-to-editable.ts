@@ -4,6 +4,8 @@ import type {
 } from "../resume-document/types.js";
 import type { EditableResumeContacts, EditableResumeJson } from "./types.js";
 
+type ExperienceItem = SourceResumeDocument["experience"]["items"][number];
+
 export function sourceDocumentToEditableResume(document: SourceResumeDocument) {
   return {
     contacts: documentToContacts(document),
@@ -13,7 +15,6 @@ export function sourceDocumentToEditableResume(document: SourceResumeDocument) {
 
 function documentToContacts(document: SourceResumeDocument): EditableResumeContacts {
   const personal = document.personal;
-
   return {
     fullName: text(personal.fullName),
     gender: text(personal.gender),
@@ -31,7 +32,6 @@ function documentToContacts(document: SourceResumeDocument): EditableResumeConta
 
 function documentToResumeJson(document: SourceResumeDocument): EditableResumeJson {
   const headline = text(document.target.title) || "Резюме";
-
   return {
     target: {
       title: text(document.target.title) || null,
@@ -67,12 +67,8 @@ function documentToResumeJson(document: SourceResumeDocument): EditableResumeJso
   };
 }
 
-function toExperienceItem(
-  item: SourceResumeDocument["experience"]["items"][number],
-  index: number
-) {
+function toExperienceItem(item: ExperienceItem, index: number) {
   const bullets = blocksToBullets(item.blocks);
-
   return {
     sourceIndex: Number.isFinite(item.sourceIndex) ? item.sourceIndex : index,
     company: text(item.company.name) || null,
@@ -86,21 +82,14 @@ function toExperienceItem(
   };
 }
 
-function formatLanguage(item: SourceResumeDocument["skills"]["languages"][number]) {
-  return [item.name, item.level, item.description].map(text).filter(Boolean).join(" — ");
-}
-
 function educationToNotes(document: SourceResumeDocument) {
-  return cleanList([
-    document.education.level || "",
-    ...document.education.items.map((item) =>
-      [item.year, item.institution, item.faculty, item.specialization]
-        .map(text)
-        .filter(Boolean)
-        .join(" — ")
-    ),
-    ...(document.education.raw || []),
-  ]);
+  const items = document.education.items.map((item) =>
+    [item.year, item.institution, item.faculty, item.specialization]
+      .map(text)
+      .filter(Boolean)
+      .join(" — ")
+  );
+  return cleanList([document.education.level || "", ...items, ...document.education.raw]);
 }
 
 function blocksToBullets(blocks: ResumeTextBlock[]) {
@@ -113,10 +102,14 @@ function formatBlock(block: ResumeTextBlock) {
   return block.text;
 }
 
-function formatDates(item: SourceResumeDocument["experience"]["items"][number]["dates"]) {
+function formatDates(item: ExperienceItem["dates"]) {
   const range = [item.start, item.end].map(text).filter(Boolean).join(" — ");
   const duration = text(item.duration);
   return [range, duration ? `(${duration})` : ""].filter(Boolean).join(" ") || null;
+}
+
+function formatLanguage(item: SourceResumeDocument["skills"]["languages"][number]) {
+  return [item.name, item.level, item.description].map(text).filter(Boolean).join(" — ");
 }
 
 function cleanList(items: string[]) {
