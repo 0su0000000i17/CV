@@ -45,10 +45,10 @@ export default function RootLayout({
 
             <footer className="mx-auto w-full max-w-[1400px] px-6 md:px-12">
               <div className="border-t border-border py-8">
-                <div className="grid gap-8 md:grid-cols-[1fr_2fr] md:items-start">
+                <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_360px] md:items-start">
                   <div>
                     <p className="text-sm font-medium text-foreground">CV Pro</p>
-                    <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                    <p className="mt-2 max-w-md text-xs leading-5 text-muted-foreground">
                       AI-сервис для анализа и адаптации IT-резюме.
                     </p>
                     <p className="mt-4 text-xs font-medium uppercase tracking-widest text-muted-foreground">
@@ -56,12 +56,12 @@ export default function RootLayout({
                     </p>
                   </div>
 
-                  <div className="md:justify-self-end md:text-right">
-                    <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+                  <div className="md:justify-self-end">
+                    <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground md:text-right">
                       Документы
                     </p>
 
-                    <nav className="mt-4 flex flex-col gap-3 text-sm text-muted-foreground sm:flex-row sm:flex-wrap md:justify-end">
+                    <nav className="mt-4 grid gap-2 text-sm text-muted-foreground md:text-right">
                       {legalLinks.map((link) => (
                         <Link
                           key={link.href}
