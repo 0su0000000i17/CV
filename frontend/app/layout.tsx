@@ -45,18 +45,18 @@ export default function RootLayout({
 
             <footer className="mx-auto w-full max-w-[1400px] px-6 md:px-12">
               <div className="border-t border-border py-8">
-                <div className="flex flex-col gap-5 text-xs font-medium uppercase tracking-widest text-muted-foreground lg:flex-row lg:items-center lg:justify-between">
-                  <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+                <div className="flex flex-col gap-5 text-sm font-medium text-muted-foreground lg:flex-row lg:items-center lg:justify-between">
+                  <div className="flex flex-wrap items-center gap-x-5 gap-y-3 text-xs uppercase tracking-widest">
                     <span>v1.0.0</span>
                     <span>© 2026 CV PRO</span>
                   </div>
 
-                  <nav className="flex flex-wrap items-center gap-y-3">
+                  <nav className="flex flex-wrap items-center gap-x-8 gap-y-3">
                     {legalLinks.map((link) => (
                       <Link
                         key={link.href}
                         href={link.href}
-                        className="mr-8 whitespace-nowrap transition-colors last:mr-0 hover:text-foreground"
+                        className="whitespace-nowrap transition-colors hover:text-foreground"
                       >
                         {link.label}
                       </Link>
