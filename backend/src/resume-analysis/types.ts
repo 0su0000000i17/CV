@@ -10,10 +10,12 @@ export type AnalysisStatus =
 export type ResumeFileRecord = {
   id: string;
   file_name: string;
-  file_path: string;
+  file_path: string | null;
   file_type: string;
   file_size: number | null;
   extracted_text: string | null;
+  source_resume_document?: unknown | null;
+  editable_resume_json?: unknown | null;
 };
 
 export type ResumeAnalysisRow = {
