@@ -65,9 +65,9 @@ export function DashboardMobileMenu({ onNavigate }: Props) {
 
   return (
     <div className="rounded-2xl border border-border bg-background p-4 shadow-2xl">
-      <div className="px-3 pb-6 pt-2">
+      <div className="px-3 pb-5 pt-2">
         <p className="text-lg font-semibold tracking-tight text-foreground">
-          CV Pro
+          CV<span className="text-emerald-500">Pro</span>
         </p>
 
         <p className="mt-1 text-xs text-muted-foreground">Личный кабинет</p>
@@ -98,13 +98,13 @@ export function DashboardMobileMenu({ onNavigate }: Props) {
                 }`}
               />
 
-              <span className="min-w-0 break-words">{item.title}</span>
+              <span className="min-w-0 break-words leading-5">{item.title}</span>
             </Link>
           );
         })}
       </nav>
 
-      <div className="mt-12 rounded-2xl border border-border bg-card/60 p-4">
+      <div className="mt-8 rounded-2xl border border-border bg-card/60 p-4">
         <p className="text-sm font-medium text-foreground">
           Тариф:{" "}
           <span className="font-semibold uppercase tracking-wide text-emerald-500">
