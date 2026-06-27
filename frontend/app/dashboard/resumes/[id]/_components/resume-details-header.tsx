@@ -15,7 +15,8 @@ type Props = {
   resume: UploadedResume;
 };
 
-function formatFileSize(size: number) {
+function formatFileSize(size: number | null) {
+  if (!size) return 'JSON';
   return `${Math.round(size / 1024)} KB`;
 }
 
@@ -35,8 +36,11 @@ export function ResumeDetailsHeader({ resume }: Props) {
 
   const deleteResumeMutation = useDeleteResumeMutation();
   const downloadResumeMutation = useDownloadResumeMutation();
+  const canDownloadOriginal = Boolean(resume.file_path);
 
   const handleDownload = async () => {
+    if (!canDownloadOriginal) return;
+
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -106,15 +110,17 @@ export function ResumeDetailsHeader({ resume }: Props) {
           </div>
 
           <div className="flex shrink-0 flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={handleDownload}
-              disabled={downloadResumeMutation.isPending}
-              className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-border px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <Download className="h-4 w-4" />
-              Скачать
-            </button>
+            {canDownloadOriginal ? (
+              <button
+                type="button"
+                onClick={handleDownload}
+                disabled={downloadResumeMutation.isPending}
+                className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-border px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Download className="h-4 w-4" />
+                Скачать
+              </button>
+            ) : null}
 
             <button
               type="button"
