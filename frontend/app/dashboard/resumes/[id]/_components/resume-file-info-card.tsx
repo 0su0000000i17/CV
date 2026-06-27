@@ -12,7 +12,8 @@ function formatDate(date: string) {
   }).format(new Date(date));
 }
 
-function formatFileSize(size: number) {
+function formatFileSize(size: number | null) {
+  if (!size) return 'JSON';
   return `${Math.round(size / 1024)} KB`;
 }
 
