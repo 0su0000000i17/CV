@@ -5,8 +5,9 @@ export type ResumeSourceRecord = {
   id: string;
   title: string | null;
   file_name: string | null;
-  file_path: string;
+  file_path: string | null;
   file_type: string | null;
+  extracted_text: string | null;
 };
 
 export type ResumeExportSource = ResumeSourceRecord & {
@@ -14,6 +15,11 @@ export type ResumeExportSource = ResumeSourceRecord & {
 };
 
 async function readOriginalText(resume: ResumeSourceRecord) {
+  const savedText = resume.extracted_text?.trim();
+  if (savedText) return savedText;
+
+  if (!resume.file_path) return "";
+
   const result = await supabaseAdmin.storage
     .from("resumes")
     .download(resume.file_path);
@@ -37,7 +43,7 @@ export async function getResumeExportSource(params: {
 }): Promise<ResumeExportSource | null> {
   const result = await supabaseAdmin
     .from("resumes")
-    .select("id, title, file_name, file_path, file_type")
+    .select("id, title, file_name, file_path, file_type, extracted_text")
     .eq("id", params.resumeId)
     .eq("user_id", params.userId)
     .maybeSingle();
@@ -45,7 +51,6 @@ export async function getResumeExportSource(params: {
   if (result.error) throw result.error;
 
   const resume = result.data as ResumeSourceRecord | null;
-
   if (!resume) return null;
 
   return {
