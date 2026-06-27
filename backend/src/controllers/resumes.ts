@@ -7,6 +7,7 @@ import { sourceDocumentToEditableResume } from "../resume-editor/source-document
 import { extractResumeMarkdown } from "../resume-processing/extract-resume-markdown.js";
 import { getUserFromRequest } from "../utils/auth.js";
 import { getStringParam, sendError, sendServerError } from "../utils/api-responses.js";
+import { saveProductEvent } from "../utils/product-events.js";
 import { allowedResumeMimeTypes, decodeFileName } from "../utils/resume-files.js";
 
 function createSourceFileHash(fileBuffer: Buffer) {
@@ -106,6 +107,14 @@ export async function uploadResume(req: Request, res: Response) {
       .single();
 
     if (error) return sendServerError(res, "Failed to save parsed resume", error);
+
+    await saveProductEvent({
+      userId: user.id,
+      name: "resume_uploaded",
+      targetType: "resume",
+      targetId: data.id,
+    });
+
     return res.status(201).json({ resume: data });
   } catch (error) {
     return sendServerError(res, "Unexpected upload error", error);
