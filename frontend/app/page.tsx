@@ -1,6 +1,18 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+
 export default function Home() {
+  const [startWave, setStartWave] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setStartWave(true);
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div className="flex flex-1 flex-col">
       <div className="flex-1">
@@ -21,12 +33,8 @@ export default function Home() {
           <div className="flex flex-col items-end justify-between pt-1 pb-0 xl:-ml-20 xl:pr-40">
             <style jsx>{`
               @keyframes drawLine {
-                from {
-                  stroke-dashoffset: 600;
-                }
-                to {
-                  stroke-dashoffset: 0;
-                }
+                from { stroke-dashoffset: 600; }
+                to { stroke-dashoffset: 0; }
               }
 
               @keyframes riseBar {
@@ -40,16 +48,45 @@ export default function Home() {
                 }
               }
 
-              @keyframes waveOpacity {
-                0%, 100% {
-                  opacity: 0.15;
-                }
-                30% {
-                  opacity: 1;
-                }
-                70% {
-                  opacity: 0.5;
-                }
+              @keyframes glowPulse {
+                0%, 100% { opacity: 0.5; }
+                50% { opacity: 1; }
+              }
+
+              @keyframes wave-col-1 {
+                0% { opacity: 0.5; }
+                15% { opacity: 1; }
+                35% { opacity: 0.5; }
+                100% { opacity: 0.5; }
+              }
+              @keyframes wave-col-2 {
+                0%, 15% { opacity: 0.5; }
+                30% { opacity: 1; }
+                50% { opacity: 0.5; }
+                100% { opacity: 0.5; }
+              }
+              @keyframes wave-col-3 {
+                0%, 30% { opacity: 0.5; }
+                45% { opacity: 1; }
+                65% { opacity: 0.5; }
+                100% { opacity: 0.5; }
+              }
+              @keyframes wave-col-4 {
+                0%, 45% { opacity: 0.5; }
+                60% { opacity: 1; }
+                80% { opacity: 0.5; }
+                100% { opacity: 0.5; }
+              }
+              @keyframes wave-col-5 {
+                0%, 60% { opacity: 0.5; }
+                75% { opacity: 1; }
+                95% { opacity: 0.5; }
+                100% { opacity: 0.5; }
+              }
+              @keyframes wave-col-6 {
+                0%, 75% { opacity: 0.5; }
+                90% { opacity: 1; }
+                100% { opacity: 0.5; }
               }
 
               .animate-line {
@@ -57,68 +94,38 @@ export default function Home() {
                 animation: drawLine 2.5s ease-in-out forwards;
               }
 
-              .animate-bar-1 {
-                animation:
-                  riseBar 0.6s ease-out 0.1s both,
-                  waveOpacity 4s ease-in-out 0s infinite;
-              }
-              .animate-bar-2 {
-                animation:
-                  riseBar 0.6s ease-out 0.2s both,
-                  waveOpacity 4s ease-in-out 0.5s infinite;
-              }
-              .animate-bar-3 {
-                animation:
-                  riseBar 0.6s ease-out 0.3s both,
-                  waveOpacity 4s ease-in-out 1s infinite;
-              }
-              .animate-bar-4 {
-                animation:
-                  riseBar 0.6s ease-out 0.4s both,
-                  waveOpacity 4s ease-in-out 1.5s infinite;
-              }
-              .animate-bar-5 {
-                animation:
-                  riseBar 0.6s ease-out 0.5s both,
-                  waveOpacity 4s ease-in-out 2s infinite;
-              }
-              .animate-bar-6 {
-                animation:
-                  riseBar 0.6s ease-out 0.6s both,
-                  waveOpacity 4s ease-in-out 2.5s infinite;
-              }
-
-              @keyframes glowPulse {
-                0%, 100% {
-                  opacity: 0.5;
-                }
-                50% {
-                  opacity: 1;
-                }
-              }
-
               .animate-glow {
                 animation: glowPulse 3.5s ease-in-out infinite;
               }
 
-              .animate-bar-1,
-              .animate-bar-2,
-              .animate-bar-3,
-              .animate-bar-4,
-              .animate-bar-5,
-              .animate-bar-6 {
+              .base-bar {
+                opacity: 0.5;
                 will-change: transform, opacity;
               }
 
+              .animate-bar-1, .animate-bar-2, .animate-bar-3,
+              .animate-bar-4, .animate-bar-5, .animate-bar-6 {
+                animation: riseBar 0.6s ease-out both;
+              }
+              .animate-bar-1 { animation-delay: 0.1s; }
+              .animate-bar-2 { animation-delay: 0.2s; }
+              .animate-bar-3 { animation-delay: 0.3s; }
+              .animate-bar-4 { animation-delay: 0.4s; }
+              .animate-bar-5 { animation-delay: 0.5s; }
+              .animate-bar-6 { animation-delay: 0.6s; }
+
+              .animate-wave-1 { animation: wave-col-1 3.5s ease-in-out infinite; }
+              .animate-wave-2 { animation: wave-col-2 3.5s ease-in-out infinite; }
+              .animate-wave-3 { animation: wave-col-3 3.5s ease-in-out infinite; }
+              .animate-wave-4 { animation: wave-col-4 3.5s ease-in-out infinite; }
+              .animate-wave-5 { animation: wave-col-5 3.5s ease-in-out infinite; }
+              .animate-wave-6 { animation: wave-col-6 3.5s ease-in-out infinite; }
+
               @media (prefers-reduced-motion: reduce) {
-                .animate-bar-1,
-                .animate-bar-2,
-                .animate-bar-3,
-                .animate-bar-4,
-                .animate-bar-5,
-                .animate-bar-6 {
-                  animation: none;
-                  opacity: 0.8;
+                .base-bar {
+                  animation: none !important;
+                  transform: scaleY(1) !important;
+                  opacity: 0.8 !important;
                 }
               }
             `}</style>
@@ -130,13 +137,7 @@ export default function Home() {
               preserveAspectRatio="xMidYMid meet"
             >
               <defs>
-                <linearGradient
-                  id="barGradient"
-                  x1="0%"
-                  y1="100%"
-                  x2="0%"
-                  y2="0%"
-                >
+                <linearGradient id="barGradient" x1="0%" y1="100%" x2="0%" y2="0%">
                   <stop offset="0%" stopColor="#059669" stopOpacity="0.1" />
                   <stop offset="100%" stopColor="#059669" stopOpacity="0.8" />
                 </linearGradient>
@@ -149,121 +150,40 @@ export default function Home() {
                 </filter>
               </defs>
 
-              {/* Сетка */}
-              <line
-                x1="40"
-                y1="40"
-                x2="300"
-                y2="40"
-                stroke="currentColor"
-                strokeWidth="0.5"
-                className="text-border/15"
-                strokeDasharray="4,8"
-              />
-              <line
-                x1="40"
-                y1="130"
-                x2="300"
-                y2="130"
-                stroke="currentColor"
-                strokeWidth="0.5"
-                className="text-border/15"
-                strokeDasharray="4,8"
-              />
-              <line
-                x1="40"
-                y1="220"
-                x2="300"
-                y2="220"
-                stroke="currentColor"
-                strokeWidth="0.5"
-                className="text-border/15"
-                strokeDasharray="4,8"
-              />
-              <line
-                x1="40"
-                y1="310"
-                x2="300"
-                y2="310"
-                stroke="currentColor"
-                strokeWidth="0.5"
-                className="text-border/15"
-                strokeDasharray="4,8"
-              />
-
-              <line
-                x1="40"
-                y1="390"
-                x2="300"
-                y2="390"
-                stroke="currentColor"
-                strokeWidth="1"
-                className="text-border/30"
-              />
+              <line x1="40" y1="40" x2="300" y2="40" stroke="currentColor" strokeWidth="0.5" className="text-border/15" strokeDasharray="4,8" />
+              <line x1="40" y1="130" x2="300" y2="130" stroke="currentColor" strokeWidth="0.5" className="text-border/15" strokeDasharray="4,8" />
+              <line x1="40" y1="220" x2="300" y2="220" stroke="currentColor" strokeWidth="0.5" className="text-border/15" strokeDasharray="4,8" />
+              <line x1="40" y1="310" x2="300" y2="310" stroke="currentColor" strokeWidth="0.5" className="text-border/15" strokeDasharray="4,8" />
+              <line x1="40" y1="390" x2="300" y2="390" stroke="currentColor" strokeWidth="1" className="text-border/30" />
             
               <rect
-                x="52"
-                y="350"
-                width="32"
-                height="40"
-                rx="4"
-                fill="url(#barGradient)"
-                className="text-emerald-600/40 animate-bar-1"
+                x="52" y="350" width="32" height="40" rx="4" fill="url(#barGradient)"
+                className={`text-emerald-600/40 base-bar animate-bar-1 ${startWave ? 'animate-wave-1' : ''}`}
               />
               <rect
-                x="100"
-                y="310"
-                width="32"
-                height="80"
-                rx="4"
-                fill="url(#barGradient)"
-                className="text-emerald-600/50 animate-bar-2"
+                x="100" y="310" width="32" height="80" rx="4" fill="url(#barGradient)"
+                className={`text-emerald-600/50 base-bar animate-bar-2 ${startWave ? 'animate-wave-2' : ''}`}
               />
               <rect
-                x="148"
-                y="260"
-                width="32"
-                height="130"
-                rx="4"
-                fill="url(#barGradient)"
-                className="text-emerald-600/60 animate-bar-3"
+                x="148" y="260" width="32" height="130" rx="4" fill="url(#barGradient)"
+                className={`text-emerald-600/60 base-bar animate-bar-3 ${startWave ? 'animate-wave-3' : ''}`}
               />
               <rect
-                x="196"
-                y="200"
-                width="32"
-                height="190"
-                rx="4"
-                fill="url(#barGradient)"
-                className="text-emerald-600/70 animate-bar-4"
+                x="196" y="200" width="32" height="190" rx="4" fill="url(#barGradient)"
+                className={`text-emerald-600/70 base-bar animate-bar-4 ${startWave ? 'animate-wave-4' : ''}`}
               />
               <rect
-                x="244"
-                y="140"
-                width="32"
-                height="250"
-                rx="4"
-                fill="url(#barGradient)"
-                className="text-emerald-600/80 animate-bar-5"
+                x="244" y="140" width="32" height="250" rx="4" fill="url(#barGradient)"
+                className={`text-emerald-600/80 base-bar animate-bar-5 ${startWave ? 'animate-wave-5' : ''}`}
               />
               <rect
-                x="292"
-                y="70"
-                width="32"
-                height="320"
-                rx="4"
-                fill="url(#barGradient)"
-                className="text-emerald-600/90 animate-bar-6"
+                x="292" y="70" width="32" height="320" rx="4" fill="url(#barGradient)"
+                className={`text-emerald-600/90 base-bar animate-bar-6 ${startWave ? 'animate-wave-6' : ''}`}
               />
 
               <polyline
                 points="68,350 116,310 164,260 212,200 260,140 308,70"
-                fill="none"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                filter="url(#glow3)"
-                className="line-theme animate-line"
+                fill="none" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" filter="url(#glow3)" className="line-theme animate-line"
               />
 
               <circle cx="68" cy="350" r="4.5" className="dot-theme" />
@@ -273,13 +193,7 @@ export default function Home() {
               <circle cx="260" cy="140" r="4.5" className="dot-theme" />
               <circle cx="308" cy="70" r="4.5" className="dot-theme" />
 
-              <circle
-                cx="212"
-                cy="200"
-                r="14"
-                fill="currentColor"
-                className="text-foreground/10 animate-glow"
-              />
+              <circle cx="212" cy="200" r="14" fill="currentColor" className="text-foreground/10 animate-glow" />
             </svg>
 
             <p className="w-full text-right text-xs font-medium tracking-wide text-muted-foreground">
