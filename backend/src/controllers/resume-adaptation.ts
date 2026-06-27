@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
 
+import { applySourceResumeStructure } from "../resume-adaptation/apply-source-resume-structure.js";
 import { generateResumeAdaptation } from "../resume-adaptation/generate-resume-adaptation.js";
 import { loadSourceResumeDocument } from "../resume-adaptation/load-source-resume-document.js";
 import { stringifyResumeAdaptationAiPayload } from "../resume-adaptation/resume-ai-payload.js";
@@ -69,11 +70,15 @@ export async function adaptResumeToVacancyController(req: Request, res: Response
       fit,
       settings: normalizeSettings(body.data.adaptationSettings),
     });
+    const adaptation = applySourceResumeStructure({
+      adaptation: result.adaptation,
+      sourceDocument: source.document,
+    });
 
     return res.json({
       status: "adapted",
       resumeId: resume.id,
-      adaptation: result.adaptation,
+      adaptation,
       meta: {
         ...result.meta,
         markdownChars: source.markdown.length,
