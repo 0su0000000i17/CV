@@ -57,6 +57,7 @@ export function applySourceResumeStructure(params: {
 }): ResumeAdaptationResult {
   const original = sourceDocumentToEditableResume(params.sourceDocument).resumeJson;
   const adapted = params.adaptation;
+  const originalTarget = original.target;
 
   const experience = original.adaptedResume.experience.map((item, index) =>
     mergeExperienceItem(
@@ -68,9 +69,15 @@ export function applySourceResumeStructure(params: {
   return {
     ...adapted,
     target: {
-      ...original.target,
+      title: originalTarget.title,
       company: adapted.target.company,
       seniority: adapted.target.seniority,
+      salary: originalTarget.salary || null,
+      specializations: originalTarget.specializations || [],
+      employment: originalTarget.employment || null,
+      schedule: originalTarget.schedule || null,
+      workFormat: originalTarget.workFormat || null,
+      commuteTime: originalTarget.commuteTime || null,
       keywordsUsed: adapted.target.keywordsUsed,
     },
     adaptedResume: {
