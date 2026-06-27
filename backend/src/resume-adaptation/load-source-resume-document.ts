@@ -5,9 +5,10 @@ import { extractResumeMarkdown } from "../resume-processing/extract-resume-markd
 
 type ResumeFileRecord = {
   file_name: string;
-  file_path: string;
+  file_path: string | null;
   file_type: string;
   extracted_text?: string | null;
+  source_resume_document?: unknown | null;
 };
 
 export type LoadedSourceResumeDocument = {
@@ -21,12 +22,24 @@ export async function loadSourceResumeDocument(
 ): Promise<LoadedSourceResumeDocument> {
   const savedMarkdown = resume.extracted_text?.trim();
 
+  if (resume.source_resume_document && savedMarkdown) {
+    return {
+      document: resume.source_resume_document as SourceResumeDocument,
+      markdown: savedMarkdown,
+      markdownLimited: false,
+    };
+  }
+
   if (savedMarkdown) {
     return {
       document: parseSourceResumeDocument(savedMarkdown),
       markdown: savedMarkdown,
       markdownLimited: false,
     };
+  }
+
+  if (!resume.file_path) {
+    throw new Error("Resume has no stored JSON, text or legacy file");
   }
 
   const fileBuffer = await downloadResumeFileBuffer(resume.file_path);
