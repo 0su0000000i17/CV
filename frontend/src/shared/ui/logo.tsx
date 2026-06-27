@@ -22,11 +22,11 @@ export function Logo() {
           letterSpacing: "-0.8px",
         }}
       >
-        CVPr
+        CV
       </text>
 
       <text
-        x="58"
+        x="31"
         y="21"
         className="fill-emerald-500"
         style={{
@@ -37,7 +37,7 @@ export function Logo() {
           letterSpacing: "-0.8px",
         }}
       >
-        o
+        Pro
       </text>
     </svg>
   );
