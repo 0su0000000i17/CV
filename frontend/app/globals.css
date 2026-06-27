@@ -19,9 +19,35 @@ html.light {
 @layer base {
   * {
     @apply border-border;
+    min-width: 0;
   }
+
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
+  }
+
+  :where(p, span, h1, h2, h3, h4, h5, h6, li, a, button, label, input, textarea, td, th, code, pre) {
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+
+  pre {
+    white-space: pre-wrap;
+  }
+
+  :where(button, a, [role='button'], summary, label[for], input[type='button'], input[type='submit'], input[type='reset']) {
+    cursor: pointer;
+  }
+
+  :where(button, input[type='button'], input[type='submit'], input[type='reset']):disabled,
+  :where([aria-disabled='true']) {
+    cursor: not-allowed;
   }
 
   ::selection {
@@ -56,18 +82,18 @@ html.light {
   }
 
   .line-theme {
-    stroke: #ffffff; 
+    stroke: #ffffff;
   }
 
   html.light .line-theme {
-    stroke: #8c8c8c; 
+    stroke: #8c8c8c;
   }
 
   .dot-theme {
-    fill: #ffffff; 
+    fill: #ffffff;
   }
 
   html.light .dot-theme {
-    fill: #8c8c8c; 
+    fill: #8c8c8c;
   }
 }
