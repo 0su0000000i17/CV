@@ -87,8 +87,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     <DashboardResumeSelectionProvider>
       <div className="grid min-h-[calc(100vh-64px)] grid-cols-1 gap-6 lg:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)] xl:gap-8">
         <aside className="hidden min-w-0 lg:block">
-          <div className="fixed bottom-6 top-20 flex min-h-0 flex-col overflow-y-auto rounded-2xl border border-border bg-card/60 p-4 lg:w-[240px] xl:w-[280px] xl:p-5">
-            <div className="px-3 pb-6 pt-2">
+          <div className="sticky top-20 flex max-h-[calc(100svh-6.5rem)] min-h-0 flex-col overflow-y-auto rounded-2xl border border-border bg-card/60 p-4 lg:w-[240px] xl:w-[280px] xl:p-5">
+            <div className="px-3 pb-5 pt-2 xl:pb-6">
               <p className="text-lg font-semibold tracking-tight text-foreground">
                 CV<span className="text-emerald-500">Pro</span>
               </p>
