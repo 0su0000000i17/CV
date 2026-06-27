@@ -16,6 +16,7 @@ type ResumeListItem = {
 type Params<TResume extends ResumeListItem> = {
   resumes: TResume[];
   resumeId: string | null;
+  restoredResumeId?: string;
   router: RouterLike;
   searchParamsString: string;
   onResetResult: () => void;
@@ -24,6 +25,7 @@ type Params<TResume extends ResumeListItem> = {
 export function useSelectedResumeState<TResume extends ResumeListItem>({
   resumes,
   resumeId,
+  restoredResumeId,
   router,
   searchParamsString,
   onResetResult,
@@ -32,40 +34,27 @@ export function useSelectedResumeState<TResume extends ResumeListItem>({
     useDashboardResumeSelection();
 
   const selectedResume = useMemo(() => {
-    if (!resumes.length) {
-      return undefined;
-    }
+    if (!resumes.length) return undefined;
 
-    const candidateResumeIds = [resumeId, selectedResumeId].filter(
-      (candidateResumeId): candidateResumeId is string =>
-        Boolean(candidateResumeId)
+    const candidateResumeIds = [resumeId, selectedResumeId, restoredResumeId].filter(
+      (candidateResumeId): candidateResumeId is string => Boolean(candidateResumeId)
     );
 
     for (const candidateResumeId of candidateResumeIds) {
-      const foundResume = resumes.find(
-        (resume) => resume.id === candidateResumeId
-      );
-
-      if (foundResume) {
-        return foundResume;
-      }
+      const foundResume = resumes.find((resume) => resume.id === candidateResumeId);
+      if (foundResume) return foundResume;
     }
 
     return resumes[0];
-  }, [resumeId, resumes, selectedResumeId]);
+  }, [resumeId, restoredResumeId, resumes, selectedResumeId]);
 
   useEffect(() => {
-    if (!selectedResume?.id || selectedResumeId === selectedResume.id) {
-      return;
-    }
-
+    if (!selectedResume?.id || selectedResumeId === selectedResume.id) return;
     setSelectedResumeId(selectedResume.id);
   }, [selectedResume?.id, selectedResumeId, setSelectedResumeId]);
 
   useEffect(() => {
-    if (!selectedResume?.id || resumeId === selectedResume.id) {
-      return;
-    }
+    if (!selectedResume?.id || resumeId === selectedResume.id) return;
 
     router.replace(
       createResumeRoute('/dashboard/adapt', searchParamsString, selectedResume.id)
