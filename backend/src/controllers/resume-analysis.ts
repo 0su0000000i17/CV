@@ -27,6 +27,7 @@ import {
 import { getTargetRoleFromAnalysis, mapAnalysisRow } from "../resume-analysis/presenter.js";
 import { getStringParam, sendError, sendServerError } from "../utils/api-responses.js";
 import { getUserFromRequest } from "../utils/auth.js";
+import { saveProductEvent } from "../utils/product-events.js";
 
 function createTextExtraction(markdown: string) {
   return {
@@ -123,6 +124,12 @@ export async function analyzeResumePreview(req: Request, res: Response) {
         score: currentResumeCachedAnalysis.score,
         role: getTargetRoleFromAnalysis(currentResumeCachedAnalysis.analysis),
       });
+      await saveProductEvent({
+        userId: user.id,
+        name: "resume_analyzed",
+        targetType: "resume",
+        targetId: resume.id,
+      });
       return res.json(mapAnalysisRow(currentResumeCachedAnalysis, {
         cached: true,
         cacheReason: "same_resume_id_same_content",
@@ -141,6 +148,12 @@ export async function analyzeResumePreview(req: Request, res: Response) {
         resumeId: resume.id,
         score: cachedAnalysisForCurrentResume.score,
         role: getTargetRoleFromAnalysis(cachedAnalysisForCurrentResume.analysis),
+      });
+      await saveProductEvent({
+        userId: user.id,
+        name: "resume_analyzed",
+        targetType: "resume",
+        targetId: resume.id,
       });
       return res.json(mapAnalysisRow(cachedAnalysisForCurrentResume, {
         cached: true,
@@ -165,6 +178,12 @@ export async function analyzeResumePreview(req: Request, res: Response) {
       resumeId: resume.id,
       score: savedAnalysis.score,
       role: getTargetRoleFromAnalysis(savedAnalysis.analysis),
+    });
+    await saveProductEvent({
+      userId: user.id,
+      name: "resume_analyzed",
+      targetType: "resume",
+      targetId: resume.id,
     });
     return res.json(mapAnalysisRow(savedAnalysis, { cached: false }));
   } catch (error) {
