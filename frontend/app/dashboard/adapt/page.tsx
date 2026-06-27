@@ -8,10 +8,7 @@ import type { AdaptationSettings } from '@/src/shared/api/resume-adaptation';
 import { AdaptHeader } from './_components/adapt-header';
 import { AdaptSetupWorkspace } from './_components/adapt-setup-workspace';
 import { GeneratedResumeWorkspace } from './_components/generated-resume-workspace';
-import {
-  createAdaptationFromFit,
-  prepareVacancyForFit,
-} from './_lib/adapt-flow-actions';
+import { createAdaptationFromFit, prepareVacancyForFit } from './_lib/adapt-flow-actions';
 import { getVacancyInputKind } from './_lib/adapt-page-utils';
 import { useAdaptSessionState } from './_hooks/use-adapt-session-state';
 import { useSelectedResumeState } from './_hooks/use-selected-resume-state';
@@ -37,15 +34,18 @@ export default function AdaptPage() {
   const searchParams = useSearchParams();
   const searchParamsString = searchParams.toString();
   const resumeId = searchParams.get('resumeId');
-
   const { accessToken } = useAuth();
-  const adaptSession = useAdaptSessionState();
+  const {
+    state: savedAdaptState,
+    saveState,
+    clearGenerated,
+    clearAdaptation,
+  } = useAdaptSessionState();
   const resumesQuery = useResumesQuery(accessToken);
   const prepareVacancyMutation = usePrepareVacancyInputMutation();
   const resumeVacancyFitMutation = useResumeVacancyFitMutation();
   const resumeAdaptationMutation = useResumeAdaptationMutation();
   const resumeProfileMutation = useResumeProfileExtractionMutation();
-
   const [isSessionRestored, setIsSessionRestored] = useState(false);
   const [adaptationSettings, setAdaptationSettings] =
     useState<AdaptationSettings>(defaultAdaptationSettings);
@@ -54,13 +54,13 @@ export default function AdaptPage() {
     resumeVacancyFitMutation.reset();
     resumeAdaptationMutation.reset();
     resumeProfileMutation.reset();
-    adaptSession.clearGenerated();
+    clearGenerated();
   }
 
   function resetAdaptationOnly() {
     resumeAdaptationMutation.reset();
     resumeProfileMutation.reset();
-    adaptSession.clearAdaptation();
+    clearAdaptation();
   }
 
   const vacancyState = useVacancyState(resetGeneratedResults);
@@ -68,7 +68,7 @@ export default function AdaptPage() {
   const { selectedResume, handleSelectResume } = useSelectedResumeState({
     resumes,
     resumeId,
-    restoredResumeId: adaptSession.state?.selectedResumeId,
+    restoredResumeId: savedAdaptState?.selectedResumeId,
     router,
     searchParamsString,
     onResetResult: resetGeneratedResults,
@@ -77,39 +77,29 @@ export default function AdaptPage() {
   useEffect(() => {
     if (isSessionRestored) return;
     setIsSessionRestored(true);
+    if (!savedAdaptState) return;
+    vacancyState.setVacancyInput(savedAdaptState.vacancyInput || '');
+    vacancyState.setPreparedVacancyText(savedAdaptState.preparedVacancyText || '');
+    vacancyState.setPreparedVacancy(savedAdaptState.preparedVacancy || null);
+    vacancyState.setExtractionStatus(savedAdaptState.extractionStatus || null);
+    vacancyState.setExtractionMessage(savedAdaptState.extractionMessage || '');
+    setAdaptationSettings(savedAdaptState.adaptationSettings || defaultAdaptationSettings);
+  }, [isSessionRestored, savedAdaptState, vacancyState]);
 
-    const saved = adaptSession.state;
-    if (!saved) return;
-
-    vacancyState.setVacancyInput(saved.vacancyInput || '');
-    vacancyState.setPreparedVacancyText(saved.preparedVacancyText || '');
-    vacancyState.setPreparedVacancy(saved.preparedVacancy || null);
-    vacancyState.setExtractionStatus(saved.extractionStatus || null);
-    vacancyState.setExtractionMessage(saved.extractionMessage || '');
-    setAdaptationSettings(saved.adaptationSettings || defaultAdaptationSettings);
-  }, [adaptSession.state, isSessionRestored, vacancyState]);
-
-  const fitResponse = resumeVacancyFitMutation.data ?? adaptSession.state?.fitResponse;
+  const fitResponse = resumeVacancyFitMutation.data ?? savedAdaptState?.fitResponse;
   const adaptationResponse =
-    resumeAdaptationMutation.data ?? adaptSession.state?.adaptationResponse;
+    resumeAdaptationMutation.data ?? savedAdaptState?.adaptationResponse;
   const isAdapting = resumeAdaptationMutation.isPending;
   const hasAdaptationWorkspace =
     Boolean(adaptationResponse) || isAdapting || resumeAdaptationMutation.isError;
 
   useEffect(() => {
     if (!isSessionRestored) return;
-
     const hasDraft = Boolean(
-      selectedResume?.id ||
-        vacancyState.vacancyInput ||
-        vacancyState.preparedVacancyText ||
-        fitResponse ||
-        adaptationResponse
+      selectedResume?.id || vacancyState.vacancyInput || vacancyState.preparedVacancyText || fitResponse || adaptationResponse
     );
-
     if (!hasDraft) return;
-
-    adaptSession.saveState({
+    saveState({
       selectedResumeId: selectedResume?.id,
       vacancyInput: vacancyState.vacancyInput,
       preparedVacancyText: vacancyState.preparedVacancyText,
@@ -123,9 +113,9 @@ export default function AdaptPage() {
   }, [
     adaptationResponse,
     adaptationSettings,
-    adaptSession,
     fitResponse,
     isSessionRestored,
+    saveState,
     selectedResume?.id,
     vacancyState.extractionMessage,
     vacancyState.extractionStatus,
@@ -138,28 +128,14 @@ export default function AdaptPage() {
     resumeProfileMutation.data?.resumeId === selectedResume?.id
       ? resumeProfileMutation.data
       : undefined;
-
   const isProfileLoading =
-    Boolean(adaptationResponse) &&
-    Boolean(selectedResume?.id) &&
-    resumeProfileMutation.isPending &&
-    !currentProfileExtraction;
+    Boolean(adaptationResponse) && Boolean(selectedResume?.id) && resumeProfileMutation.isPending && !currentProfileExtraction;
 
   useEffect(() => {
     if (!accessToken || !selectedResume?.id || !adaptationResponse) return;
     if (resumeProfileMutation.isPending || currentProfileExtraction) return;
-
-    resumeProfileMutation.mutate({
-      resumeId: selectedResume.id,
-      accessToken,
-    });
-  }, [
-    accessToken,
-    adaptationResponse,
-    currentProfileExtraction,
-    resumeProfileMutation,
-    selectedResume?.id,
-  ]);
+    resumeProfileMutation.mutate({ resumeId: selectedResume.id, accessToken });
+  }, [accessToken, adaptationResponse, currentProfileExtraction, resumeProfileMutation, selectedResume?.id]);
 
   function handlePrepareVacancy() {
     prepareVacancyForFit({
@@ -192,7 +168,6 @@ export default function AdaptPage() {
   return (
     <div>
       <AdaptHeader />
-
       {hasAdaptationWorkspace ? (
         <GeneratedResumeWorkspace
           adaptationResponse={adaptationResponse}
@@ -224,11 +199,7 @@ export default function AdaptPage() {
           isCheckingFit={resumeVacancyFitMutation.isPending}
           isAdapting={isAdapting}
           isFitError={resumeVacancyFitMutation.isError}
-          fitErrorMessage={
-            resumeVacancyFitMutation.error instanceof Error
-              ? resumeVacancyFitMutation.error.message
-              : undefined
-          }
+          fitErrorMessage={resumeVacancyFitMutation.error instanceof Error ? resumeVacancyFitMutation.error.message : undefined}
           onSelectResume={handleSelectResume}
           onVacancyInputChange={vacancyState.handleVacancyInputChange}
           onPrepareVacancy={handlePrepareVacancy}
