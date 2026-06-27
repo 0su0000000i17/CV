@@ -13,6 +13,12 @@ export function normalizeTarget(value: unknown): ResumeAdaptationTarget {
     title: toNullableString(source.title),
     company: toNullableString(source.company),
     seniority: toNullableString(source.seniority),
+    salary: toNullableString(source.salary),
+    specializations: toStringArray(source.specializations, 20),
+    employment: toNullableString(source.employment),
+    schedule: toNullableString(source.schedule),
+    workFormat: toNullableString(source.workFormat),
+    commuteTime: toNullableString(source.commuteTime),
     keywordsUsed: toStringArray(source.keywordsUsed, 30),
   };
 }
@@ -29,32 +35,38 @@ export function normalizeSkills(value: unknown): AdaptedResumeSkills {
 }
 
 export function normalizeExperience(value: unknown): AdaptedResumeExperienceItem[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
+  if (!Array.isArray(value)) return [];
 
-  return value
-    .map((item, index) => {
-      if (!isRecord(item)) {
-        return null;
-      }
+  const result: AdaptedResumeExperienceItem[] = [];
 
-      return {
-        sourceIndex:
-          typeof item.sourceIndex === "number" && Number.isFinite(item.sourceIndex)
-            ? item.sourceIndex
-            : index,
-        company: toNullableString(item.company),
-        position: toNullableString(item.position),
-        dates: toNullableString(item.dates),
-        adaptedBullets: toStringArray(item.adaptedBullets, 10),
-        focus: toNullableString(item.focus),
-        preservedFacts: toStringArray(item.preservedFacts, 12),
-        warnings: toStringArray(item.warnings, 8),
-      };
-    })
-    .filter((item): item is AdaptedResumeExperienceItem => Boolean(item))
-    .slice(0, 7);
+  value.forEach((item, index) => {
+    const normalized = normalizeExperienceItem(item, index);
+    if (normalized) result.push(normalized);
+  });
+
+  return result.slice(0, 7);
+}
+
+function normalizeExperienceItem(
+  value: unknown,
+  index: number
+): AdaptedResumeExperienceItem | null {
+  if (!isRecord(value)) return null;
+
+  return {
+    sourceIndex:
+      typeof value.sourceIndex === "number" && Number.isFinite(value.sourceIndex)
+        ? value.sourceIndex
+        : index,
+    company: toNullableString(value.company),
+    companyUrl: toNullableString(value.companyUrl),
+    position: toNullableString(value.position),
+    dates: toNullableString(value.dates),
+    adaptedBullets: toStringArray(value.adaptedBullets, 14),
+    focus: toNullableString(value.focus),
+    preservedFacts: toStringArray(value.preservedFacts, 16),
+    warnings: toStringArray(value.warnings, 8),
+  };
 }
 
 export function normalizeEducation(value: unknown): AdaptedResumeEducation {
@@ -68,6 +80,6 @@ export function normalizeEducation(value: unknown): AdaptedResumeEducation {
       policy === "not_found"
         ? policy
         : "unchanged",
-    notes: toStringArray(source.notes, 8),
+    notes: toStringArray(source.notes, 12),
   };
 }
