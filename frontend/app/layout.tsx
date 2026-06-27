@@ -11,13 +11,6 @@ const inter = Inter({
   variable: '--font-sans',
 });
 
-const legalLinks = [
-  { href: '/privacy', label: 'Политика конфиденциальности' },
-  { href: '/terms', label: 'Пользовательское соглашение' },
-  { href: '/offer', label: 'Оферта' },
-  { href: '/personal-data', label: 'Согласие на обработку данных' },
-];
-
 export const metadata: Metadata = {
   title: 'CV Pro',
   description: 'AI-сервис для анализа и адаптации резюме',
@@ -45,28 +38,32 @@ export default function RootLayout({
 
             <footer className="mx-auto w-full max-w-[1400px] px-6 md:px-12">
               <div className="border-t border-border py-8">
-                <div className="flex items-center justify-between text-xs font-medium uppercase tracking-widest text-muted-foreground">
-                  <span>v1.0.0</span>
-                  <span>© 2026 CV PRO</span>
-                </div>
-
-                <nav className="mt-6 grid w-full grid-cols-1 gap-y-3 text-sm font-medium text-muted-foreground sm:grid-cols-2 lg:grid-cols-4">
-                  {legalLinks.map((link, index) => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      className={`block whitespace-nowrap transition-colors hover:text-foreground ${
-                        index === 0
-                          ? 'text-left'
-                          : index === legalLinks.length - 1
-                            ? 'lg:text-right'
-                            : 'lg:text-center'
-                      }`}
+                <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
+                  <div className="text-sm leading-6 text-muted-foreground">
+                    <p>© 2026 CVPro. Все права защищены.</p>
+                    <a
+                      href="mailto:support@cvpro.ru"
+                      className="transition-colors hover:text-foreground"
                     >
-                      {link.label}
+                      support@cvpro.ru
+                    </a>
+                  </div>
+
+                  <nav className="flex flex-col gap-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:gap-8">
+                    <Link
+                      href="/privacy"
+                      className="transition-colors hover:text-foreground"
+                    >
+                      Политика конфиденциальности
                     </Link>
-                  ))}
-                </nav>
+                    <Link
+                      href="/terms"
+                      className="transition-colors hover:text-foreground"
+                    >
+                      Условия использования
+                    </Link>
+                  </nav>
+                </div>
               </div>
             </footer>
           </div>
