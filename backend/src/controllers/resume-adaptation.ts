@@ -11,6 +11,7 @@ import { formatVacancyForAdaptation } from "../vacancy-ai/format-vacancy-for-ada
 import type { NormalizedVacancy } from "../vacancy-ai/types.js";
 import { getStringParam, sendError, sendServerError } from "../utils/api-responses.js";
 import { getUserFromRequest } from "../utils/auth.js";
+import { saveProductEvent } from "../utils/product-events.js";
 
 const settingsSchema = z.object({
   preserveAuthorStyle: z.boolean().optional(),
@@ -73,6 +74,13 @@ export async function adaptResumeToVacancyController(req: Request, res: Response
     const adaptation = applySourceResumeStructure({
       adaptation: result.adaptation,
       sourceDocument: source.document,
+    });
+
+    await saveProductEvent({
+      userId: user.id,
+      name: "resume_adapted",
+      targetType: "resume",
+      targetId: resume.id,
     });
 
     return res.json({
