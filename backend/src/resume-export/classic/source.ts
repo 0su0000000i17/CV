@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "../../lib/supabase.js";
+import { parseSourceResumeDocument } from "../../resume-document/parser/parse-source-resume-document.js";
 import type { SourceResumeDocument } from "../../resume-document/types.js";
 import { extractResumeMarkdown } from "../../resume-processing/extract-resume-markdown.js";
 
@@ -36,6 +37,16 @@ async function readOriginalText(resume: ResumeSourceRecord) {
   return extraction.normalizedMarkdown.trim();
 }
 
+function resolveSourceDocument(resume: ResumeSourceRecord, sourceText: string) {
+  if (resume.source_resume_document) {
+    return resume.source_resume_document as SourceResumeDocument;
+  }
+
+  if (!sourceText.trim()) return null;
+
+  return parseSourceResumeDocument(sourceText);
+}
+
 export async function getResumeExportSource(params: {
   userId: string;
   resumeId: string;
@@ -52,9 +63,11 @@ export async function getResumeExportSource(params: {
   const resume = result.data as ResumeSourceRecord | null;
   if (!resume) return null;
 
+  const sourceText = await readOriginalText(resume);
+
   return {
     ...resume,
-    sourceText: await readOriginalText(resume),
-    sourceDocument: resume.source_resume_document as SourceResumeDocument | null,
+    sourceText,
+    sourceDocument: resolveSourceDocument(resume, sourceText),
   };
 }
