@@ -23,7 +23,9 @@ export default function Home() {
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-[2fr_1fr] xl:gap-12">
           <div className="space-y-6">
             <h1 className="text-4xl font-normal leading-[1.1] tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl">
-              <span className="font-medium text-foreground">AI-сервис,</span>{' '}
+              <span className="bg-gradient-to-r from-emerald-300 via-emerald-500 to-emerald-300 bg-clip-text font-semibold text-transparent">
+                AI-сервис,
+              </span>{' '}
               <br className="hidden sm:inline" />
               который усиливает <br className="hidden sm:inline" />
               твоё резюме
