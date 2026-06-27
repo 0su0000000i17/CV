@@ -1,17 +1,10 @@
-export type ResumeVacancyFitLevel =
-  | "impossible"
-  | "weak"
-  | "partial"
-  | "solid"
-  | "strong";
-
+export type ResumeVacancyFitLevel = "impossible" | "weak" | "partial" | "solid" | "strong";
 export type ResumeVacancyCareerMove =
   | "same_role"
   | "adjacent_role"
   | "stretch_role"
   | "career_change"
   | "unknown";
-
 export type ResumeVacancyAdaptationMode = "safe" | "limited" | "blocked";
 
 export type AdaptationSettings = {
@@ -41,23 +34,18 @@ export type ResumeVacancyFitResult = {
   fit: ResumeVacancyFitLevel;
   score: number;
   confidence: number;
-
   resumeRole: string | null;
   vacancyRole: string | null;
   careerMove: ResumeVacancyCareerMove;
   adaptationMode: ResumeVacancyAdaptationMode;
-
   reason: string;
   safeAdaptationDirection: string | null;
-
   matchedRequirements: string[];
   transferableExperience: string[];
   gaps: string[];
   blockingGaps: string[];
-
   allowedChanges: string[];
   forbiddenChanges: string[];
-
   riskFlags: ResumeVacancyFitRiskFlag[];
 };
 
@@ -71,6 +59,7 @@ export type AdaptedResumeSkills = {
 export type AdaptedResumeExperienceItem = {
   sourceIndex: number;
   company: string | null;
+  companyUrl?: string | null;
   position: string | null;
   dates: string | null;
   adaptedBullets: string[];
@@ -97,6 +86,12 @@ export type ResumeAdaptationTarget = {
   title: string | null;
   company: string | null;
   seniority: string | null;
+  salary: string | null;
+  specializations: string[];
+  employment: string | null;
+  schedule: string | null;
+  workFormat: string | null;
+  commuteTime: string | null;
   keywordsUsed: string[];
 };
 
