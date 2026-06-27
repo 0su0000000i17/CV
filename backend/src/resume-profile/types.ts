@@ -14,6 +14,9 @@ export type ResumePersonalProfile = {
   relocation: string | null;
   businessTrips: string | null;
 
+  telegram: string | null;
+  links: string[];
+
   targetTitle: string | null;
   salary: string | null;
   specializations: string[];

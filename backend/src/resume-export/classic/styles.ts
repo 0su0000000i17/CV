@@ -1,7 +1,7 @@
 export function createClassicStyles() {
   return `
     @page {
-      size: A4;
+      size: 210mm 297mm;
       margin: 0;
     }
 
@@ -9,10 +9,20 @@ export function createClassicStyles() {
       box-sizing: border-box;
     }
 
-    html,
+    html {
+      margin: 0;
+      padding: 0;
+      width: 210mm;
+      background: #ffffff;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
     body {
       margin: 0;
       padding: 0;
+      width: 210mm;
+      min-width: 210mm;
       background: #ffffff;
       color: #222222;
       font-family: Arial, Helvetica, sans-serif;
@@ -22,15 +32,12 @@ export function createClassicStyles() {
       print-color-adjust: exact;
     }
 
-    body {
-      width: 210mm;
-    }
-
     .resume {
       width: 210mm;
       min-height: 297mm;
-      padding: 20mm 14.5mm 14mm;
+      padding: 19.5mm 14.5mm 14mm;
       background: #ffffff;
+      overflow: visible;
     }
 
     .header {
@@ -45,7 +52,7 @@ export function createClassicStyles() {
     }
 
     .name {
-      margin: 0 0 7px;
+      margin: 0 0 2px;
       font-size: 33px;
       line-height: 1.12;
       font-weight: 700;
@@ -69,8 +76,12 @@ export function createClassicStyles() {
       margin-top: 1px;
     }
 
-    .contact-gap {
-      margin-top: 15px;
+    .contact-line--gap {
+      margin-top: 16px;
+    }
+
+    .muted {
+      color: #b4b4b4;
     }
 
     .photo {
@@ -84,27 +95,27 @@ export function createClassicStyles() {
       margin-top: 24px;
     }
 
-    .section-title {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin: 0 0 12px;
-      color: #b0b0b0;
-      font-size: 16px;
-      font-weight: 400;
-      line-height: 1;
-    }
+.section-title {
+  display: block;
+  width: 100%;
+  margin: 0 0 12px;
+  padding: 0 0 2px;
+  border-bottom: 1px solid #d7d7d7;
+  color: #b3b3b3;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.05;
+}
 
-    .section-title::after {
-      content: "";
-      height: 1px;
-      flex: 1;
-      background: #d7d7d7;
-      transform: translateY(1px);
-    }
+.section-title span {
+  position: relative;
+  top: 1px;
+  display: inline;
+  white-space: nowrap;
+}
 
     .target-title {
-      margin: 0 0 8px;
+      margin: 0 0 6px;
       font-size: 16px;
       line-height: 1.3;
       font-weight: 700;
@@ -122,7 +133,7 @@ export function createClassicStyles() {
     }
 
     .plain-line--indent {
-      padding-left: 34px;
+      padding-left: 20px;
     }
 
     .experience-item {
@@ -164,13 +175,17 @@ export function createClassicStyles() {
       line-height: 1.35;
     }
 
+    .company-meta--muted {
+      color: #b5b5b5;
+    }
+
     .company-meta + .company-meta {
       margin-top: 1px;
     }
 
     .position {
       margin: 10px 0 7px;
-      font-size: 18px;
+      font-size: 17px;
       line-height: 1.22;
       font-weight: 400;
       color: #222222;
@@ -227,7 +242,7 @@ export function createClassicStyles() {
     .side-label {
       font-size: 13px;
       line-height: 1.36;
-      color: #222222;
+      color: #8f8f8f;
     }
 
     .language-lines {
@@ -241,15 +256,14 @@ export function createClassicStyles() {
       align-items: flex-start;
     }
 
-    .skill-tag {
-      display: inline-block;
-      padding: 3px 8px 4px;
-      background: #f1f1f1;
-      border-radius: 2px;
-      font-size: 12px;
-      line-height: 1.2;
-      color: #222222;
-    }
+.skill-tag {
+  display: inline-block;
+  padding: 2px;
+  background: #d4d4d4;
+  font-size: 14px;
+  line-height: 1.2;
+  color: #222222;
+}
 
     .details-grid {
       display: grid;
@@ -260,8 +274,8 @@ export function createClassicStyles() {
     .summary {
       margin: 0;
       white-space: pre-wrap;
-      font-size: 13px;
-      line-height: 1.36;
+      font-size: 12.5px;
+      line-height: 1.35;
     }
 
     .footer {

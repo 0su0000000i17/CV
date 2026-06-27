@@ -1,8 +1,10 @@
-import { extractResumeProfileFromText } from "../resume-profile/extract-profile-from-text.js";
+import { parseSourceResumeDocument } from "../resume-document/parser/parse-source-resume-document.js";
+import { buildProfileFromSourceResumeDocument } from "../resume-document/profile-compat.js";
 
 export function createCoverLetterContactSignature(resumeText: string) {
-  const profile = extractResumeProfileFromText(resumeText).profile;
-  const telegram = extractTelegramContact(resumeText);
+  const document = parseSourceResumeDocument(resumeText);
+  const profile = buildProfileFromSourceResumeDocument(document);
+  const telegram = document.personal.telegram || document.additional.telegram;
 
   const contactLines = [
     telegram ? `Telegram: ${telegram}` : null,
@@ -32,24 +34,4 @@ export function appendContactSignature(
   }
 
   return `${cleanCoverLetter}\n\n${signature}`;
-}
-
-function extractTelegramContact(text: string) {
-  const tMeMatch = text.match(
-    /(?:https?:\/\/)?(?:www\.)?t\.me\/([a-z0-9_]{4,32})/i
-  );
-
-  if (tMeMatch?.[1]) {
-    return `@${tMeMatch[1]}`;
-  }
-
-  const labeledMatch = text.match(
-    /(?:telegram|телеграм|tg|тг)[^\n@]*(@[a-z0-9_]{4,32})/i
-  );
-
-  if (labeledMatch?.[1]) {
-    return labeledMatch[1];
-  }
-
-  return null;
 }

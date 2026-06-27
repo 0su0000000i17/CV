@@ -1,6 +1,7 @@
 import type { ClassicDocument, ClassicExperienceItem } from "./types.js";
 import { getCompanyMeta } from "./document.js";
 import {
+  calculateExperienceDuration,
   escapeHtml,
   splitDateLines,
   stripBullet,
@@ -12,21 +13,43 @@ function line(text: string, className = "plain-line") {
   return `<p class="${className}">${escapeHtml(text)}</p>`;
 }
 
+function sectionTitle(title: string) {
+  return `<h2 class="section-title"><span>${escapeHtml(title)}</span></h2>`;
+}
+
+function renderMutedAfterDash(value: string) {
+  const match = value.match(/^(.+?)(\s+—\s+.+)$/u);
+
+  if (!match?.[1] || !match[2]) {
+    return escapeHtml(value);
+  }
+
+  return `${escapeHtml(match[1])}<span class="muted">${escapeHtml(match[2])}</span>`;
+}
+
+function renderContactLine(item: string, index: number, lines: string[]) {
+  const hasGap =
+    index > 0 &&
+    (item.startsWith("Проживает:") ||
+      lines[index - 1]?.includes("предпочитаемый способ связи"));
+
+  const className = `contact-line${hasGap ? " contact-line--gap" : ""}`;
+
+  if (item.includes("— предпочитаемый способ связи")) {
+    const main = item.replace("— предпочитаемый способ связи", "").trim();
+
+    return `<p class="${className}">${escapeHtml(main)} <span class="muted">— предпочитаемый способ связи</span></p>`;
+  }
+
+  return `<p class="${className}">${escapeHtml(item)}</p>`;
+}
+
 function renderHeader(doc: ClassicDocument) {
   const photo = doc.photoUrl
     ? `<img class="photo" src="${escapeHtml(doc.photoUrl)}" alt="" />`
     : "";
   const contactLines = doc.contactLines
-    .map((item, index) => {
-      const gap =
-        index > 0 &&
-        (item.startsWith("Проживает:") ||
-          doc.contactLines[index - 1]?.includes("предпочитаемый способ связи"))
-          ? " contact-gap"
-          : "";
-
-      return `<p class="contact-line${gap}">${escapeHtml(item)}</p>`;
-    })
+    .map((item, index) => renderContactLine(item, index, doc.contactLines))
     .join("");
 
   return `
@@ -54,7 +77,7 @@ function renderTarget(doc: ClassicDocument) {
 
   return `
     <section class="section">
-      <h2 class="section-title">Желаемая должность и зарплата</h2>
+      ${sectionTitle("Желаемая должность и зарплата")}
       ${
         doc.targetTitle
           ? `<h3 class="target-title">${escapeHtml(doc.targetTitle)}</h3>`
@@ -65,12 +88,27 @@ function renderTarget(doc: ClassicDocument) {
   `;
 }
 
+function looksLikeUrl(value: string) {
+  const text = value.trim();
+
+  return (
+    /^https?:\/\//i.test(text) ||
+    /^[a-zа-яё0-9.-]+\.[a-zа-яё]{2,}(?:\/.*)?$/i.test(text)
+  );
+}
+
 function renderCompanyMeta(doc: ClassicDocument, item: ClassicExperienceItem) {
   const meta = getCompanyMeta(doc.snapshot, item.company);
   const lines = meta?.lines ?? [];
 
   return lines
-    .map((text) => `<p class="company-meta">${escapeHtml(text)}</p>`)
+    .map((text) => {
+      const className = looksLikeUrl(text)
+        ? "company-meta company-meta--muted"
+        : "company-meta";
+
+      return `<p class="${className}">${escapeHtml(text)}</p>`;
+    })
     .join("");
 }
 
@@ -78,7 +116,9 @@ function renderExperienceItem(
   doc: ClassicDocument,
   item: ClassicExperienceItem
 ) {
-  const dates = splitDateLines(item.dates)
+  const duration = calculateExperienceDuration(item.dates);
+  const dates = [...splitDateLines(item.dates), duration]
+    .filter(Boolean)
     .map((dateLine) => `<p class="date-line">${escapeHtml(dateLine)}</p>`)
     .join("");
   const focus = item.focus
@@ -119,9 +159,7 @@ function renderExperience(doc: ClassicDocument) {
 
   return `
     <section class="section">
-      <h2 class="section-title">${escapeHtml(
-        doc.snapshot.experienceTitle || "Опыт работы"
-      )}</h2>
+      ${sectionTitle(doc.snapshot.experienceTitle || "Опыт работы")}
       ${items.map((item) => renderExperienceItem(doc, item)).join("")}
     </section>
   `;
@@ -168,7 +206,7 @@ function renderEducation(doc: ClassicDocument) {
 
   return `
     <section class="section">
-      <h2 class="section-title">Образование</h2>
+      ${sectionTitle("Образование")}
       ${level ? line(level) : ""}
       ${rows}
     </section>
@@ -178,14 +216,16 @@ function renderEducation(doc: ClassicDocument) {
 function renderSkills(doc: ClassicDocument) {
   if (!doc.snapshot.languageLines.length && !doc.skills.length) return "";
 
-  const languages = doc.snapshot.languageLines.map((item) => line(item)).join("");
+  const languages = doc.snapshot.languageLines
+    .map((item) => `<p class="plain-line">${renderMutedAfterDash(item)}</p>`)
+    .join("");
   const skills = doc.skills
     .map((item) => `<span class="skill-tag">${escapeHtml(item)}</span>`)
     .join("");
 
   return `
     <section class="section">
-      <h2 class="section-title">Ключевые навыки</h2>
+      ${sectionTitle("Навыки")}
       ${
         languages
           ? `<div class="skill-row language-lines"><div class="side-label">Знание языков</div><div>${languages}</div></div>`
@@ -212,7 +252,7 @@ function renderDetails(doc: ClassicDocument) {
 
   return `
     <section class="section">
-      <h2 class="section-title">Дополнительная информация</h2>
+      ${sectionTitle("Дополнительная информация")}
       <div class="details-grid">
         <div class="side-label">Обо мне</div>
         <p class="summary">${escapeHtml(text)}</p>

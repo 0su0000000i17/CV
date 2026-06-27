@@ -24,14 +24,20 @@ export type ResumePersonalProfile = {
   gender: string | null;
   age: string | null;
   birthDate: string | null;
+
   phone: string | null;
   email: string | null;
   preferredContactMethod: string | null;
+
   city: string | null;
   citizenship: string | null;
   workPermit: string | null;
   relocation: string | null;
   businessTrips: string | null;
+
+  telegram?: string | null;
+  links?: string[];
+
   targetTitle: string | null;
   salary: string | null;
   specializations: string[];
@@ -45,6 +51,7 @@ export type ResumeProfileExtractionResponse = {
   resumeId: string;
   source: 'hh_pdf' | 'generic_resume';
   profile: ResumePersonalProfile;
+  document?: unknown;
   photo: {
     contentType: string;
     dataUrl: string;
@@ -53,6 +60,9 @@ export type ResumeProfileExtractionResponse = {
     rawChars: number;
     normalizedChars: number;
     photoFound: boolean;
+    serviceLines?: number;
+    experienceItems?: number;
+    skillItems?: number;
   };
 };
 

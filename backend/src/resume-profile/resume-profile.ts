@@ -1,10 +1,10 @@
 import type { Request, Response } from "express";
-
 import { downloadResumeFileBuffer } from "../resume-analysis/repositories/resume-files-repository.js";
 import { findResumeFileRecord } from "../resume-analysis/repositories/resumes-repository.js";
+import { parseSourceResumeDocument } from "../resume-document/parser/parse-source-resume-document.js";
+import { buildProfileFromSourceResumeDocument } from "../resume-document/profile-compat.js";
 import { extractResumeMarkdown } from "../resume-processing/extract-resume-markdown.js";
 import { extractPhotoFromPdf } from "../resume-profile/extract-photo-from-pdf.js";
-import { extractResumeProfileFromText } from "../resume-profile/extract-profile-from-text.js";
 import {
   getStringParam,
   sendError,
@@ -46,9 +46,8 @@ export async function extractResumeProfileController(
       mimeType: resume.file_type,
     });
 
-    const profileExtraction = extractResumeProfileFromText(
-      extraction.normalizedMarkdown
-    );
+    const document = parseSourceResumeDocument(extraction.normalizedMarkdown);
+    const profile = buildProfileFromSourceResumeDocument(document);
 
     const photo = await extractPhotoFromPdf({
       fileBuffer,
@@ -58,8 +57,9 @@ export async function extractResumeProfileController(
     return res.json({
       status: "completed",
       resumeId: resume.id,
-      source: profileExtraction.source,
-      profile: profileExtraction.profile,
+      source: document.source,
+      profile,
+      document,
       photo: photo
         ? {
             contentType: photo.contentType,
@@ -70,6 +70,9 @@ export async function extractResumeProfileController(
         rawChars: extraction.stats.rawChars,
         normalizedChars: extraction.stats.normalizedChars,
         photoFound: Boolean(photo),
+        serviceLines: document.meta.serviceLines.length,
+        experienceItems: document.experience.items.length,
+        skillItems: document.skills.items.length,
       },
     });
   } catch (error) {
