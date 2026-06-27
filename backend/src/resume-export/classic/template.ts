@@ -28,12 +28,10 @@ function renderContactLine(item: string, index: number, lines: string[]) {
     index > 0 &&
     (item.startsWith("Проживает:") || lines[index - 1]?.includes("предпочитаемый способ связи"));
   const className = `contact-line${hasGap ? " contact-line--gap" : ""}`;
-
   if (item.includes("— предпочитаемый способ связи")) {
     const main = item.replace("— предпочитаемый способ связи", "").trim();
     return `<p class="${className}">${escapeHtml(main)} <span class="muted">— предпочитаемый способ связи</span></p>`;
   }
-
   return `<p class="${className}">${escapeHtml(item)}</p>`;
 }
 
@@ -57,9 +55,18 @@ function looksLikeUrl(value: string) {
 }
 
 function renderCompanyMeta(doc: ClassicDocument, item: ClassicExperienceItem) {
-  const lines = getCompanyMeta(doc.snapshot, item.company)?.lines ?? [];
+  const metaLines = getCompanyMeta(doc.snapshot, item.company)?.lines ?? [];
+  const lines = item.companyUrl && !metaLines.includes(item.companyUrl)
+    ? [item.companyUrl, ...metaLines]
+    : metaLines;
   return lines
     .map((text) => `<p class="${looksLikeUrl(text) ? "company-meta company-meta--muted" : "company-meta"}">${escapeHtml(text)}</p>`)
+    .join("");
+}
+
+function renderFocus(item: ClassicExperienceItem) {
+  return toTextLines(item.focus)
+    .map((focusLine) => `<p class="work-text">${escapeHtml(focusLine)}</p>`)
     .join("");
 }
 
@@ -69,14 +76,12 @@ function renderExperienceItem(doc: ClassicDocument, item: ClassicExperienceItem)
     .filter(Boolean)
     .map((dateLine) => `<p class="date-line">${escapeHtml(dateLine)}</p>`)
     .join("");
-  const focus = item.focus ? `<p class="work-text">${escapeHtml(item.focus)}</p>` : "";
   const bullets = item.adaptedBullets
     .map(stripBullet)
     .filter(Boolean)
     .map((bullet) => `<p class="bullet">- ${escapeHtml(bullet)}</p>`)
     .join("");
-
-  return `<article class="experience-item"><div class="dates">${dates}</div><div>${item.company ? `<h3 class="company">${escapeHtml(item.company)}</h3>` : ""}${renderCompanyMeta(doc, item)}${item.position ? `<h4 class="position">${escapeHtml(item.position)}</h4>` : ""}${focus}${bullets}</div></article>`;
+  return `<article class="experience-item"><div class="dates">${dates}</div><div>${item.company ? `<h3 class="company">${escapeHtml(item.company)}</h3>` : ""}${renderCompanyMeta(doc, item)}${item.position ? `<h4 class="position">${escapeHtml(item.position)}</h4>` : ""}${renderFocus(item)}${bullets}</div></article>`;
 }
 
 function renderExperience(doc: ClassicDocument) {
