@@ -3,6 +3,7 @@ import "dotenv/config";
 import cors from "cors";
 import express from "express";
 
+import { adminRouter } from "./routes/admin.js";
 import { aiRouter } from "./routes/ai.js";
 import { coverLettersRouter } from "./routes/cover-letters.js";
 import { profileRouter } from "./routes/profile.js";
@@ -47,6 +48,7 @@ app.use(
   })
 );
 
+app.use("/api/admin", adminRouter);
 app.use("/api/ai", aiRouter);
 app.use("/api/cover-letters", coverLettersRouter);
 app.use("/api/profile", profileRouter);
