@@ -21,9 +21,12 @@ export function Header() {
 
   const [mounted, setMounted] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [debugTapCount, setDebugTapCount] = useState(0);
 
   useEffect(() => {
     setMounted(true);
+
+    window.alert("CVPro debug: Header client JS mounted");
   }, []);
 
   useEffect(() => {
@@ -43,6 +46,15 @@ export function Header() {
   }
 
   function handleToggleMenu() {
+    const nextTapCount = debugTapCount + 1;
+
+    window.alert(
+      `CVPro debug: burger tap ${nextTapCount}; menu was ${
+        isMenuOpen ? "open" : "closed"
+      }; path ${pathname}`
+    );
+
+    setDebugTapCount(nextTapCount);
     setIsMenuOpen((currentValue) => !currentValue);
   }
 
@@ -65,6 +77,10 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2 md:gap-3">
+          <span className="rounded-full border border-red-500/30 bg-red-500/10 px-2 py-1 text-[10px] font-medium text-red-300 md:hidden">
+            dbg {debugTapCount}
+          </span>
+
           <ThemeToggleButton
             mounted={mounted}
             resolvedTheme={resolvedTheme}
