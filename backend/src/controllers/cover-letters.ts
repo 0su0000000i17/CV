@@ -12,6 +12,7 @@ import { findResumeFileRecord } from "../resume-analysis/repositories/resumes-re
 import { extractResumeMarkdown } from "../resume-processing/extract-resume-markdown.js";
 import { sendError, sendServerError } from "../utils/api-responses.js";
 import { getUserFromRequest } from "../utils/auth.js";
+import { saveProductEvent } from "../utils/product-events.js";
 
 const generateCoverLetterSchema = z.object({
   resumeId: z.string().trim().min(1),
@@ -95,6 +96,13 @@ export async function generateCoverLetterController(
     });
 
     const signature = createCoverLetterContactSignature(source.markdown);
+
+    await saveProductEvent({
+      userId: user.id,
+      name: "cover_letter_generated",
+      targetType: "resume",
+      targetId: resume.id,
+    });
 
     return res.json({
       status: "generated",
