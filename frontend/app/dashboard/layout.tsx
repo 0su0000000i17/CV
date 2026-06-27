@@ -85,12 +85,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   return (
     <DashboardResumeSelectionProvider>
-      <div className="grid min-h-[calc(100vh-64px)] grid-cols-1 gap-8 lg:grid-cols-[280px_1fr]">
-        <aside className="hidden lg:flex lg:flex-col">
-          <div className="fixed bottom-30 top-24 flex w-[280px] flex-col overflow-y-auto rounded-2xl border border-border bg-card/60 p-4">
-            <div className="px-3 pb-6 pt-2">
+      <div className="grid min-h-[calc(100vh-64px)] grid-cols-1 gap-6 lg:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)] xl:gap-8">
+        <aside className="hidden min-w-0 lg:block">
+          <div className="sticky top-20 flex max-h-[calc(100vh-6rem)] min-h-0 flex-col overflow-y-auto rounded-2xl border border-border bg-card/60 p-3 lg:w-[240px] xl:w-[280px] xl:p-4">
+            <div className="px-3 pb-5 pt-2">
               <p className="text-lg font-semibold tracking-tight text-foreground">
-                CV Pro
+                CV<span className="text-emerald-500">Pro</span>
               </p>
 
               <p className="mt-1 text-xs text-muted-foreground">
@@ -98,7 +98,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               </p>
             </div>
 
-            <nav className="flex flex-col gap-1">
+            <nav className="flex min-h-0 flex-col gap-1">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const active = isActiveRoute(pathname, item.href);
@@ -108,7 +108,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     key={item.href}
                     href={item.href}
                     aria-current={active ? 'page' : undefined}
-                    className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors ${
+                    className={`group flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors xl:py-2.5 ${
                       active
                         ? 'bg-foreground text-background shadow-sm'
                         : 'text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -122,13 +122,15 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                       }`}
                     />
 
-                    <span className="min-w-0 break-words">{item.title}</span>
+                    <span className="min-w-0 break-words leading-5">
+                      {item.title}
+                    </span>
                   </Link>
                 );
               })}
             </nav>
 
-            <div className="mt-auto rounded-2xl border border-border bg-background p-4">
+            <div className="mt-6 rounded-2xl border border-border bg-background p-4 xl:mt-auto">
               <p className="text-sm font-medium text-foreground">
                 Тариф:{' '}
                 <span className="font-semibold uppercase tracking-wide text-emerald-500">
@@ -164,7 +166,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </div>
         </aside>
 
-        <section className="min-w-0">{children}</section>
+        <section className="min-w-0 pb-8">{children}</section>
       </div>
     </DashboardResumeSelectionProvider>
   );
