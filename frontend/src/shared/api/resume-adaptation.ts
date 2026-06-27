@@ -34,13 +34,21 @@ export type AdaptedResumeEducation = {
   notes: string[];
 };
 
+export type ResumeAdaptationTarget = {
+  title: string | null;
+  company: string | null;
+  seniority: string | null;
+  salary: string | null;
+  specializations: string[];
+  employment: string | null;
+  schedule: string | null;
+  workFormat: string | null;
+  commuteTime: string | null;
+  keywordsUsed: string[];
+};
+
 export type ResumeAdaptationResult = {
-  target: {
-    title: string | null;
-    company: string | null;
-    seniority: string | null;
-    keywordsUsed: string[];
-  };
+  target: ResumeAdaptationTarget;
   adaptedResume: {
     headline: string;
     summary: string;
@@ -76,22 +84,19 @@ export async function adaptResumeToVacancy(params: {
   adaptationSettings: AdaptationSettings;
   accessToken: string;
 }): Promise<ResumeAdaptationResponse> {
-  const response = await fetch(
-    `${getApiUrl()}/api/resumes/${params.resumeId}/adapt`,
-    {
-      method: 'POST',
-      headers: {
-        ...createAuthHeaders(params.accessToken),
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        vacancy: params.vacancy,
-        vacancyText: params.vacancyText,
-        fit: params.fit,
-        adaptationSettings: params.adaptationSettings,
-      }),
-    }
-  );
+  const response = await fetch(`${getApiUrl()}/api/resumes/${params.resumeId}/adapt`, {
+    method: 'POST',
+    headers: {
+      ...createAuthHeaders(params.accessToken),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      vacancy: params.vacancy,
+      vacancyText: params.vacancyText,
+      fit: params.fit,
+      adaptationSettings: params.adaptationSettings,
+    }),
+  });
 
   return parseApiResponse<ResumeAdaptationResponse>(
     response,
