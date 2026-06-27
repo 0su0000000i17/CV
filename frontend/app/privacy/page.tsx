@@ -3,8 +3,16 @@ import type { Metadata } from 'next';
 import { LegalPage } from '@/src/shared/ui/legal-page';
 
 export const metadata: Metadata = {
-  title: 'Политика конфиденциальности — CV Pro',
-  description: 'Как CV Pro обрабатывает и защищает данные пользователей.',
+  title: 'Политика конфиденциальности',
+  description: 'Как CVPro обрабатывает и защищает данные пользователей.',
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false,
+    },
+  },
 };
 
 export default function PrivacyPage() {
