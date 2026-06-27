@@ -170,6 +170,7 @@ type StatCardProps = {
   value: string;
   caption: string;
   icon: ReactNode;
+  iconClassName: string;
   valueClassName?: string;
 };
 
@@ -178,6 +179,7 @@ function StatCard({
   value,
   caption,
   icon,
+  iconClassName,
   valueClassName = 'text-foreground',
 }: StatCardProps) {
   return (
@@ -187,7 +189,7 @@ function StatCard({
           {label}
         </p>
 
-        <div className="rounded-xl bg-muted p-2.5 text-foreground">{icon}</div>
+        <div className={`rounded-xl border p-2.5 ${iconClassName}`}>{icon}</div>
       </div>
 
       <p className={`text-3xl font-semibold tracking-tight ${valueClassName}`}>
@@ -208,8 +210,8 @@ function ResumeRow({ resume }: { resume: UploadedResume }) {
   return (
     <div className="flex flex-col gap-4 px-4 py-4 transition-colors hover:bg-muted/30 2xl:flex-row 2xl:items-center 2xl:justify-between">
       <div className="flex min-w-0 items-start gap-4">
-        <div className="shrink-0 rounded-xl bg-muted p-3">
-          <FileText className="h-5 w-5 text-foreground" />
+        <div className="shrink-0 rounded-xl bg-blue-500/10 p-3 text-blue-300 ring-1 ring-blue-500/20">
+          <FileText className="h-5 w-5" />
         </div>
 
         <div className="min-w-0">
@@ -317,9 +319,9 @@ export default function DashboardPage() {
     : false;
 
   const actionResumeId =
-  selectedResumeExists && selectedResumeId
-    ? selectedResumeId
-    : latestCheckedResume?.id ?? resumes[0]?.id;
+    selectedResumeExists && selectedResumeId
+      ? selectedResumeId
+      : latestCheckedResume?.id ?? resumes[0]?.id;
 
   const analyzeHref = createResumeActionHref('/dashboard/analyze', actionResumeId);
   const adaptHref = createResumeActionHref('/dashboard/adapt', actionResumeId);
@@ -364,7 +366,7 @@ export default function DashboardPage() {
             href={analyzeHref}
             className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-5 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
           >
-            <Sparkles className="h-4 w-4" />
+            <Sparkles className="h-4 w-4 text-purple-300" />
             Оценить резюме
           </Link>
 
@@ -372,7 +374,7 @@ export default function DashboardPage() {
             href={adaptHref}
             className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-5 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
           >
-            <Target className="h-4 w-4" />
+            <Target className="h-4 w-4 text-blue-300" />
             Адаптировать под вакансию
           </Link>
         </div>
@@ -384,6 +386,7 @@ export default function DashboardPage() {
           value={String(resumes.length)}
           caption="Файлы в личном кабинете"
           icon={<FileText className="h-5 w-5" />}
+          iconClassName="border-blue-500/20 bg-blue-500/10 text-blue-300"
         />
 
         <StatCard
@@ -391,6 +394,7 @@ export default function DashboardPage() {
           value={`${checkedResumes.length}/${resumes.length}`}
           caption="Резюме с готовой оценкой"
           icon={<CheckCircle2 className="h-5 w-5" />}
+          iconClassName="border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
         />
 
         <StatCard
@@ -398,6 +402,7 @@ export default function DashboardPage() {
           value={averageScore === null ? '—' : `${averageScore}/100`}
           caption="По всем оцененным резюме"
           icon={<BarChart3 className="h-5 w-5" />}
+          iconClassName="border-orange-500/20 bg-orange-500/10 text-orange-300"
           valueClassName={getScoreColorClass(averageScore)}
         />
 
@@ -415,6 +420,7 @@ export default function DashboardPage() {
               : 'Оценка ещё не запускалась'
           }
           icon={<Clock3 className="h-5 w-5" />}
+          iconClassName="border-violet-500/20 bg-violet-500/10 text-violet-300"
           valueClassName={getScoreColorClass(latestCheckedResume?.last_score)}
         />
       </section>
@@ -462,8 +468,8 @@ export default function DashboardPage() {
           ) : (
             <div className="p-6">
               <div className="rounded-2xl border border-dashed border-border p-8 text-center">
-                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-muted">
-                  <Plus className="h-5 w-5 text-foreground" />
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-300 ring-1 ring-blue-500/20">
+                  <Plus className="h-5 w-5" />
                 </div>
 
                 <p className="text-base font-medium text-foreground">
@@ -500,8 +506,8 @@ export default function DashboardPage() {
                 href={analyzeHref}
                 className="group flex items-start gap-4 rounded-2xl border border-border p-4 transition-colors hover:bg-muted/40"
               >
-                <div className="shrink-0 rounded-xl bg-muted p-3">
-                  <Sparkles className="h-5 w-5 text-foreground" />
+                <div className="shrink-0 rounded-xl bg-purple-500/10 p-3 text-purple-300 ring-1 ring-purple-500/20 transition-colors group-hover:bg-purple-500/15">
+                  <Sparkles className="h-5 w-5" />
                 </div>
 
                 <div>
@@ -519,8 +525,8 @@ export default function DashboardPage() {
                 href={adaptHref}
                 className="group flex items-start gap-4 rounded-2xl border border-border p-4 transition-colors hover:bg-muted/40"
               >
-                <div className="shrink-0 rounded-xl bg-muted p-3">
-                  <Target className="h-5 w-5 text-foreground" />
+                <div className="shrink-0 rounded-xl bg-blue-500/10 p-3 text-blue-300 ring-1 ring-blue-500/20 transition-colors group-hover:bg-blue-500/15">
+                  <Target className="h-5 w-5" />
                 </div>
 
                 <div>
@@ -539,8 +545,8 @@ export default function DashboardPage() {
                 href="/dashboard/resumes"
                 className="group flex items-start gap-4 rounded-2xl border border-border p-4 transition-colors hover:bg-muted/40"
               >
-                <div className="shrink-0 rounded-xl bg-muted p-3">
-                  <FileText className="h-5 w-5 text-foreground" />
+                <div className="shrink-0 rounded-xl bg-orange-500/10 p-3 text-orange-300 ring-1 ring-orange-500/20 transition-colors group-hover:bg-orange-500/15">
+                  <FileText className="h-5 w-5" />
                 </div>
 
                 <div>
