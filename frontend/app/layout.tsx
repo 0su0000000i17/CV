@@ -5,14 +5,63 @@ import { ThemeProvider } from './providers';
 import { Footer, Header } from '@/src/widgets';
 import { ThemeFavicon } from './theme-favicon';
 
+const siteUrl = 'https://cvpro.example';
+
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
   variable: '--font-sans',
 });
 
 export const metadata: Metadata = {
-  title: 'CV Pro',
-  description: 'AI-сервис для анализа и адаптации резюме',
+  metadataBase: new URL(siteUrl),
+  applicationName: 'CVPro',
+  title: {
+    default: 'CVPro — AI-сервис для анализа и адаптации резюме',
+    template: '%s | CVPro',
+  },
+  description:
+    'CVPro помогает оценивать резюме, находить слабые места, адаптировать опыт под вакансии и готовить сильные отклики с помощью AI.',
+  keywords: [
+    'CVPro',
+    'анализ резюме',
+    'адаптация резюме',
+    'AI резюме',
+    'ATS проверка резюме',
+    'сопроводительное письмо',
+    'поиск работы',
+  ],
+  authors: [{ name: 'CVPro' }],
+  creator: 'CVPro',
+  publisher: 'CVPro',
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'ru_RU',
+    url: '/',
+    siteName: 'CVPro',
+    title: 'CVPro — AI-сервис для анализа и адаптации резюме',
+    description:
+      'Оценивай резюме, адаптируй опыт под вакансии и создавай сильные отклики с помощью AI.',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'CVPro — AI-сервис для резюме',
+    description:
+      'AI-сервис для анализа, адаптации резюме и подготовки сильных откликов.',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+      'max-video-preview': -1,
+    },
+  },
 };
 
 export default function RootLayout({
