@@ -73,7 +73,7 @@ function mergeSkills(original: AdaptedResumeSkills, adapted: AdaptedResumeSkills
   const secondary = originalSkills.filter((skill) => !used.has(key(skill)));
 
   return {
-    primary: primary.length ? primary : original.primary,
+    primary: primary.length ? primary : unique(original.primary),
     secondary,
     deprioritized: unique(adapted.deprioritized).filter((item) => canonical.has(key(item))),
     notAdded: unique(adapted.notAdded),
@@ -86,6 +86,7 @@ export function applySourceResumeStructure(params: {
 }): ResumeAdaptationResult {
   const original = sourceDocumentToEditableResume(params.sourceDocument).resumeJson;
   const adapted = params.adaptation;
+  const target = original.target;
   const experience = original.adaptedResume.experience.map((item, index) =>
     mergeExperienceItem(item, findAdapted(adapted.adaptedResume.experience, item.sourceIndex, index))
   );
@@ -93,9 +94,15 @@ export function applySourceResumeStructure(params: {
   return {
     ...adapted,
     target: {
-      ...original.target,
+      title: target.title,
       company: adapted.target.company,
       seniority: adapted.target.seniority,
+      salary: target.salary || null,
+      specializations: target.specializations || [],
+      employment: target.employment || null,
+      schedule: target.schedule || null,
+      workFormat: target.workFormat || null,
+      commuteTime: target.commuteTime || null,
       keywordsUsed: unique(adapted.target.keywordsUsed),
     },
     adaptedResume: {
