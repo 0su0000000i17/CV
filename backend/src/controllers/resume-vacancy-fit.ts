@@ -9,6 +9,7 @@ import { formatVacancyForAdaptation } from "../vacancy-ai/format-vacancy-for-ada
 import type { NormalizedVacancy } from "../vacancy-ai/types.js";
 import { getStringParam, sendError, sendServerError } from "../utils/api-responses.js";
 import { getUserFromRequest } from "../utils/auth.js";
+import { saveProductEvent } from "../utils/product-events.js";
 
 const schema = z.object({
   vacancy: z.object({ isVacancy: z.boolean() }).passthrough(),
@@ -37,6 +38,13 @@ export async function checkResumeVacancyFitController(req: Request, res: Respons
     const source = await loadSourceResumeDocument(resume);
     const resumeJson = stringifyResumeAdaptationAiPayload(source.document);
     const result = await checkResumeVacancyFit({ resumeJson, vacancy, vacancyText });
+
+    await saveProductEvent({
+      userId: user.id,
+      name: "vacancy_fit_checked",
+      targetType: "resume",
+      targetId: resume.id,
+    });
 
     return res.json({
       status: result.fit.canAdapt ? "fit_passed" : "fit_blocked",
