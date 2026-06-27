@@ -4,35 +4,29 @@ import type {
 } from "../types.js";
 import { riskFlagSeverities, riskFlagTypes } from "./config.js";
 
+const EMPTY_STRING_VALUES = new Set(["null", "undefined", "none", "n/a", "-"]);
+
 export function normalizeForbiddenChanges(value: unknown) {
   const modelItems = toStringArray(value, 12);
 
   return Array.from(
     new Set([
       ...modelItems,
-      "Не менять ФИО, контакты, email, телефон, Telegram, ссылки, адрес и другие личные данные.",
-      "Не добавлять компании, должности, даты, проекты, технологии и метрики, которых нет в резюме.",
-      "Не повышать уровень кандидата, если он не подтверждён резюме.",
+      "Не менять личные данные кандидата.",
+      "Не добавлять неподтвержденные компании, должности, даты, проекты, технологии и метрики.",
+      "Не повышать уровень кандидата без подтверждения в резюме.",
     ])
   );
 }
 
 export function normalizeRiskFlags(value: unknown): ResumeVacancyFitRiskFlag[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
+  if (!Array.isArray(value)) return [];
 
   return value
     .map((item) => {
-      if (!isRecord(item)) {
-        return null;
-      }
-
+      if (!isRecord(item)) return null;
       const explanation = toNullableString(item.explanation);
-
-      if (!explanation) {
-        return null;
-      }
+      if (!explanation) return null;
 
       return {
         type: toEnumValue(item.type, riskFlagTypes, "over_adaptation_risk"),
@@ -61,10 +55,7 @@ export function normalizeScore(value: unknown, fit: ResumeVacancyFitLevel) {
 }
 
 export function normalizeConfidence(value: unknown) {
-  if (typeof value !== "number" || Number.isNaN(value)) {
-    return 0.5;
-  }
-
+  if (typeof value !== "number" || Number.isNaN(value)) return 0.5;
   return Math.max(0, Math.min(1, value));
 }
 
@@ -73,30 +64,24 @@ export function toEnumValue<T extends string>(
   allowedValues: readonly T[],
   fallback: T
 ): T {
-  if (typeof value !== "string") {
-    return fallback;
-  }
-
+  if (typeof value !== "string") return fallback;
   return allowedValues.includes(value as T) ? (value as T) : fallback;
 }
 
 export function toNullableString(value: unknown) {
-  if (typeof value !== "string") {
-    return null;
-  }
+  if (typeof value !== "string") return null;
 
   const trimmed = value.trim();
+  if (!trimmed || EMPTY_STRING_VALUES.has(trimmed.toLowerCase())) return null;
 
-  return trimmed ? trimmed : null;
+  return trimmed;
 }
 
 export function toStringArray(value: unknown, limit: number) {
-  if (!Array.isArray(value)) {
-    return [];
-  }
+  if (!Array.isArray(value)) return [];
 
   return value
-    .map((item) => (typeof item === "string" ? item.trim() : ""))
+    .map((item) => toNullableString(item) || "")
     .filter(Boolean)
     .slice(0, limit);
 }
