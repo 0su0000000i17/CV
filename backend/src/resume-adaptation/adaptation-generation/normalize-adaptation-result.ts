@@ -23,10 +23,10 @@ export function normalizeAdaptationResult(value: unknown): ResumeAdaptationResul
       skills: normalizeSkills(adaptedResume.skills),
       experience: normalizeExperience(adaptedResume.experience),
       education: normalizeEducation(adaptedResume.education),
-      additionalInfo: toStringArray(adaptedResume.additionalInfo, 10),
+      additionalInfo: toStringArray(adaptedResume.additionalInfo, 20),
     },
-    changes: toStringArray(source.changes, 10),
-    warnings: toStringArray(source.warnings, 10),
+    changes: toStringArray(source.changes, 12),
+    warnings: toStringArray(source.warnings, 12),
     forbiddenClaims: normalizeForbiddenClaims(source.forbiddenClaims),
   };
 }
@@ -34,7 +34,7 @@ export function normalizeAdaptationResult(value: unknown): ResumeAdaptationResul
 function normalizeForbiddenClaims(value: unknown) {
   return Array.from(
     new Set([
-      ...toStringArray(value, 12),
+      ...toStringArray(value, 20),
       "Не добавлены навыки, технологии, должности, компании, даты и метрики, которых нет в исходном резюме.",
       "Контакты и личные данные не изменялись.",
     ])
