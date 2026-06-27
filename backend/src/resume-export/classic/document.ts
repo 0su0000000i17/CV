@@ -12,7 +12,6 @@ function contactLinesFromContacts(contacts: ClassicContacts) {
   const permission = contacts.workPermit ? `есть разрешение на работу: ${contacts.workPermit}` : "";
   const citizenship = [contacts.citizenship, permission].filter(Boolean).join(", ");
   const mobility = [contacts.relocation, contacts.businessTrips].filter(Boolean).join(", ");
-
   return [
     personal,
     contacts.phone,
@@ -33,12 +32,20 @@ function resolveContactLines(contacts: ClassicContacts, snapshot: SourceSnapshot
   return snapshot.contactLines.length ? snapshot.contactLines : contactLines;
 }
 
+function formatEducationItem(item: SourceResumeDocument["education"]["items"][number]) {
+  const details = [item.institution, item.faculty, item.specialization]
+    .map(cleanText)
+    .filter(Boolean)
+    .join(", ");
+  return [item.year, details].map(cleanText).filter(Boolean).join(" ");
+}
+
 function educationFromSourceDocument(document: SourceResumeDocument | null) {
   if (!document) return [];
-  const items = document.education.items.map((item) =>
-    [item.year, item.institution, item.faculty, item.specialization].map(cleanText).filter(Boolean).join(" — ")
-  );
-  return uniqueStrings([document.education.level || "", ...items]);
+  return uniqueStrings([
+    document.education.level || "",
+    ...document.education.items.map(formatEducationItem),
+  ]);
 }
 
 function languagesFromSourceDocument(document: SourceResumeDocument | null) {
@@ -56,11 +63,7 @@ function companyMetaFromSourceDocument(document: SourceResumeDocument | null) {
     .map((item) => {
       const company = cleanText(item.company.name);
       if (!company) return null;
-      const lines = uniqueStrings([
-        item.company.city || "",
-        item.company.url || "",
-        ...item.company.industries,
-      ]);
+      const lines = uniqueStrings([item.company.city || "", item.company.url || "", ...item.company.industries]);
       return { company, lines };
     })
     .filter((item): item is CompanyMeta => Boolean(item));
@@ -78,7 +81,6 @@ function createSnapshot(params: {
   });
   const languageLines = languagesFromSourceDocument(params.sourceDocument);
   const companyMeta = companyMetaFromSourceDocument(params.sourceDocument);
-
   return {
     ...snapshot,
     languageLines: languageLines.length ? languageLines : snapshot.languageLines,
@@ -95,7 +97,6 @@ function resolveEducationLines(params: {
   const notes = params.payload.adaptation.adaptedResume.education.notes
     .map((item) => cleanText(item))
     .filter(Boolean);
-
   if (documentLines.length) return documentLines;
   if (params.snapshot.educationLines.length) return params.snapshot.educationLines;
   return notes;
@@ -109,7 +110,6 @@ function resolveSkills(payload: ClassicExportPayload) {
   const { skills } = payload.adaptation.adaptedResume;
   const seen = new Set<string>();
   const result: string[] = [];
-
   for (const item of [...skills.primary, ...skills.secondary, ...skills.deprioritized]) {
     const value = cleanText(item);
     const key = skillKey(value);
@@ -117,7 +117,6 @@ function resolveSkills(payload: ClassicExportPayload) {
     seen.add(key);
     result.push(value);
   }
-
   return result;
 }
 
@@ -136,10 +135,7 @@ export function buildClassicDocument(params: {
   const sourceDocument = params.sourceDocument || null;
   const snapshot = createSnapshot({ sourceText: params.sourceText, payload: params.payload, sourceDocument });
   const sourceTitle = createBaseName(params.sourceTitle || params.payload.sourceTitle);
-  const targetTitle =
-    cleanText(params.payload.adaptation.adaptedResume.headline) ||
-    cleanText(params.payload.adaptation.target.title);
-
+  const targetTitle = cleanText(params.payload.adaptation.adaptedResume.headline) || cleanText(params.payload.adaptation.target.title);
   return {
     ...params.payload,
     sourceText: params.sourceText,
