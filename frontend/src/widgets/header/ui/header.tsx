@@ -21,13 +21,9 @@ export function Header() {
 
   const [mounted, setMounted] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [debugTapCount, setDebugTapCount] = useState(0);
-  const [debugTestCount, setDebugTestCount] = useState(0);
 
   useEffect(() => {
     setMounted(true);
-
-    window.alert("CVPro debug: Header client JS mounted");
   }, []);
 
   useEffect(() => {
@@ -47,23 +43,7 @@ export function Header() {
   }
 
   function handleToggleMenu() {
-    const nextTapCount = debugTapCount + 1;
-
-    window.alert(
-      `CVPro debug: burger tap ${nextTapCount}; menu was ${
-        isMenuOpen ? "open" : "closed"
-      }; path ${pathname}`
-    );
-
-    setDebugTapCount(nextTapCount);
     setIsMenuOpen((currentValue) => !currentValue);
-  }
-
-  function handleDebugTestTap() {
-    const nextTestCount = debugTestCount + 1;
-
-    window.alert(`CVPro debug: TEST TAP ${nextTestCount}`);
-    setDebugTestCount(nextTestCount);
   }
 
   function handleNavigate() {
@@ -71,66 +51,52 @@ export function Header() {
   }
 
   return (
-    <>
-      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="mx-auto flex h-16 w-full max-w-[1400px] items-center justify-between px-4 md:px-6">
-          <Link href="/" className="inline-flex items-center" aria-label="CVPro">
-            <Logo />
-          </Link>
+    <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="mx-auto flex h-16 w-full max-w-[1400px] items-center justify-between px-4 md:px-6">
+        <Link href="/" className="inline-flex items-center" aria-label="CVPro">
+          <Logo />
+        </Link>
 
-          <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
-            <HeaderNavLinks
-              isDashboard={isDashboard}
-              showDashboard={!loading && authenticated}
+        <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
+          <HeaderNavLinks
+            isDashboard={isDashboard}
+            showDashboard={!loading && authenticated}
+          />
+        </nav>
+
+        <div className="flex items-center gap-2 md:gap-3">
+          <ThemeToggleButton
+            mounted={mounted}
+            resolvedTheme={resolvedTheme}
+            onToggle={handleToggleTheme}
+          />
+
+          <div className="hidden min-w-[76px] md:block">
+            <DesktopAuthControl
+              isLoginPage={isLoginPage}
+              loading={loading}
+              authenticated={authenticated}
+              fullName={fullName}
+              email={email}
+              profileLoading={profileQuery.isLoading}
             />
-          </nav>
-
-          <div className="flex items-center gap-2 md:gap-3">
-            <span className="rounded-full border border-red-500/30 bg-red-500/10 px-2 py-1 text-[10px] font-medium text-red-300 md:hidden">
-              b {debugTapCount} / t {debugTestCount}
-            </span>
-
-            <ThemeToggleButton
-              mounted={mounted}
-              resolvedTheme={resolvedTheme}
-              onToggle={handleToggleTheme}
-            />
-
-            <div className="hidden min-w-[76px] md:block">
-              <DesktopAuthControl
-                isLoginPage={isLoginPage}
-                loading={loading}
-                authenticated={authenticated}
-                fullName={fullName}
-                email={email}
-                profileLoading={profileQuery.isLoading}
-              />
-            </div>
-
-            <MobileMenuButton isOpen={isMenuOpen} onClick={handleToggleMenu} />
           </div>
+
+          <MobileMenuButton isOpen={isMenuOpen} onClick={handleToggleMenu} />
         </div>
+      </div>
 
-        <MobileMenu
-          isOpen={isMenuOpen}
-          isDashboard={isDashboard}
-          showDashboard={!loading && authenticated}
-          isLoginPage={isLoginPage}
-          loading={loading}
-          authenticated={authenticated}
-          fullName={fullName}
-          email={email}
-          onNavigate={handleNavigate}
-        />
-      </header>
-
-      <button
-        type="button"
-        onClick={handleDebugTestTap}
-        className="fixed bottom-4 left-4 z-[9999] rounded-full border border-red-500 bg-red-500 px-4 py-3 text-xs font-semibold text-white md:hidden"
-      >
-        TEST TAP {debugTestCount}
-      </button>
-    </>
+      <MobileMenu
+        isOpen={isMenuOpen}
+        isDashboard={isDashboard}
+        showDashboard={!loading && authenticated}
+        isLoginPage={isLoginPage}
+        loading={loading}
+        authenticated={authenticated}
+        fullName={fullName}
+        email={email}
+        onNavigate={handleNavigate}
+      />
+    </header>
   );
 }
