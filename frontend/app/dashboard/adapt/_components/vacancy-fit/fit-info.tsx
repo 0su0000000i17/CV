@@ -12,7 +12,18 @@ type Props = {
   fit: Fit;
 };
 
+function getSafeText(value?: string | null) {
+  const normalized = value?.trim();
+  if (!normalized) return null;
+  if (['null', 'undefined', 'none', 'n/a', '-'].includes(normalized.toLowerCase())) {
+    return null;
+  }
+  return normalized;
+}
+
 export function FitInfo({ fit }: Props) {
+  const safeAdaptationDirection = getSafeText(fit.safeAdaptationDirection);
+
   return (
     <>
       <div className="mt-4">
@@ -30,14 +41,14 @@ export function FitInfo({ fit }: Props) {
         />
       </div>
 
-      {fit.safeAdaptationDirection ? (
+      {safeAdaptationDirection ? (
         <div className="mt-5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4">
           <h3 className="text-sm font-medium text-emerald-300">
             Безопасное направление адаптации
           </h3>
 
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            {fit.safeAdaptationDirection}
+            {safeAdaptationDirection}
           </p>
         </div>
       ) : null}
