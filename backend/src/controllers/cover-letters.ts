@@ -24,6 +24,37 @@ const generateCoverLetterSchema = z.object({
   adaptation: z.unknown().optional(),
 });
 
+type CoverLetterResumeSource = {
+  markdown: string;
+  markdownLimited: boolean;
+};
+
+async function loadResumeMarkdown(resume: Awaited<ReturnType<typeof findResumeFileRecord>>) {
+  if (!resume) throw new Error("Resume not found");
+
+  const savedMarkdown = resume.extracted_text?.trim();
+  if (savedMarkdown) {
+    return { markdown: savedMarkdown, markdownLimited: false } satisfies CoverLetterResumeSource;
+  }
+
+  if (!resume.file_path) {
+    throw new Error("Resume has no stored text or legacy file");
+  }
+
+  const fileBuffer = await downloadResumeFileBuffer(resume.file_path);
+  const extraction = await extractResumeMarkdown({
+    fileBuffer,
+    fileName: resume.file_name,
+    filePath: resume.file_path,
+    mimeType: resume.file_type,
+  });
+
+  return {
+    markdown: extraction.normalizedMarkdown,
+    markdownLimited: extraction.stats.limited,
+  } satisfies CoverLetterResumeSource;
+}
+
 export async function generateCoverLetterController(
   req: Request,
   res: Response
@@ -54,27 +85,16 @@ export async function generateCoverLetterController(
       return sendError(res, 404, "Resume not found");
     }
 
-    const fileBuffer = await downloadResumeFileBuffer(resume.file_path);
-
-    const extraction = await extractResumeMarkdown({
-      fileBuffer,
-      fileName: resume.file_name,
-      filePath: resume.file_path,
-      mimeType: resume.file_type,
-    });
-
-    const resumeMarkdown = resume.extracted_text?.trim() || extraction.markdown;
+    const source = await loadResumeMarkdown(resume);
 
     const result = await generateCoverLetter({
-      resumeMarkdown,
+      resumeMarkdown: source.markdown,
       vacancyText: parsedBody.data.vacancyText,
       tone: parsedBody.data.tone as CoverLetterTone,
       adaptation: parsedBody.data.adaptation as never,
     });
 
-    const signature = createCoverLetterContactSignature(
-      extraction.normalizedMarkdown
-    );
+    const signature = createCoverLetterContactSignature(source.markdown);
 
     return res.json({
       status: "generated",
@@ -84,8 +104,8 @@ export async function generateCoverLetterController(
       meta: {
         ...result.meta,
         contactSignatureAppended: Boolean(signature),
-        markdownChars: resumeMarkdown.length,
-        markdownLimited: extraction.stats.limited,
+        markdownChars: source.markdown.length,
+        markdownLimited: source.markdownLimited,
         provider: result.generation.provider,
         model: result.generation.model,
       },
