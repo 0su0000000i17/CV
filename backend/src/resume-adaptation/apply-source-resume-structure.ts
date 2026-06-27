@@ -4,12 +4,44 @@ import type { AdaptedResumeSkills, ResumeAdaptationResult } from "./types.js";
 
 type ExperienceItem = ResumeAdaptationResult["adaptedResume"]["experience"][number];
 
+const stopWords = new Set([
+  "и",
+  "в",
+  "на",
+  "с",
+  "по",
+  "для",
+  "что",
+  "как",
+  "это",
+  "через",
+  "без",
+  "при",
+  "от",
+  "до",
+]);
+
 function clean(value?: string | null) {
   return value?.replace(/\s+/g, " ").trim() || "";
 }
 
 function key(value: string) {
   return clean(value).toLowerCase().replace(/[^a-zа-яё0-9+#.]+/giu, "");
+}
+
+function tokens(value: string) {
+  return clean(value)
+    .toLowerCase()
+    .split(/[^a-zа-яё0-9+#.]+/giu)
+    .filter((token) => token.length > 2 && !stopWords.has(token));
+}
+
+function isSimilar(a: string, b: string) {
+  const first = new Set(tokens(a));
+  const second = new Set(tokens(b));
+  if (!first.size || !second.size) return false;
+  const intersection = [...first].filter((token) => second.has(token)).length;
+  return intersection / Math.min(first.size, second.size) >= 0.58;
 }
 
 function unique(values: string[]) {
@@ -32,17 +64,27 @@ function findAdapted(items: ExperienceItem[], sourceIndex: number, fallbackIndex
 function mergeBullets(original: string[], adapted: string[]) {
   const result = unique(adapted);
   const seen = new Set(result.map(key));
-  const targetCount = Math.min(unique(original).length, 16);
+  const originalItems = unique(original);
+  const targetCount = Math.min(originalItems.length, 16);
 
-  for (const bullet of unique(original)) {
+  for (const bullet of originalItems) {
     if (result.length >= targetCount) break;
     const bulletKey = key(bullet);
-    if (seen.has(bulletKey)) continue;
+    if (seen.has(bulletKey) || result.some((item) => isSimilar(item, bullet))) continue;
     seen.add(bulletKey);
     result.push(bullet);
   }
 
-  return result.length ? result : unique(original);
+  return result.length ? result : originalItems;
+}
+
+function mergeFocus(originalFocus: string | null, adaptedFocus?: string | null) {
+  const originalLines = originalFocus?.split("\n") || [];
+  const adapted = clean(adaptedFocus);
+  if (!adapted || originalLines.some((line) => isSimilar(line, adapted))) {
+    return unique(originalLines).join("\n") || null;
+  }
+  return unique([...originalLines, adapted]).slice(0, 5).join("\n") || null;
 }
 
 function mergeExperienceItem(original: ExperienceItem, adapted: ExperienceItem | null): ExperienceItem {
@@ -55,7 +97,7 @@ function mergeExperienceItem(original: ExperienceItem, adapted: ExperienceItem |
     position: original.position,
     dates: original.dates,
     adaptedBullets: mergeBullets(original.adaptedBullets, adaptedBullets),
-    focus: clean(adapted?.focus) || original.focus,
+    focus: mergeFocus(original.focus, adapted?.focus),
     preservedFacts: unique(preservedFacts).slice(0, 16),
     warnings: adapted?.warnings || [],
   };
@@ -71,7 +113,6 @@ function mergeSkills(original: AdaptedResumeSkills, adapted: AdaptedResumeSkills
   const primary = unique(addSupported([...adapted.primary, ...adapted.secondary]));
   const used = new Set(primary.map(key));
   const secondary = originalSkills.filter((skill) => !used.has(key(skill)));
-
   return {
     primary: primary.length ? primary : unique(original.primary),
     secondary,
@@ -90,7 +131,6 @@ export function applySourceResumeStructure(params: {
   const experience = original.adaptedResume.experience.map((item, index) =>
     mergeExperienceItem(item, findAdapted(adapted.adaptedResume.experience, item.sourceIndex, index))
   );
-
   return {
     ...adapted,
     target: {
