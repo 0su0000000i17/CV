@@ -4,11 +4,7 @@ import { buildClassicDocument } from "../resume-export/classic/document.js";
 import { renderClassicResumePdf } from "../resume-export/classic/render-pdf.js";
 import { classicExportSchema } from "../resume-export/classic/schema.js";
 import { getResumeExportSource } from "../resume-export/classic/source.js";
-import {
-  getStringParam,
-  sendError,
-  sendServerError,
-} from "../utils/api-responses.js";
+import { getStringParam, sendError, sendServerError } from "../utils/api-responses.js";
 import { getUserFromRequest } from "../utils/auth.js";
 
 function createFileName(sourceTitle: string) {
@@ -29,31 +25,24 @@ export async function exportClassicResumeController(req: Request, res: Response)
     if (!resumeId) return sendError(res, 400, "Invalid resume id");
 
     const parsedBody = classicExportSchema.safeParse(req.body);
-
     if (!parsedBody.success) {
       return sendError(res, 400, "Некорректные данные для экспорта резюме.");
     }
 
-    const source = await getResumeExportSource({
-      userId: user.id,
-      resumeId,
-    });
-
+    const source = await getResumeExportSource({ userId: user.id, resumeId });
     if (!source) return sendError(res, 404, "Resume not found");
-
     if (!source.sourceText.trim()) {
       return sendError(res, 400, "Не удалось извлечь текст исходного резюме.");
     }
 
     const sourceTitle =
       source.file_name || source.title || parsedBody.data.sourceTitle || "resume";
-
     const document = buildClassicDocument({
       sourceTitle,
       sourceText: source.sourceText,
+      sourceDocument: source.sourceDocument,
       payload: parsedBody.data,
     });
-
     const pdfBytes = await renderClassicResumePdf(document);
 
     res.setHeader("Content-Type", "application/pdf");
