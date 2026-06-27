@@ -32,7 +32,7 @@ const dashboardNavItems = [
     icon: Mail,
   },
   {
-    title: "Оценка резюме",
+    title: "Оценить резюме",
     href: "/dashboard/analyze",
     icon: BarChart3,
   },
