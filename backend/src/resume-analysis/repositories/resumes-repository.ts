@@ -12,10 +12,7 @@ export async function findResumeOwnerRecord(params: {
     .eq("user_id", params.userId)
     .maybeSingle();
 
-  if (error) {
-    throw error;
-  }
-
+  if (error) throw error;
   return data as { id: string } | null;
 }
 
@@ -25,15 +22,14 @@ export async function findResumeFileRecord(params: {
 }) {
   const { data, error } = await supabaseAdmin
     .from("resumes")
-    .select("id, file_name, file_path, file_type, file_size, extracted_text")
+    .select(
+      "id, file_name, file_path, file_type, file_size, extracted_text, source_resume_document, editable_resume_json"
+    )
     .eq("id", params.resumeId)
     .eq("user_id", params.userId)
     .maybeSingle();
 
-  if (error) {
-    throw error;
-  }
-
+  if (error) throw error;
   return data as ResumeFileRecord | null;
 }
 
@@ -51,9 +47,7 @@ export async function setResumeAnalysisStatus(params: {
     .eq("id", params.resumeId)
     .eq("user_id", params.userId);
 
-  if (error) {
-    console.error("[resumeAnalysis] Failed to update analysis status", error);
-  }
+  if (error) console.error("[resumeAnalysis] Failed to update analysis status", error);
 }
 
 export async function markResumeAnalysisCompleted(params: {
@@ -63,7 +57,6 @@ export async function markResumeAnalysisCompleted(params: {
   role: string | null;
 }) {
   const analyzedAt = new Date().toISOString();
-
   const { error } = await supabaseAdmin
     .from("resumes")
     .update({
@@ -77,9 +70,6 @@ export async function markResumeAnalysisCompleted(params: {
     .eq("user_id", params.userId);
 
   if (error) {
-    console.error(
-      "[resumeAnalysis] Failed to update resume analysis metadata",
-      error
-    );
+    console.error("[resumeAnalysis] Failed to update resume analysis metadata", error);
   }
 }
