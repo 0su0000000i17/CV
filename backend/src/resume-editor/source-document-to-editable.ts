@@ -3,6 +3,8 @@ import type { EditableResumeContacts, EditableResumeJson } from "./types.js";
 
 type ExperienceItem = SourceResumeDocument["experience"]["items"][number];
 
+type SplitBlocks = { focus: string[]; bullets: string[] };
+
 export function sourceDocumentToEditableResume(document: SourceResumeDocument) {
   return { contacts: documentToContacts(document), resumeJson: documentToResumeJson(document) };
 }
@@ -62,16 +64,16 @@ function documentToResumeJson(document: SourceResumeDocument): EditableResumeJso
 }
 
 function toExperienceItem(item: ExperienceItem, index: number) {
-  const bullets = blocksToBullets(item.blocks);
+  const split = splitExperienceBlocks(item.blocks);
   return {
     sourceIndex: Number.isFinite(item.sourceIndex) ? item.sourceIndex : index,
     company: text(item.company.name) || null,
     companyUrl: text(item.company.url) || null,
     position: text(item.position) || null,
     dates: formatDates(item.dates),
-    adaptedBullets: bullets,
-    focus: item.company.industries.join(", ") || null,
-    preservedFacts: bullets.slice(0, 16),
+    adaptedBullets: split.bullets,
+    focus: createFocus(item, split.focus),
+    preservedFacts: split.bullets.slice(0, 16),
     warnings: [],
   };
 }
@@ -83,8 +85,39 @@ function educationToNotes(document: SourceResumeDocument) {
   return cleanList([document.education.level || "", ...items]);
 }
 
-function blocksToBullets(blocks: ResumeTextBlock[]) {
-  return cleanList(blocks.map(formatBlock));
+function splitExperienceBlocks(blocks: ResumeTextBlock[]): SplitBlocks {
+  const result: SplitBlocks = { focus: [], bullets: [] };
+  let isBulletMode = false;
+
+  for (const block of blocks) {
+    if (block.type === "sectionTitle") {
+      if (isBulletSection(block.title)) isBulletMode = true;
+      continue;
+    }
+
+    const value = formatBlock(block);
+    if (!value) continue;
+
+    if (!isBulletMode && isFocusBlock(block, result.focus.length)) {
+      result.focus.push(value);
+      continue;
+    }
+
+    isBulletMode = true;
+    result.bullets.push(value);
+  }
+
+  return { focus: cleanList(result.focus).slice(0, 4), bullets: cleanList(result.bullets) };
+}
+
+function isBulletSection(title: string) {
+  return /достиж|задач|обязан|пример|ключев|опыт работы/i.test(title);
+}
+
+function isFocusBlock(block: ResumeTextBlock, focusCount: number) {
+  if (focusCount >= 4) return false;
+  if (block.type === "stack") return /стек|технолог/i.test(block.label);
+  return block.type === "paragraph" && !/^[-—–•*]/u.test(block.text);
 }
 
 function formatBlock(block: ResumeTextBlock) {
@@ -93,10 +126,13 @@ function formatBlock(block: ResumeTextBlock) {
   return block.text;
 }
 
+function createFocus(item: ExperienceItem, focus: string[]) {
+  const industries = item.company.industries.join(", ");
+  return cleanList([...focus, industries]).join("\n") || null;
+}
+
 function formatDates(item: ExperienceItem["dates"]) {
-  const range = [item.start, item.end].map(text).filter(Boolean).join(" — ");
-  const duration = text(item.duration);
-  return [range, duration ? `(${duration})` : ""].filter(Boolean).join(" ") || null;
+  return [item.start, item.end].map(text).filter(Boolean).join(" — ") || null;
 }
 
 function formatLanguage(item: SourceResumeDocument["skills"]["languages"][number]) {
