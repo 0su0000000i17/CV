@@ -13,7 +13,7 @@ import { normalizeFitResult } from "./fit-check/normalize-fit-result.js";
 import { createUserPrompt, SYSTEM_PROMPT } from "./fit-check/prompts.js";
 
 type CheckResumeVacancyFitParams = {
-  resumeMarkdown: string;
+  resumeJson: string;
   vacancy: NormalizedVacancy;
   vacancyText?: string;
 };
@@ -35,21 +35,16 @@ export async function checkResumeVacancyFit(
 ): Promise<CheckResumeVacancyFitOutput> {
   const vacancyText =
     params.vacancyText?.trim() || formatVacancyForAdaptation(params.vacancy);
-  const resumeForPrompt = params.resumeMarkdown
-    .trim()
-    .slice(0, FIT_RESUME_MAX_CHARS);
+  const resumeForPrompt = params.resumeJson.trim().slice(0, FIT_RESUME_MAX_CHARS);
   const vacancyForPrompt = vacancyText.trim().slice(0, FIT_VACANCY_MAX_CHARS);
   const aiProvider = getAiProvider();
 
   const messages: AiMessage[] = [
-    {
-      role: "system",
-      content: SYSTEM_PROMPT,
-    },
+    { role: "system", content: SYSTEM_PROMPT },
     {
       role: "user",
       content: createUserPrompt({
-        resumeMarkdown: resumeForPrompt,
+        resumeJson: resumeForPrompt,
         vacancyText: vacancyForPrompt,
       }),
     },
