@@ -28,12 +28,12 @@ export type EditableResumeTarget = {
   title: string | null;
   company: string | null;
   seniority: string | null;
-  salary: string | null;
-  specializations: string[];
-  employment: string | null;
-  schedule: string | null;
-  workFormat: string | null;
-  commuteTime: string | null;
+  salary?: string | null;
+  specializations?: string[];
+  employment?: string | null;
+  schedule?: string | null;
+  workFormat?: string | null;
+  commuteTime?: string | null;
   keywordsUsed: string[];
 };
 
