@@ -19,25 +19,23 @@ export type UploadedResume = {
   updated_at: string;
 };
 
+export type SourceResumeDocument = Record<string, unknown>;
+
 export type ResumePersonalProfile = {
   fullName: string | null;
   gender: string | null;
   age: string | null;
   birthDate: string | null;
-
   phone: string | null;
   email: string | null;
   preferredContactMethod: string | null;
-
   city: string | null;
   citizenship: string | null;
   workPermit: string | null;
   relocation: string | null;
   businessTrips: string | null;
-
   telegram?: string | null;
   links?: string[];
-
   targetTitle: string | null;
   salary: string | null;
   specializations: string[];
@@ -51,19 +49,9 @@ export type ResumeProfileExtractionResponse = {
   resumeId: string;
   source: 'hh_pdf' | 'generic_resume';
   profile: ResumePersonalProfile;
-  document?: unknown;
-  photo: {
-    contentType: string;
-    dataUrl: string;
-  } | null;
-  stats: {
-    rawChars: number;
-    normalizedChars: number;
-    photoFound: boolean;
-    serviceLines?: number;
-    experienceItems?: number;
-    skillItems?: number;
-  };
+  document: SourceResumeDocument;
+  photo: { contentType: string; dataUrl: string } | null;
+  stats: Record<string, unknown>;
 };
 
 export type ResumeTextContacts = {
@@ -87,12 +75,9 @@ export type ResumeTextResponse = {
   markdown: string;
   resumeJson: ResumeAdaptationResult | null;
   contacts?: ResumeTextContacts | null;
+  document?: SourceResumeDocument;
   stats: unknown | null;
-  extractor?: {
-    mode: 'ai' | 'local_fallback' | 'saved_json';
-    provider: string | null;
-    model: string | null;
-  };
+  extractor?: { mode: 'source_document' | 'saved_json'; provider: string | null; model: string | null };
 };
 
 export type DuplicateResume = {
@@ -109,143 +94,51 @@ export type UploadResumeDuplicateError = {
   duplicateResume?: DuplicateResume;
 };
 
-type ResumesResponse = {
-  resumes: UploadedResume[];
-};
-
-type UploadResumeResponse = {
-  resume: UploadedResume;
-};
-
-type ResumeResponse = {
-  resume: UploadedResume;
-};
-
-type DeleteResumeResponse = {
-  success: boolean;
-};
-
-type ResumeDownloadUrlResponse = {
-  downloadUrl: string;
-};
-
-type UpdateResumeTextResponse = {
-  status: 'updated';
-  resume: UploadedResume;
-};
+type ResumesResponse = { resumes: UploadedResume[] };
+type UploadResumeResponse = { resume: UploadedResume };
+type ResumeResponse = { resume: UploadedResume };
+type DeleteResumeResponse = { success: boolean };
+type ResumeDownloadUrlResponse = { downloadUrl: string };
+type UpdateResumeTextResponse = { status: 'updated'; resume: UploadedResume };
 
 export async function getResumes(accessToken: string) {
-  const response = await fetch(`${getApiUrl()}/api/resumes`, {
-    headers: createAuthHeaders(accessToken),
-  });
-
+  const response = await fetch(`${getApiUrl()}/api/resumes`, { headers: createAuthHeaders(accessToken) });
   return parseApiResponse<ResumesResponse>(response, 'Failed to fetch resumes');
 }
 
 export async function uploadResume(file: File, accessToken: string) {
   const formData = new FormData();
-
   formData.append('resume', file);
-
-  const response = await fetch(`${getApiUrl()}/api/resumes/upload`, {
-    method: 'POST',
-    headers: createAuthHeaders(accessToken),
-    body: formData,
-  });
-
-  return parseApiResponse<UploadResumeResponse>(
-    response,
-    'Failed to upload resume'
-  );
+  const response = await fetch(`${getApiUrl()}/api/resumes/upload`, { method: 'POST', headers: createAuthHeaders(accessToken), body: formData });
+  return parseApiResponse<UploadResumeResponse>(response, 'Failed to upload resume');
 }
 
 export async function deleteResume(resumeId: string, accessToken: string) {
-  const response = await fetch(`${getApiUrl()}/api/resumes/${resumeId}`, {
-    method: 'DELETE',
-    headers: createAuthHeaders(accessToken),
-  });
-
-  return parseApiResponse<DeleteResumeResponse>(
-    response,
-    'Failed to delete resume'
-  );
+  const response = await fetch(`${getApiUrl()}/api/resumes/${resumeId}`, { method: 'DELETE', headers: createAuthHeaders(accessToken) });
+  return parseApiResponse<DeleteResumeResponse>(response, 'Failed to delete resume');
 }
 
-export async function getResumeDownloadUrl(
-  resumeId: string,
-  accessToken: string
-) {
-  const response = await fetch(
-    `${getApiUrl()}/api/resumes/${resumeId}/download-url`,
-    {
-      headers: createAuthHeaders(accessToken),
-    }
-  );
-
-  return parseApiResponse<ResumeDownloadUrlResponse>(
-    response,
-    'Failed to get resume download url'
-  );
+export async function getResumeDownloadUrl(resumeId: string, accessToken: string) {
+  const response = await fetch(`${getApiUrl()}/api/resumes/${resumeId}/download-url`, { headers: createAuthHeaders(accessToken) });
+  return parseApiResponse<ResumeDownloadUrlResponse>(response, 'Failed to get resume download url');
 }
 
 export async function getResumeById(resumeId: string, accessToken: string) {
-  const response = await fetch(`${getApiUrl()}/api/resumes/${resumeId}`, {
-    headers: createAuthHeaders(accessToken),
-  });
-
+  const response = await fetch(`${getApiUrl()}/api/resumes/${resumeId}`, { headers: createAuthHeaders(accessToken) });
   return parseApiResponse<ResumeResponse>(response, 'Failed to fetch resume');
 }
 
 export async function getResumeText(resumeId: string, accessToken: string) {
-  const response = await fetch(`${getApiUrl()}/api/resumes/${resumeId}/text`, {
-    headers: createAuthHeaders(accessToken),
-  });
-
-  return parseApiResponse<ResumeTextResponse>(
-    response,
-    'Failed to fetch resume text'
-  );
+  const response = await fetch(`${getApiUrl()}/api/resumes/${resumeId}/text`, { headers: createAuthHeaders(accessToken) });
+  return parseApiResponse<ResumeTextResponse>(response, 'Failed to fetch resume text');
 }
 
-export async function updateResumeText(params: {
-  resumeId: string;
-  resumeJson: ResumeAdaptationResult;
-  accessToken: string;
-}) {
-  const response = await fetch(
-    `${getApiUrl()}/api/resumes/${params.resumeId}/text`,
-    {
-      method: 'PATCH',
-      headers: {
-        ...createAuthHeaders(params.accessToken),
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        resumeJson: params.resumeJson,
-      }),
-    }
-  );
-
-  return parseApiResponse<UpdateResumeTextResponse>(
-    response,
-    'Failed to update resume text'
-  );
+export async function updateResumeText(params: { resumeId: string; resumeJson: ResumeAdaptationResult; accessToken: string }) {
+  const response = await fetch(`${getApiUrl()}/api/resumes/${params.resumeId}/text`, { method: 'PATCH', headers: { ...createAuthHeaders(params.accessToken), 'Content-Type': 'application/json' }, body: JSON.stringify({ resumeJson: params.resumeJson }) });
+  return parseApiResponse<UpdateResumeTextResponse>(response, 'Failed to update resume text');
 }
 
-export async function extractResumeProfile(
-  resumeId: string,
-  accessToken: string
-) {
-  const response = await fetch(
-    `${getApiUrl()}/api/resumes/${resumeId}/extract-profile`,
-    {
-      method: 'POST',
-      headers: createAuthHeaders(accessToken),
-    }
-  );
-
-  return parseApiResponse<ResumeProfileExtractionResponse>(
-    response,
-    'Failed to extract resume profile'
-  );
+export async function extractResumeProfile(resumeId: string, accessToken: string) {
+  const response = await fetch(`${getApiUrl()}/api/resumes/${resumeId}/extract-profile`, { method: 'POST', headers: createAuthHeaders(accessToken) });
+  return parseApiResponse<ResumeProfileExtractionResponse>(response, 'Failed to extract resume profile');
 }
