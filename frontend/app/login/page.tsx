@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 
 import { BackArrow } from '@/src/shared';
 import { supabase } from '@/src/shared/lib/supabase/client';
@@ -19,6 +20,7 @@ function getSafeNextPath(value: string | null) {
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
+  const [isLegalAccepted, setIsLegalAccepted] = useState(false);
   const [nextPath, setNextPath] = useState('/dashboard');
   const [status, setStatus] = useState<
     'idle' | 'loading' | 'success' | 'error'
@@ -34,6 +36,7 @@ export default function LoginPage() {
   const canSubmit =
     normalizedEmail.length > 0 &&
     isValidEmail(normalizedEmail) &&
+    isLegalAccepted &&
     status !== 'loading';
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -50,6 +53,12 @@ export default function LoginPage() {
     if (!isValidEmail(normalizedEmail)) {
       setStatus('error');
       setMessage('Введите корректный email.');
+      return;
+    }
+
+    if (!isLegalAccepted) {
+      setStatus('error');
+      setMessage('Чтобы продолжить, примите условия сервиса.');
       return;
     }
 
@@ -165,6 +174,41 @@ export default function LoginPage() {
                 required
               />
             </div>
+
+            <label className="flex items-start gap-3 rounded-lg border border-border bg-muted/40 p-3 text-xs leading-5 text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={isLegalAccepted}
+                onChange={(event) => {
+                  setIsLegalAccepted(event.target.checked);
+
+                  if (status === 'error') {
+                    setStatus('idle');
+                    setMessage('');
+                  }
+                }}
+                className="mt-1 h-4 w-4 shrink-0 rounded border-border bg-background accent-foreground"
+                required
+              />
+
+              <span>
+                Я принимаю{' '}
+                <Link
+                  href="/terms"
+                  className="font-medium text-foreground underline underline-offset-4 transition-colors hover:text-foreground/70"
+                >
+                  Условия использования
+                </Link>{' '}
+                и соглашаюсь на обработку персональных данных в соответствии с{' '}
+                <Link
+                  href="/privacy"
+                  className="font-medium text-foreground underline underline-offset-4 transition-colors hover:text-foreground/70"
+                >
+                  Политикой конфиденциальности
+                </Link>
+                .
+              </span>
+            </label>
 
             <button
               type="submit"
