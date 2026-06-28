@@ -31,7 +31,7 @@ function createEditorSnapshot(
 }
 
 function getStoredPhotoUrl(document?: SourceResumeDocument | null) {
-  const photo = document?.photo;
+  const photo = document?.['photo'];
   if (!photo || typeof photo !== 'object') return null;
 
   const dataUrl = (photo as { dataUrl?: unknown }).dataUrl;
