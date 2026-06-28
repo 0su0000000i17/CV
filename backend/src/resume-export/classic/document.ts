@@ -79,11 +79,115 @@ function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function splitSkillValue(value: string) {
+function splitExplicitSkillValue(value: string) {
   return cleanText(value)
     .split(/[\n,;|•]+/u)
     .map((item) => cleanText(item))
     .filter(Boolean);
+}
+
+function isUpperAbbreviation(value: string) {
+  return /^[A-Z0-9+#.]{2,}$/u.test(value);
+}
+
+function isTitleLikeSkillToken(value: string) {
+  return /^[A-Z][A-Za-z0-9+#.\-]*$/u.test(value) && /[a-z]/u.test(value);
+}
+
+function isLowercaseDescriptor(value: string) {
+  return /^[a-z][a-z0-9+#.\-]*$/u.test(value);
+}
+
+function isPackedSkillLine(value: string) {
+  const tokens = cleanText(value).split(/\s+/u).filter(Boolean);
+  if (tokens.length < 4) return false;
+
+  return tokens.some((token) => /[A-Za-z0-9+#.]/u.test(token));
+}
+
+function splitPackedSkillLine(value: string) {
+  const text = cleanText(value);
+  const tokens = text.split(/\s+/u).filter(Boolean);
+  if (!isPackedSkillLine(text)) return [text].filter(Boolean);
+
+  const result: string[] = [];
+  for (let index = 0; index < tokens.length; index += 1) {
+    const current = tokens[index];
+    const next = tokens[index + 1];
+
+    if (next && isUpperAbbreviation(current) && isTitleLikeSkillToken(next)) {
+      result.push(`${current} ${next}`);
+      index += 1;
+      continue;
+    }
+
+    if (next && isTitleLikeSkillToken(current) && isLowercaseDescriptor(next)) {
+      result.push(`${current} ${next}`);
+      index += 1;
+      continue;
+    }
+
+    result.push(current);
+  }
+
+  return result;
+}
+
+function normalizeSkillCandidates(values: string[]) {
+  return uniqueStrings(values.flatMap(splitExplicitSkillValue))
+    .map(cleanText)
+    .filter((item) => Boolean(item) && !isPackedSkillLine(item));
+}
+
+function splitByKnownCandidates(value: string, candidates: string[]) {
+  const text = cleanText(value);
+  if (!text || !candidates.length) return [text].filter(Boolean);
+
+  const orderedCandidates = [...candidates]
+    .map(cleanText)
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length);
+  const result: string[] = [];
+  let rest = text;
+
+  while (rest) {
+    const trimmed = rest.trimStart();
+    if (trimmed !== rest) rest = trimmed;
+
+    const matched = orderedCandidates.find((candidate) => {
+      if (!rest.toLowerCase().startsWith(candidate.toLowerCase())) return false;
+      const nextChar = rest[candidate.length];
+      return !nextChar || /\s/u.test(nextChar);
+    });
+
+    if (matched) {
+      result.push(matched);
+      rest = rest.slice(matched.length);
+      continue;
+    }
+
+    const fallbackMatch = rest.match(/^\S+/u)?.[0];
+    if (!fallbackMatch) break;
+    result.push(fallbackMatch);
+    rest = rest.slice(fallbackMatch.length);
+  }
+
+  return result.length > 1 ? result : [text];
+}
+
+function splitSkillValue(value: string, candidates: string[]) {
+  const explicitParts = splitExplicitSkillValue(value);
+  if (explicitParts.length > 1) {
+    return explicitParts.flatMap((item) => splitSkillValue(item, candidates));
+  }
+
+  const text = explicitParts[0] || cleanText(value);
+  if (!text) return [];
+
+  const candidateParts = splitByKnownCandidates(text, candidates);
+  if (candidateParts.length > 1) return candidateParts;
+
+  return splitPackedSkillLine(text);
 }
 
 function collectLanguageLines(params: { sourceDocument: SourceResumeDocument | null; snapshot: SourceSnapshot }) {
@@ -120,38 +224,26 @@ function isKnownLanguageSkill(value: string, languageLines: string[]) {
   });
 }
 
-function skillsFromSourceDocument(document: SourceResumeDocument | null) {
+function rawSkillsFromSourceDocument(document: SourceResumeDocument | null) {
   return document ? document.skills.items.map(cleanText).filter(Boolean) : [];
-}
-
-function isCompositeKnownSkillLine(value: string, sourceSkillKeys: Set<string>) {
-  const valueKey = skillKey(value);
-  if (!valueKey || sourceSkillKeys.size < 2) return false;
-
-  let matches = 0;
-  for (const key of sourceSkillKeys) {
-    if (key && valueKey.includes(key)) matches += 1;
-    if (matches >= 3) return true;
-  }
-
-  return false;
 }
 
 function resolveSkills(params: { payload: ClassicExportPayload; sourceDocument: SourceResumeDocument | null; snapshot: SourceSnapshot }) {
   const { skills } = params.payload.adaptation.adaptedResume;
-  const sourceSkills = skillsFromSourceDocument(params.sourceDocument);
-  const sourceSkillKeys = new Set(sourceSkills.map(skillKey).filter(Boolean));
+  const rawAdaptedSkills = [...skills.primary, ...skills.secondary, ...skills.deprioritized].map(cleanText).filter(Boolean);
+  const rawSourceSkills = rawSkillsFromSourceDocument(params.sourceDocument);
+  const candidates = normalizeSkillCandidates(rawAdaptedSkills);
+  const sourceSkills = rawSourceSkills.flatMap((item) => splitSkillValue(item, candidates));
+  const adaptedSkills = rawAdaptedSkills.flatMap((item) => splitSkillValue(item, candidates.length ? candidates : sourceSkills));
   const languageLines = collectLanguageLines({ sourceDocument: params.sourceDocument, snapshot: params.snapshot });
-  const adaptedSkills = [...skills.primary, ...skills.secondary, ...skills.deprioritized].flatMap(splitSkillValue);
   const seen = new Set<string>();
   const result: string[] = [];
 
-  for (const item of [...sourceSkills, ...adaptedSkills]) {
+  for (const item of [...adaptedSkills, ...sourceSkills]) {
     const value = removeKnownLanguageFragments(item, languageLines);
     const key = skillKey(value);
 
     if (!value || !key || isKnownLanguageSkill(value, languageLines) || seen.has(key)) continue;
-    if (!sourceSkillKeys.has(key) && isCompositeKnownSkillLine(value, sourceSkillKeys)) continue;
 
     seen.add(key);
     result.push(value);
