@@ -18,8 +18,8 @@ export function CoverLetterVacancyCard({
   return (
     <section className="rounded-2xl border border-border bg-card/60 p-5">
       <div className="mb-4 flex items-start gap-3">
-        <div className="rounded-xl bg-muted p-2.5">
-          <Mail className="h-5 w-5 text-foreground" />
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300 ring-1 ring-blue-500/20">
+          <Mail className="h-5 w-5" />
         </div>
 
         <div>
