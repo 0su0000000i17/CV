@@ -5,20 +5,15 @@ import { Pencil } from 'lucide-react';
 
 import type { ResumeAdaptationResult } from '@/src/shared/api/resume-adaptation';
 import type { DraftUpdater } from '@/src/features/resume-editor/model/types';
-import { listToText, textToList } from '@/src/features/resume-editor/model/text';
 import { EditorSection } from '@/src/features/resume-editor/ui/editor-section';
-import { SmallInput, TextArea } from '@/src/features/resume-editor/ui/form-controls';
+import { SmallInput } from '@/src/features/resume-editor/ui/form-controls';
 
 type Props = { draft: ResumeAdaptationResult; updateDraft: DraftUpdater };
-type FieldKey = 'title' | 'salary' | 'employment' | 'schedule' | 'workFormat' | 'commuteTime';
+type FieldKey = 'title' | 'salary';
 
 const fields: Array<{ key: FieldKey; label: string }> = [
   { key: 'title', label: 'Должность' },
   { key: 'salary', label: 'Зарплата' },
-  { key: 'employment', label: 'Занятость' },
-  { key: 'schedule', label: 'График' },
-  { key: 'workFormat', label: 'Формат' },
-  { key: 'commuteTime', label: 'Время в пути' },
 ];
 
 export function TargetSection({ draft, updateDraft }: Props) {
@@ -27,7 +22,7 @@ export function TargetSection({ draft, updateDraft }: Props) {
 
   if (isEditing) {
     return (
-      <EditorSection title="Цель и условия">
+      <EditorSection title="Должность и зарплата">
         <div className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             {fields.map((field) => (
@@ -41,14 +36,7 @@ export function TargetSection({ draft, updateDraft }: Props) {
               />
             ))}
           </div>
-          <TextArea
-            value={listToText(target.specializations)}
-            rows={4}
-            placeholder="Специализации, каждая с новой строки"
-            onChange={(value) => updateDraft((current) => {
-              current.target.specializations = textToList(value);
-            })}
-          />
+
           <button type="button" onClick={() => setIsEditing(false)} className="cursor-pointer rounded-xl border border-border px-4 py-2 text-sm text-foreground transition-colors hover:bg-muted">
             Готово
           </button>
@@ -57,27 +45,19 @@ export function TargetSection({ draft, updateDraft }: Props) {
     );
   }
 
-  const visible = [
-    target.title,
-    target.salary,
-    ...target.specializations,
-    target.employment,
-    target.schedule,
-    target.workFormat,
-    target.commuteTime,
-  ].filter(Boolean);
+  const visible = [target.title, target.salary].filter(Boolean);
 
   return (
-    <EditorSection title="Цель и условия">
+    <EditorSection title="Должность и зарплата">
       <div className="flex items-start justify-between gap-4">
         <div className="flex flex-wrap gap-2">
           {visible.length ? visible.map((item, index) => (
             <span key={`${item}-${index}`} className="rounded-lg bg-muted px-3 py-1.5 text-sm text-foreground">
               {item}
             </span>
-          )) : <p className="text-sm text-muted-foreground">Блок можно заполнить вручную.</p>}
+          )) : <p className="text-sm text-muted-foreground">Можно указать должность и зарплату вручную.</p>}
         </div>
-        <button type="button" onClick={() => setIsEditing(true)} className="shrink-0 cursor-pointer rounded-xl border border-border p-2.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Редактировать цель и условия">
+        <button type="button" onClick={() => setIsEditing(true)} className="shrink-0 cursor-pointer rounded-xl border border-border p-2.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Редактировать должность и зарплату">
           <Pencil className="h-4 w-4" />
         </button>
       </div>
