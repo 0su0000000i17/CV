@@ -20,11 +20,13 @@ type Props = {
 
 function createEditorSnapshot(
   draft: ReturnType<typeof normalizeResumeEditorDraft>,
-  contacts: ContactDraft
+  contacts: ContactDraft,
+  photoUrl: string | null
 ) {
   return JSON.stringify({
     draft,
     contacts,
+    photoUrl,
   });
 }
 
@@ -53,23 +55,30 @@ export function StoredResumeEditorCard({ resume, accessToken }: Props) {
     sourceResume: {
       ...resume,
       extracted_text: initialText,
+      source_resume_document:
+        resumeTextQuery.data?.document ?? resume.source_resume_document,
     },
   });
 
   const loadedSnapshot = useMemo(() => {
     if (!initialDraft || !resumeTextQuery.data?.contacts) return null;
 
-    return createEditorSnapshot(initialDraft, resumeTextQuery.data.contacts);
-  }, [initialDraft, resumeTextQuery.data?.contacts]);
+    return createEditorSnapshot(
+      initialDraft,
+      resumeTextQuery.data.contacts,
+      editor.photoUrl
+    );
+  }, [editor.photoUrl, initialDraft, resumeTextQuery.data?.contacts]);
 
   const currentSnapshot = useMemo(() => {
     if (!editor.draft) return null;
 
     return createEditorSnapshot(
       normalizeResumeEditorDraft(editor.draft),
-      editor.contacts
+      editor.contacts,
+      editor.photoUrl
     );
-  }, [editor.contacts, editor.draft]);
+  }, [editor.contacts, editor.draft, editor.photoUrl]);
 
   const hasUnsavedChanges = Boolean(
     currentSnapshot &&
@@ -98,15 +107,21 @@ export function StoredResumeEditorCard({ resume, accessToken }: Props) {
   async function handleSave() {
     if (!editor.draft) return;
 
-   const normalizedDraft = normalizeResumeEditorDraft(editor.draft);
-const nextSnapshot = createEditorSnapshot(normalizedDraft, editor.contacts);
+    const normalizedDraft = normalizeResumeEditorDraft(editor.draft);
+    const nextSnapshot = createEditorSnapshot(
+      normalizedDraft,
+      editor.contacts,
+      editor.photoUrl
+    );
 
-try {
-  await updateResumeTextMutation.mutateAsync({
-    resumeId: resume.id,
-    resumeJson: normalizedDraft,
-    accessToken,
-  });
+    try {
+      await updateResumeTextMutation.mutateAsync({
+        resumeId: resume.id,
+        resumeJson: normalizedDraft,
+        contacts: editor.contacts,
+        photoUrl: editor.photoUrl,
+        accessToken,
+      });
 
       setLastSavedSnapshot(nextSnapshot);
       setSaveStatus('saved');
