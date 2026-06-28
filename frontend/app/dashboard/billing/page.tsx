@@ -94,19 +94,31 @@ export default function Page() {
             key={plan.name}
             className={`relative flex min-h-full flex-col rounded-2xl border p-5 ${
               plan.featured
-                ? 'border-blue-500/40 bg-blue-500/10 ring-1 ring-blue-500/20'
+                ? 'border-emerald-500/40 bg-emerald-500/10 ring-1 ring-emerald-500/20'
                 : 'border-border bg-card/60'
             }`}
           >
             {plan.badge ? (
-              <span className="mb-5 w-fit rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground">
+              <span
+                className={`mb-5 w-fit rounded-full border px-3 py-1 text-xs ${
+                  plan.featured
+                    ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+                    : 'border-border bg-background text-muted-foreground'
+                }`}
+              >
                 {plan.badge}
               </span>
             ) : (
               <div className="mb-5 h-7" />
             )}
 
-            <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300 ring-1 ring-blue-500/20">
+            <div
+              className={`mb-5 flex h-11 w-11 items-center justify-center rounded-xl ring-1 ${
+                plan.featured
+                  ? 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/20'
+                  : 'bg-blue-500/10 text-blue-300 ring-blue-500/20'
+              }`}
+            >
               <Sparkles className="h-5 w-5" />
             </div>
 
@@ -135,7 +147,11 @@ export default function Page() {
             <ul className="mt-5 space-y-3">
               {plan.features.map((feature) => (
                 <li key={feature} className="flex items-start gap-2 text-sm text-muted-foreground">
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-blue-300" />
+                  <Check
+                    className={`mt-0.5 h-4 w-4 shrink-0 ${
+                      plan.featured ? 'text-emerald-300' : 'text-blue-300'
+                    }`}
+                  />
                   {feature}
                 </li>
               ))}
@@ -144,7 +160,7 @@ export default function Page() {
             <button
               type="button"
               disabled
-              className={`mt-auto inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-colors disabled:opacity-70 ${
+              className={`mt-8 inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-colors disabled:opacity-70 ${
                 plan.featured
                   ? 'bg-foreground text-background'
                   : 'border border-border text-foreground'
@@ -167,7 +183,7 @@ export default function Page() {
               className="rounded-2xl border border-border bg-card/60 p-5"
             >
               <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300 ring-1 ring-blue-500/20">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-300 ring-1 ring-emerald-500/20">
                   <Icon className="h-5 w-5" />
                 </div>
 
