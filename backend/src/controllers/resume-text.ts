@@ -104,8 +104,8 @@ function applyPhotoToSourceDocument(sourceDocument: unknown, photoUrl: string | 
     return sourceDocument;
   }
 
-  const currentPhoto = isRecord(sourceDocument.photo) ? sourceDocument.photo : null;
-  const currentDataUrl = typeof currentPhoto?.dataUrl === "string" ? currentPhoto.dataUrl : null;
+  const currentPhoto = isRecord(sourceDocument["photo"]) ? sourceDocument["photo"] : null;
+  const currentDataUrl = typeof currentPhoto?.["dataUrl"] === "string" ? currentPhoto["dataUrl"] : null;
   const keepSize = Boolean(photoUrl && currentDataUrl === photoUrl);
 
   return {
@@ -114,8 +114,8 @@ function applyPhotoToSourceDocument(sourceDocument: unknown, photoUrl: string | 
       ? {
           contentType: getPhotoContentType(photoUrl),
           dataUrl: photoUrl,
-          displayWidth: keepSize ? currentPhoto?.displayWidth ?? null : null,
-          displayHeight: keepSize ? currentPhoto?.displayHeight ?? null : null,
+          displayWidth: keepSize ? currentPhoto?.["displayWidth"] ?? null : null,
+          displayHeight: keepSize ? currentPhoto?.["displayHeight"] ?? null : null,
         }
       : null,
   };
