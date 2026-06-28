@@ -61,6 +61,32 @@ def normalize_pixmap(doc, xref):
     return pix
 
 
+def pixmap_to_rgb_bytes(pix):
+    if pix.alpha or pix.colorspace is None or pix.colorspace.n != 3:
+        pix = fitz.Pixmap(fitz.csRGB, pix)
+
+    return pix.samples, pix.width, pix.height, pix.n
+
+
+def non_white_ratio(pix):
+    samples, width, height, channels = pixmap_to_rgb_bytes(pix)
+    if width <= 0 or height <= 0 or channels < 3:
+        return 0
+
+    total = width * height
+    non_white = 0
+
+    for index in range(0, len(samples), channels):
+        red = samples[index]
+        green = samples[index + 1]
+        blue = samples[index + 2]
+
+        if red < 238 or green < 238 or blue < 238:
+            non_white += 1
+
+    return non_white / float(total)
+
+
 def candidate_score(page, rect, width, height, order_index):
     x0, y0, x1, y1 = rect
     box_width = max(1, x1 - x0)
@@ -152,8 +178,43 @@ def extract_from_unpositioned_xrefs(doc):
     return best
 
 
+def extract_from_rendered_header_crop(doc):
+    if len(doc) == 0:
+        return None
+
+    page = doc[0]
+    # HH PDF coordinates are in points. This rectangle covers the profile photo
+    # area in the upper-left header without touching the hh logo in the top-right.
+    crop = fitz.Rect(34, 54, 124, 164)
+    crop = crop & page.rect
+
+    if crop.is_empty or crop.width < 40 or crop.height < 50:
+        return None
+
+    pix = page.get_pixmap(
+        matrix=fitz.Matrix(3, 3),
+        clip=crop,
+        alpha=False,
+        colorspace=fitz.csRGB,
+    )
+
+    # A real photo has a large painted area. Plain white space or a couple of text
+    # glyphs should not pass this fallback.
+    if non_white_ratio(pix) < 0.18:
+        return None
+
+    return {
+        "score": crop.width * crop.height,
+        "bytes": pix.tobytes("png"),
+    }
+
+
 doc = fitz.open(str(input_path))
-best = extract_from_positioned_xrefs(doc) or extract_from_unpositioned_xrefs(doc)
+best = (
+    extract_from_positioned_xrefs(doc)
+    or extract_from_rendered_header_crop(doc)
+    or extract_from_unpositioned_xrefs(doc)
+)
 
 if not best:
     print(json.dumps({"ok": False, "reason": "photo_not_found"}))
