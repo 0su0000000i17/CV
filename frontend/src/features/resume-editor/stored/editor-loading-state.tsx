@@ -20,10 +20,6 @@ export function EditorLoadingState() {
           <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
             Разбираем резюме, достаём опыт, навыки и образование.
           </p>
-
-          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
-            <div className="h-full w-1/2 animate-pulse rounded-full bg-emerald-400/70" />
-          </div>
         </div>
       </div>
     </div>
