@@ -24,9 +24,15 @@ export type ResumeTextBlock =
       items: string[];
     };
 
+export type SourceResumePhoto = {
+  contentType: string;
+  dataUrl: string;
+};
+
 export type SourceResumeDocument = {
   version: 1;
   source: SourceResumeDocumentSource;
+  photo?: SourceResumePhoto | null;
 
   meta: {
     updatedAtRaw: string | null;
