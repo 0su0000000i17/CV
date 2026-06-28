@@ -4,8 +4,8 @@ export function FitCheckingState() {
   return (
     <section className="rounded-2xl border border-border bg-card/60 p-5">
       <div className="flex items-start gap-4">
-        <div className="rounded-xl bg-muted p-3">
-          <Sparkles className="h-5 w-5 animate-pulse text-foreground" />
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300 ring-1 ring-blue-500/20">
+          <Sparkles className="h-5 w-5 animate-pulse" />
         </div>
 
         <div>
@@ -27,7 +27,7 @@ export function FitErrorState({ errorMessage }: { errorMessage?: string }) {
   return (
     <section className="rounded-2xl border border-border bg-card/60 p-5">
       <div className="flex items-start gap-4">
-        <div className="rounded-xl bg-red-500/10 p-3 text-red-300 ring-1 ring-red-500/20">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-300 ring-1 ring-red-500/20">
           <CircleAlert className="h-5 w-5" />
         </div>
 
@@ -50,8 +50,8 @@ export function FitEmptyState() {
   return (
     <section className="rounded-2xl border border-border bg-card/60 p-5">
       <div className="flex items-start gap-4">
-        <div className="rounded-xl bg-muted p-3">
-          <Target className="h-5 w-5 text-foreground" />
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300 ring-1 ring-blue-500/20">
+          <Target className="h-5 w-5" />
         </div>
 
         <div>
