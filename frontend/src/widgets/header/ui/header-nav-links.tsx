@@ -11,6 +11,10 @@ export function HeaderNavLinks({
   showDashboard,
   onNavigate,
 }: Props) {
+  if (isDashboard) {
+    return null;
+  }
+
   return (
     <>
       <Link
@@ -29,23 +33,11 @@ export function HeaderNavLinks({
         Как это работает
       </Link>
 
-      <Link
-        href="/contacts"
-        onClick={onNavigate}
-        className="text-muted-foreground transition-colors hover:text-foreground"
-      >
-        Контакты
-      </Link>
-
       {showDashboard ? (
         <Link
           href="/dashboard"
           onClick={onNavigate}
-          className={`transition-colors ${
-            isDashboard
-              ? "text-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
+          className="text-muted-foreground transition-colors hover:text-foreground"
         >
           Личный кабинет
         </Link>
