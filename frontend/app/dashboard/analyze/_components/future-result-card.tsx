@@ -34,6 +34,7 @@ type LoadingStep = {
 
 const STEP_DURATION_MS = 6_000;
 const LONG_WAIT_STEP_DURATION_MS = 12_000;
+const accentIconClassName = 'bg-blue-500/10 text-blue-300 ring-blue-500/20';
 
 const analysisSteps: LoadingStep[] = [
   {
@@ -124,10 +125,10 @@ const severityClasses: Record<ResumeRedFlag['severity'], string> = {
 };
 
 const sectionIconClasses = {
-  yellow: 'bg-yellow-500/10 text-yellow-300 ring-yellow-500/20',
-  green: 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/20',
-  orange: 'bg-orange-500/10 text-orange-300 ring-orange-500/20',
-  red: 'bg-red-500/10 text-red-300 ring-red-500/20',
+  yellow: accentIconClassName,
+  green: accentIconClassName,
+  orange: accentIconClassName,
+  red: accentIconClassName,
 };
 
 function getActiveLoadingStep(elapsedMs: number) {
@@ -169,7 +170,7 @@ function ResultSection({
     <section className="rounded-2xl border border-border bg-card/60 p-6">
       <div className="mb-4 flex items-center gap-3">
         <div
-          className={`rounded-xl p-2.5 ring-1 ${sectionIconClasses[tone]}`}
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 ${sectionIconClasses[tone]}`}
         >
           <Icon className="h-4 w-4" />
         </div>
@@ -202,7 +203,7 @@ function RedFlagsBlock({ redFlags }: { redFlags: ResumeRedFlag[] }) {
   return (
     <section className="rounded-2xl border border-border bg-card/60 p-6">
       <div className="mb-5 flex items-center gap-3">
-        <div className="rounded-xl bg-yellow-500/10 p-2.5 text-yellow-300 ring-1 ring-yellow-500/20">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300 ring-1 ring-blue-500/20">
           <TriangleAlert className="h-4 w-4" />
         </div>
 
@@ -257,8 +258,8 @@ function AnalysisLoadingState() {
   return (
     <div className="rounded-2xl border border-border bg-card/60 p-6">
       <div className="flex items-start gap-4">
-        <div className="rounded-xl bg-muted p-3">
-          <Loader2 className="h-5 w-5 animate-spin text-foreground" />
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300 ring-1 ring-blue-500/20">
+          <Loader2 className="h-5 w-5 animate-spin" />
         </div>
 
         <div className="min-w-0">
@@ -307,7 +308,7 @@ export function FutureResultCard({
     return (
       <div className="rounded-2xl border border-border bg-card/60 p-6">
         <div className="flex items-start gap-4">
-          <div className="rounded-xl bg-red-500/10 p-3 text-red-300 ring-1 ring-red-500/20">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-300 ring-1 ring-red-500/20">
             <AlertCircle className="h-5 w-5" />
           </div>
 
@@ -330,7 +331,7 @@ export function FutureResultCard({
     return (
       <div className="rounded-2xl border border-border bg-card/60 p-6">
         <div className="mb-6 flex items-start gap-4">
-          <div className="rounded-xl bg-emerald-500/10 p-3 text-emerald-300 ring-1 ring-emerald-500/20">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300 ring-1 ring-blue-500/20">
             <Lightbulb className="h-5 w-5" />
           </div>
 
@@ -368,7 +369,7 @@ export function FutureResultCard({
     <div className="space-y-5">
       <section className="rounded-2xl border border-border bg-card/60 p-6">
         <div className="mb-5 flex items-start gap-4">
-          <div className="rounded-xl bg-emerald-500/10 p-3 text-emerald-300 ring-1 ring-emerald-500/20">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300 ring-1 ring-blue-500/20">
             <Sparkles className="h-5 w-5" />
           </div>
 
@@ -421,7 +422,7 @@ export function FutureResultCard({
       {analysis.missingKeywords.length > 0 && (
         <section className="rounded-2xl border border-border bg-card/60 p-6">
           <div className="mb-4 flex items-center gap-3">
-            <div className="rounded-xl bg-yellow-500/10 p-2.5 text-yellow-300 ring-1 ring-yellow-500/20">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300 ring-1 ring-blue-500/20">
               <Search className="h-4 w-4" />
             </div>
 
