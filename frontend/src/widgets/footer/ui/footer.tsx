@@ -18,12 +18,22 @@ export function Footer() {
         <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
           <div className="text-sm leading-6 text-muted-foreground">
             <p>© 2026 CVPro. Все права защищены.</p>
-            <a
-              href="mailto:support@cvpro.ru"
-              className="transition-colors hover:text-foreground"
-            >
-              support@cvpro.ru
-            </a>
+            <div className="mt-1 flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-4">
+              <a
+                href="mailto:support@cvpro.ru"
+                className="transition-colors hover:text-foreground"
+              >
+                support@cvpro.ru
+              </a>
+              <a
+                href="https://t.me/cvprophet"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition-colors hover:text-foreground"
+              >
+                Telegram: @cvprophet
+              </a>
+            </div>
           </div>
 
           <nav className="flex flex-col gap-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:gap-8">
