@@ -4,6 +4,7 @@ import type { Request, Response } from "express";
 import { supabaseAdmin } from "../lib/supabase.js";
 import { parseSourceResumeDocument } from "../resume-document/parser/parse-source-resume-document.js";
 import { sourceDocumentToEditableResume } from "../resume-editor/source-document-to-editable.js";
+import { extractPhotoFromPdf } from "../resume-profile/extract-photo-from-pdf.js";
 import { extractResumeMarkdown } from "../resume-processing/extract-resume-markdown.js";
 import { getUserFromRequest } from "../utils/auth.js";
 import { getStringParam, sendError, sendServerError } from "../utils/api-responses.js";
@@ -12,6 +13,10 @@ import { allowedResumeMimeTypes, decodeFileName } from "../utils/resume-files.js
 
 function createSourceFileHash(fileBuffer: Buffer) {
   return createHash("sha256").update(fileBuffer).digest("hex");
+}
+
+function createPhotoDataUrl(buffer: Buffer, contentType: string) {
+  return `data:${contentType};base64,${buffer.toString("base64")}`;
 }
 
 async function findDuplicateResume(params: { userId: string; sourceFileHash: string }) {
@@ -85,7 +90,17 @@ export async function uploadResume(req: Request, res: Response) {
       mimeType: file.mimetype,
     });
     const document = parseSourceResumeDocument(extraction.normalizedMarkdown);
-    const editable = sourceDocumentToEditableResume(document);
+    const photo = await extractPhotoFromPdf({ fileBuffer: file.buffer, mimeType: file.mimetype });
+    const documentWithPhoto = photo
+      ? {
+          ...document,
+          photo: {
+            contentType: photo.contentType,
+            dataUrl: createPhotoDataUrl(photo.buffer, photo.contentType),
+          },
+        }
+      : document;
+    const editable = sourceDocumentToEditableResume(documentWithPhoto);
 
     const { data, error } = await supabaseAdmin
       .from("resumes")
@@ -99,7 +114,7 @@ export async function uploadResume(req: Request, res: Response) {
         file_size: file.size,
         source_file_hash: sourceFileHash,
         extracted_text: extraction.normalizedMarkdown,
-        source_resume_document: document,
+        source_resume_document: documentWithPhoto,
         editable_resume_json: editable.resumeJson,
         analysis_status: "idle",
       })
