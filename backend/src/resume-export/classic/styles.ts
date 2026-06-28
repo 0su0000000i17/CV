@@ -43,6 +43,8 @@ export function createClassicStyles() {
       font-size: 15px;
       font-weight: 400;
       line-height: 1.05;
+      break-after: avoid;
+      page-break-after: avoid;
     }
     .section-title span { position: relative; top: 1px; display: inline; white-space: nowrap; }
     .target-heading-row {
@@ -64,20 +66,20 @@ export function createClassicStyles() {
       grid-template-columns: 99px 1fr;
       column-gap: 14px;
       margin-top: 18px;
-      break-inside: avoid;
-      page-break-inside: avoid;
+      break-inside: auto;
+      page-break-inside: auto;
     }
     .experience-item:first-of-type { margin-top: 0; }
-    .dates { color: #8f8f8f; font-size: 11px; line-height: 1.38; padding-top: 2px; }
+    .dates { color: #8f8f8f; font-size: 11px; line-height: 1.38; padding-top: 2px; break-inside: avoid; page-break-inside: avoid; }
     .date-line { margin: 0; }
-    .company { margin: 0 0 2px; font-size: 16px; line-height: 1.28; font-weight: 700; color: #000; }
+    .company { margin: 0 0 2px; font-size: 16px; line-height: 1.28; font-weight: 700; color: #000; break-after: avoid; page-break-after: avoid; }
     .company-meta { margin: 0; color: #222; font-size: 12.5px; line-height: 1.35; }
     .company-meta--muted { color: #b5b5b5; }
     .company-meta + .company-meta { margin-top: 1px; }
-    .position { margin: 10px 0 7px; font-size: 17px; line-height: 1.22; font-weight: 400; color: #222; }
+    .position { margin: 10px 0 7px; font-size: 17px; line-height: 1.22; font-weight: 400; color: #222; break-after: avoid; page-break-after: avoid; }
     .work-text { margin: 0; font-size: 13px; line-height: 1.36; color: #222; }
     .work-text + .work-text { margin-top: 6px; }
-    .bullet { margin: 0; font-size: 13px; line-height: 1.36; color: #222; }
+    .bullet { margin: 0; font-size: 13px; line-height: 1.36; color: #222; break-inside: avoid; page-break-inside: avoid; }
     .bullet + .bullet { margin-top: 5px; }
     .education-row, .skill-row, .details-grid {
       display: grid;
