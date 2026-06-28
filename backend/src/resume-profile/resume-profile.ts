@@ -14,7 +14,7 @@ function buildStoredStats(document: SourceResumeDocument, chars: number) {
   return {
     rawChars: chars,
     normalizedChars: chars,
-    photoFound: false,
+    photoFound: Boolean(document.photo?.dataUrl),
     serviceLines: document.meta.serviceLines.length,
     experienceItems: document.experience.items.length,
     skillItems: document.skills.items.length,
@@ -39,7 +39,12 @@ export async function extractResumeProfileController(req: Request, res: Response
         source: document.source,
         profile: buildProfileFromSourceResumeDocument(document),
         document,
-        photo: null,
+        photo: document.photo?.dataUrl
+          ? {
+              contentType: document.photo.contentType,
+              dataUrl: document.photo.dataUrl,
+            }
+          : null,
         stats: buildStoredStats(document, resume.extracted_text.length),
       });
     }
