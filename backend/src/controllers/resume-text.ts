@@ -12,6 +12,7 @@ const updateResumeTextSchema = z.object({
     (value) => Boolean(value) && typeof value === "object",
     "Resume editor data is required"
   ),
+  photoUrl: z.string().max(8_000_000).nullable().optional(),
 });
 
 type EditableResumeRecord = {
@@ -89,6 +90,37 @@ function createResponse(params: {
   };
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function getPhotoContentType(photoUrl: string) {
+  const match = photoUrl.match(/^data:([^;,]+)[;,]/i);
+  return match?.[1] || "image/png";
+}
+
+function applyPhotoToSourceDocument(sourceDocument: unknown, photoUrl: string | null | undefined) {
+  if (photoUrl === undefined || !isRecord(sourceDocument)) {
+    return sourceDocument;
+  }
+
+  const currentPhoto = isRecord(sourceDocument.photo) ? sourceDocument.photo : null;
+  const currentDataUrl = typeof currentPhoto?.dataUrl === "string" ? currentPhoto.dataUrl : null;
+  const keepSize = Boolean(photoUrl && currentDataUrl === photoUrl);
+
+  return {
+    ...sourceDocument,
+    photo: photoUrl
+      ? {
+          contentType: getPhotoContentType(photoUrl),
+          dataUrl: photoUrl,
+          displayWidth: keepSize ? currentPhoto?.displayWidth ?? null : null,
+          displayHeight: keepSize ? currentPhoto?.displayHeight ?? null : null,
+        }
+      : null,
+  };
+}
+
 export async function getEditableResumeText(req: Request, res: Response) {
   try {
     const { user } = await getUserFromRequest(req);
@@ -130,9 +162,27 @@ export async function updateEditableResumeText(req: Request, res: Response) {
     if (!resumeId) return sendError(res, 400, "Invalid resume id");
     if (!parsedBody.success) return sendError(res, 400, "Некорректные данные редактора резюме.");
 
+    const resume = await findEditableResume(user.id, resumeId);
+    if (!resume) return sendError(res, 404, "Resume not found");
+
+    const nextSourceDocument = applyPhotoToSourceDocument(
+      resume.source_resume_document,
+      parsedBody.data.photoUrl
+    );
+    const updatePayload: Record<string, unknown> = {
+      editable_resume_json: parsedBody.data.resumeJson,
+      analysis_status: "needs_update",
+      last_score: null,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (parsedBody.data.photoUrl !== undefined) {
+      updatePayload.source_resume_document = nextSourceDocument;
+    }
+
     const { data, error } = await supabaseAdmin
       .from("resumes")
-      .update({ editable_resume_json: parsedBody.data.resumeJson, analysis_status: "needs_update", last_score: null, updated_at: new Date().toISOString() })
+      .update(updatePayload)
       .eq("id", resumeId)
       .eq("user_id", user.id)
       .select()
