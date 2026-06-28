@@ -1,6 +1,7 @@
 'use client';
 
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { Mail, User, WalletCards } from 'lucide-react';
 
 import type { Profile } from '@/src/shared/api/profile';
@@ -221,8 +222,8 @@ function ProfileForms({ profile, accessToken }: ProfileFormsProps) {
     <div className="space-y-5">
       <section className="rounded-2xl border border-border bg-card/60 p-5">
         <div className="flex items-start gap-3 border-b border-border pb-4">
-          <div className="rounded-xl bg-muted p-2.5">
-            <User className="h-4 w-4 text-foreground" />
+          <div className="rounded-xl bg-blue-500/10 p-2.5 text-blue-300 ring-1 ring-blue-500/20">
+            <User className="h-4 w-4" />
           </div>
 
           <div>
@@ -342,14 +343,14 @@ function ProfileForms({ profile, accessToken }: ProfileFormsProps) {
       <section className="rounded-2xl border border-border bg-card/60 p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
-            <div className="rounded-xl bg-muted p-2.5">
-              <WalletCards className="h-4 w-4 text-foreground" />
+            <div className="rounded-xl bg-emerald-500/10 p-2.5 text-emerald-300 ring-1 ring-emerald-500/20">
+              <WalletCards className="h-4 w-4" />
             </div>
 
             <div>
               <h2 className="text-lg font-medium text-foreground">Тариф</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Сейчас доступен бесплатный режим.
+                Текущий режим и доступные действия.
               </p>
             </div>
           </div>
@@ -363,15 +364,20 @@ function ProfileForms({ profile, accessToken }: ProfileFormsProps) {
           </div>
         </div>
 
-        <div className="mt-4 rounded-xl border border-border bg-background px-4 py-3">
-          <p className="text-sm font-medium text-foreground">
-            Pro появится позже
-          </p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+          <div className="rounded-xl border border-border bg-background px-4 py-3">
+            <p className="text-sm text-muted-foreground">Бесплатные действия</p>
+            <p className="mt-1 text-lg font-medium text-foreground">
+              0<span className="text-muted-foreground"> / 3</span>
+            </p>
+          </div>
 
-          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-            Платный тариф подключим ближе к продакшену, когда будут готовы анализ
-            резюме, адаптация под вакансии и версии.
-          </p>
+          <Link
+            href="/dashboard/billing"
+            className="inline-flex h-11 items-center justify-center rounded-xl border border-border px-5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+          >
+            Управлять тарифом
+          </Link>
         </div>
       </section>
     </div>
