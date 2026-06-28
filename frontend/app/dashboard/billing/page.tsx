@@ -1,4 +1,4 @@
-import { Check, CreditCard, LockKeyhole, ShieldCheck, Sparkles } from 'lucide-react';
+import { Check, CreditCard, LockKeyhole, ShieldCheck } from 'lucide-react';
 
 const plans = [
   {
@@ -119,7 +119,7 @@ export default function Page() {
                   : 'bg-blue-500/10 text-blue-300 ring-blue-500/20'
               }`}
             >
-              <Sparkles className="h-5 w-5" />
+              <CreditCard className="h-5 w-5" />
             </div>
 
             <h2 className="text-2xl font-medium text-foreground">{plan.name}</h2>
