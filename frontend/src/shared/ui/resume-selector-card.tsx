@@ -268,8 +268,8 @@ export function ResumeSelectorCard({
           <div className="rounded-xl border border-border bg-background px-4 py-3">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 items-center gap-3">
-                <div className="rounded-lg bg-muted p-2">
-                  <FileText className="h-4 w-4 text-foreground" />
+                <div className="shrink-0 rounded-lg bg-blue-500/10 p-2 text-blue-300 ring-1 ring-blue-500/20">
+                  <FileText className="h-4 w-4" />
                 </div>
 
                 <div className="min-w-0 flex-1">
@@ -365,8 +365,8 @@ export function ResumeSelectorCard({
                         onClick={() => handleSelect(resume.id)}
                         className="flex w-full cursor-pointer items-start gap-3 rounded-xl border border-border bg-card px-3 py-2.5 text-left transition-colors duration-150 hover:bg-muted"
                       >
-                        <div className="rounded-md bg-muted p-1.5">
-                          <FileText className="h-3.5 w-3.5 text-foreground" />
+                        <div className="shrink-0 rounded-md bg-blue-500/10 p-1.5 text-blue-300 ring-1 ring-blue-500/20">
+                          <FileText className="h-3.5 w-3.5" />
                         </div>
 
                         <div className="min-w-0 flex-1">
