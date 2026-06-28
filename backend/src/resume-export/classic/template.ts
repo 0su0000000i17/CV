@@ -17,6 +17,10 @@ function sectionTitle(title: string) {
   return `<h2 class="section-title"><span>${escapeHtml(title)}</span></h2>`;
 }
 
+function clean(value?: string | null) {
+  return value?.replace(/\s+/g, " ").trim() || "";
+}
+
 function renderMutedAfterDash(value: string) {
   const match = value.match(/^(.+?)(\s+—\s+.+)$/u);
   if (!match?.[1] || !match[2]) return escapeHtml(value);
@@ -51,12 +55,66 @@ function renderHeader(doc: ClassicDocument) {
   return `<header class="header${doc.photoUrl ? "" : " header--no-photo"}">${photo}<div class="header-content"><h1 class="name">${escapeHtml(doc.name)}</h1><div class="contacts">${contactLines}</div></div></header>`;
 }
 
+function targetSalary(doc: ClassicDocument) {
+  return clean(doc.adaptation.target.salary);
+}
+
+function targetHasStructuredDetails(doc: ClassicDocument) {
+  const target = doc.adaptation.target;
+  return Boolean(
+    target.specializations.length ||
+      clean(target.employment) ||
+      clean(target.schedule) ||
+      clean(target.workFormat) ||
+      clean(target.commuteTime)
+  );
+}
+
+function targetDetailLines(doc: ClassicDocument) {
+  const target = doc.adaptation.target;
+
+  if (targetHasStructuredDetails(doc)) {
+    const result: Array<{ text: string; indent?: boolean }> = [];
+    const specializations = target.specializations.map(clean).filter(Boolean);
+
+    if (specializations.length) {
+      result.push({ text: "Специализации:" });
+      specializations.forEach((item) => result.push({ text: `— ${item}`, indent: true }));
+    }
+
+    if (clean(target.employment)) result.push({ text: `Тип занятости: ${clean(target.employment)}` });
+    if (clean(target.schedule)) result.push({ text: `График: ${clean(target.schedule)}` });
+    if (clean(target.workFormat)) result.push({ text: `Формат работы: ${clean(target.workFormat)}` });
+    if (clean(target.commuteTime)) result.push({ text: `Желательное время в пути до работы: ${clean(target.commuteTime)}` });
+
+    return result;
+  }
+
+  const salary = targetSalary(doc).toLowerCase();
+  return doc.snapshot.targetDetails
+    .filter((item) => clean(item).toLowerCase() !== salary)
+    .map((item) => ({ text: item, indent: item.startsWith("—") }));
+}
+
+function renderSalary(value: string) {
+  if (!value) return "";
+
+  const currencyIndex = value.indexOf("₽");
+  const amount = currencyIndex >= 0 ? value.slice(0, currencyIndex + 1).trim() : value;
+  const note = currencyIndex >= 0 ? value.slice(currencyIndex + 1).trim() : "";
+
+  return `<div class="target-salary"><span class="target-salary-amount">${escapeHtml(amount)}</span>${note ? ` <span class="target-salary-note">${escapeHtml(note)}</span>` : ""}</div>`;
+}
+
 function renderTarget(doc: ClassicDocument) {
-  if (!doc.targetTitle && !doc.snapshot.targetDetails.length) return "";
-  const details = doc.snapshot.targetDetails
-    .map((item) => line(item, item.startsWith("—") ? "plain-line plain-line--indent" : "plain-line"))
+  const salary = targetSalary(doc);
+  const details = targetDetailLines(doc)
+    .map((item) => line(item.text, item.indent ? "plain-line plain-line--indent" : "plain-line"))
     .join("");
-  return `<section class="section">${sectionTitle("Желаемая должность и зарплата")}${doc.targetTitle ? `<h3 class="target-title">${escapeHtml(doc.targetTitle)}</h3>` : ""}${details}</section>`;
+
+  if (!doc.targetTitle && !salary && !details) return "";
+
+  return `<section class="section">${sectionTitle("Желаемая должность и зарплата")}<div class="target-heading-row">${doc.targetTitle ? `<h3 class="target-title">${escapeHtml(doc.targetTitle)}</h3>` : "<div></div>"}${renderSalary(salary)}</div>${details}</section>`;
 }
 
 function looksLikeUrl(value: string) {
