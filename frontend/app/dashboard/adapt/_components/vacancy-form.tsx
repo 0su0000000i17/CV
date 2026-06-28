@@ -32,8 +32,8 @@ export function VacancyForm({
       return;
     }
 
-    const minHeight = 64;
-    const maxHeight = 180;
+    const minHeight = 44;
+    const maxHeight = 220;
 
     textarea.style.height = 'auto';
 
@@ -70,7 +70,7 @@ export function VacancyForm({
   return (
     <div className="rounded-2xl border border-border bg-card/60 p-5">
       <div className="mb-4 flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300 ring-1 ring-blue-500/20">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-300 ring-1 ring-amber-500/20">
           <Briefcase className="h-5 w-5" />
         </div>
 
