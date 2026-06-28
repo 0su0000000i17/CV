@@ -10,7 +10,7 @@ import {
   Loader2,
   Mail,
   Settings,
-  Sparkles,
+  Target,
 } from 'lucide-react';
 import { type ReactNode, useEffect } from 'react';
 
@@ -30,19 +30,19 @@ const navItems = [
     icon: FileText,
   },
   {
+    title: 'Оценить резюме',
+    href: '/dashboard/analyze',
+    icon: BarChart3,
+  },
+  {
     title: 'Адаптировать под вакансию',
     href: '/dashboard/adapt',
-    icon: Sparkles,
+    icon: Target,
   },
   {
     title: 'Сопроводительное письмо',
     href: '/dashboard/cover-letter',
     icon: Mail,
-  },
-  {
-    title: 'Оценить резюме',
-    href: '/dashboard/analyze',
-    icon: BarChart3,
   },
   {
     title: 'Оплата',
