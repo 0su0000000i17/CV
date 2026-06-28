@@ -17,7 +17,7 @@ export function createClassicStyles() {
     .resume { width: 100%; min-height: auto; background: #fff; overflow: visible; }
     .header {
       display: grid;
-      grid-template-columns: 95px minmax(0, 1fr);
+      grid-template-columns: auto minmax(0, 1fr);
       column-gap: 19px;
       align-items: start;
       margin-bottom: 34px;
@@ -31,7 +31,7 @@ export function createClassicStyles() {
     .contact-line + .contact-line { margin-top: 1px; }
     .contact-line--gap { margin-top: 16px; }
     .muted { color: #b4b4b4; }
-    .photo { display: block; width: 95px; height: 112px; object-fit: cover; border-radius: 0; }
+    .photo { display: block; width: 95px; height: auto; object-fit: contain; border-radius: 0; }
     .section { margin-top: 24px; }
     .section-title {
       display: block;
