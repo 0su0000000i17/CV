@@ -24,6 +24,7 @@ export function createClassicStyles() {
     }
     .header--no-photo { display: block; }
     .header-content { min-width: 0; }
+    .header:not(.header--no-photo) .header-content { margin-top: -5px; }
     .name { margin: 0 0 2px; font-size: 33px; line-height: 1.12; font-weight: 700; letter-spacing: -0.4px; color: #000; }
     .contacts { max-width: 650px; color: #222; }
     .contact-line { min-height: 18px; margin: 0; font-size: 13px; line-height: 1.35; }
