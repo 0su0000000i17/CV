@@ -38,7 +38,7 @@ function renderContactLine(item: string, index: number, lines: string[]) {
 function renderHeader(doc: ClassicDocument) {
   const photo = doc.photoUrl ? `<img class="photo" src="${escapeHtml(doc.photoUrl)}" alt="" />` : "";
   const contactLines = doc.contactLines.map((item, index) => renderContactLine(item, index, doc.contactLines)).join("");
-  return `<header class="header${doc.photoUrl ? "" : " header--no-photo"}"><div><h1 class="name">${escapeHtml(doc.name)}</h1><div class="contacts">${contactLines}</div></div>${photo}</header>`;
+  return `<header class="header${doc.photoUrl ? "" : " header--no-photo"}">${photo}<div class="header-content"><h1 class="name">${escapeHtml(doc.name)}</h1><div class="contacts">${contactLines}</div></div></header>`;
 }
 
 function renderTarget(doc: ClassicDocument) {
