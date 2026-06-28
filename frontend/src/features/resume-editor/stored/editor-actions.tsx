@@ -86,7 +86,7 @@ export function StoredResumeEditorActions({
   return (
     <div className="rounded-2xl border border-border bg-card/60 p-5">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div>
+        <div className="min-w-0">
           <h2 className="text-xl font-medium text-foreground">
             Редактор резюме
           </h2>
@@ -104,33 +104,33 @@ export function StoredResumeEditorActions({
           ) : null}
         </div>
 
-        <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap md:w-auto md:shrink-0 md:justify-end">
           <button
             type="button"
             onClick={onSave}
             disabled={saveButtonDisabled}
-            className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3 text-sm font-medium text-background transition-colors hover:bg-foreground/80 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex w-full cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-foreground px-5 py-3 text-sm font-medium text-background transition-colors hover:bg-foreground/80 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[136px]"
           >
             {isSaving ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
             ) : (
-              <Save className="h-4 w-4" />
+              <Save className="h-4 w-4 shrink-0" />
             )}
-            {isSaving ? 'Сохраняем...' : 'Сохранить'}
+            <span>{isSaving ? 'Сохраняем...' : 'Сохранить'}</span>
           </button>
 
           <button
             type="button"
             onClick={handleDownload}
             disabled={!editor.draft || downloadStatus === 'loading'}
-            className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex w-full cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-border px-5 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[120px]"
           >
             {downloadStatus === 'loading' ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
             ) : (
-              <Download className="h-4 w-4" />
+              <Download className="h-4 w-4 shrink-0" />
             )}
-            Скачать
+            <span>Скачать</span>
           </button>
         </div>
       </div>
