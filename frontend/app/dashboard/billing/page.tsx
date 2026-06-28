@@ -19,7 +19,7 @@ const plans = [
     price: '199 ₽',
     period: 'на 30 дней',
     description: 'Для точечной подготовки к нескольким вакансиям.',
-    actions: '20 действий',
+    actions: '15 действий',
     badge: null,
     features: [
       'Все основные инструменты',
@@ -32,7 +32,7 @@ const plans = [
     price: '499 ₽',
     period: 'на 30 дней',
     description: 'Оптимальный тариф для активного поиска работы.',
-    actions: '80 действий',
+    actions: '50 действий',
     badge: 'Оптимальный',
     featured: true,
     features: [
@@ -46,7 +46,7 @@ const plans = [
     price: '899 ₽',
     period: 'на 30 дней',
     description: 'Для большого количества откликов и частой адаптации резюме.',
-    actions: '180 действий',
+    actions: '120 действий',
     badge: 'Больше лимит',
     features: [
       'Максимальный лимит действий',
@@ -133,7 +133,7 @@ export default function Page() {
               </span>
             </div>
 
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground lg:min-h-[72px]">
               {plan.description}
             </p>
 
