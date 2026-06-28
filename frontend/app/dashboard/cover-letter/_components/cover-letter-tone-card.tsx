@@ -22,7 +22,7 @@ export function CoverLetterToneCard({
   return (
     <section className="rounded-2xl border border-border bg-card/60 p-5">
       <div className="mb-4 flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300 ring-1 ring-blue-500/20">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300 ring-1 ring-violet-500/20">
           <Sparkles className="h-5 w-5" />
         </div>
 
@@ -75,9 +75,7 @@ export function CoverLetterToneCard({
         ) : (
           <Wand2 className="h-4 w-4" />
         )}
-        {isGenerating
-          ? 'Генерируем письмо...'
-          : 'Сгенерировать сопроводительное'}
+        {isGenerating ? 'Генерируем письмо...' : 'Сгенерировать сопроводительное'}
       </button>
     </section>
   );
