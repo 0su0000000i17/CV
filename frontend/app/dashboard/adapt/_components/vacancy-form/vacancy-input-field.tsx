@@ -16,8 +16,8 @@ export function VacancyInputField({
         Ссылка или текст вакансии
       </label>
 
-      <div className="flex min-h-[44px] items-center gap-3 rounded-xl border border-border bg-background px-3">
-        <LinkIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+      <div className="flex min-h-[44px] items-start gap-3 rounded-xl border border-border bg-background px-3">
+        <LinkIcon className="mt-3.5 h-4 w-4 shrink-0 text-muted-foreground" />
 
         {isTextMode ? (
           <textarea
@@ -26,7 +26,7 @@ export function VacancyInputField({
             rows={1}
             onChange={(event) => onVacancyInputChange(event.target.value)}
             placeholder="Вставьте полный текст вакансии"
-            className="max-h-[180px] min-h-[64px] w-full resize-none bg-transparent py-2.5 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
+            className="max-h-[220px] min-h-[44px] w-full resize-none bg-transparent py-2.5 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
           />
         ) : (
           <input
