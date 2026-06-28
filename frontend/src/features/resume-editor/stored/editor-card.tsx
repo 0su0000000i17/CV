@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import type { UploadedResume } from '@/src/shared/api/resumes';
+import type { SourceResumeDocument, UploadedResume } from '@/src/shared/api/resumes';
 import { useResumeTextQuery } from '@/src/shared/hooks/use-resume-text-query';
 import { useUpdateResumeTextMutation } from '@/src/shared/hooks/use-update-resume-text-mutation';
 import { ResumeEditorContent } from '@/src/features/resume-editor/editor/resume-editor-content';
@@ -30,6 +30,14 @@ function createEditorSnapshot(
   });
 }
 
+function getStoredPhotoUrl(document?: SourceResumeDocument | null) {
+  const photo = document?.photo;
+  if (!photo || typeof photo !== 'object') return null;
+
+  const dataUrl = (photo as { dataUrl?: unknown }).dataUrl;
+  return typeof dataUrl === 'string' && dataUrl.trim() ? dataUrl : null;
+}
+
 export function StoredResumeEditorCard({ resume, accessToken }: Props) {
   const resumeTextQuery = useResumeTextQuery(resume.id, accessToken);
   const updateResumeTextMutation = useUpdateResumeTextMutation();
@@ -42,6 +50,9 @@ export function StoredResumeEditorCard({ resume, accessToken }: Props) {
   );
 
   const initialText = resumeTextQuery.data?.markdown ?? '';
+  const sourceDocument =
+    resumeTextQuery.data?.document ?? resume.source_resume_document;
+  const initialPhotoUrl = getStoredPhotoUrl(sourceDocument);
   const initialDraft = useMemo(() => {
     const resumeJson = resumeTextQuery.data?.resumeJson;
 
@@ -55,8 +66,7 @@ export function StoredResumeEditorCard({ resume, accessToken }: Props) {
     sourceResume: {
       ...resume,
       extracted_text: initialText,
-      source_resume_document:
-        resumeTextQuery.data?.document ?? resume.source_resume_document,
+      source_resume_document: sourceDocument,
     },
   });
 
@@ -66,9 +76,9 @@ export function StoredResumeEditorCard({ resume, accessToken }: Props) {
     return createEditorSnapshot(
       initialDraft,
       resumeTextQuery.data.contacts,
-      editor.photoUrl
+      initialPhotoUrl
     );
-  }, [editor.photoUrl, initialDraft, resumeTextQuery.data?.contacts]);
+  }, [initialDraft, initialPhotoUrl, resumeTextQuery.data?.contacts]);
 
   const currentSnapshot = useMemo(() => {
     if (!editor.draft) return null;
