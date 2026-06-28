@@ -45,7 +45,17 @@ export function createClassicStyles() {
       line-height: 1.05;
     }
     .section-title span { position: relative; top: 1px; display: inline; white-space: nowrap; }
-    .target-title { margin: 0 0 6px; font-size: 16px; line-height: 1.3; font-weight: 700; color: #000; }
+    .target-heading-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      column-gap: 24px;
+      align-items: start;
+      margin-bottom: 6px;
+    }
+    .target-title { margin: 0; font-size: 16px; line-height: 1.3; font-weight: 700; color: #000; }
+    .target-salary { white-space: nowrap; text-align: right; color: #000; line-height: 1.2; }
+    .target-salary-amount { font-size: 22px; font-weight: 700; letter-spacing: -0.2px; }
+    .target-salary-note { font-size: 11px; font-weight: 400; color: #222; }
     .plain-line { margin: 0; font-size: 13px; line-height: 1.36; }
     .plain-line + .plain-line { margin-top: 2px; }
     .plain-line--indent { padding-left: 20px; }
