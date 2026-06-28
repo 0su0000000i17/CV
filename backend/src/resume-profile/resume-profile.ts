@@ -10,15 +10,31 @@ import { extractPhotoFromPdf } from "../resume-profile/extract-photo-from-pdf.js
 import { getStringParam, sendError, sendServerError } from "../utils/api-responses.js";
 import { getUserFromRequest } from "../utils/auth.js";
 
-function buildStoredStats(document: SourceResumeDocument, chars: number) {
+type ExtractedPhotoResponse = { contentType: string; dataUrl: string } | null;
+
+function buildStoredStats(document: SourceResumeDocument, chars: number, photoFound = Boolean(document.photo?.dataUrl)) {
   return {
     rawChars: chars,
     normalizedChars: chars,
-    photoFound: Boolean(document.photo?.dataUrl),
+    photoFound,
     serviceLines: document.meta.serviceLines.length,
     experienceItems: document.experience.items.length,
     skillItems: document.skills.items.length,
   };
+}
+
+async function tryExtractStoredFilePhoto(resume: { file_path: string | null; file_type: string | null }): Promise<ExtractedPhotoResponse> {
+  if (!resume.file_path) return null;
+
+  try {
+    const fileBuffer = await downloadResumeFileBuffer(resume.file_path);
+    const photo = await extractPhotoFromPdf({ fileBuffer, mimeType: resume.file_type });
+    return photo
+      ? { contentType: photo.contentType, dataUrl: createPhotoDataUrl(photo.buffer, photo.contentType) }
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function extractResumeProfileController(req: Request, res: Response) {
@@ -33,19 +49,23 @@ export async function extractResumeProfileController(req: Request, res: Response
 
     if (resume.source_resume_document && resume.extracted_text) {
       const document = resume.source_resume_document as SourceResumeDocument;
+      const storedPhoto = document.photo?.dataUrl
+        ? {
+            contentType: document.photo.contentType,
+            dataUrl: document.photo.dataUrl,
+          }
+        : null;
+      const filePhoto = storedPhoto ? null : await tryExtractStoredFilePhoto(resume);
+      const photo = storedPhoto || filePhoto;
+
       return res.json({
         status: "completed",
         resumeId: resume.id,
         source: document.source,
         profile: buildProfileFromSourceResumeDocument(document),
         document,
-        photo: document.photo?.dataUrl
-          ? {
-              contentType: document.photo.contentType,
-              dataUrl: document.photo.dataUrl,
-            }
-          : null,
-        stats: buildStoredStats(document, resume.extracted_text.length),
+        photo,
+        stats: buildStoredStats(document, resume.extracted_text.length, Boolean(photo)),
       });
     }
 
