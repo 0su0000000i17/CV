@@ -35,8 +35,18 @@ function renderContactLine(item: string, index: number, lines: string[]) {
   return `<p class="${className}">${escapeHtml(item)}</p>`;
 }
 
+function renderPhoto(doc: ClassicDocument) {
+  if (!doc.photoUrl) return "";
+
+  const sizeStyle = doc.photoSize
+    ? ` style="width: ${doc.photoSize.width}px; height: ${doc.photoSize.height}px;"`
+    : "";
+
+  return `<img class="photo" src="${escapeHtml(doc.photoUrl)}" alt=""${sizeStyle} />`;
+}
+
 function renderHeader(doc: ClassicDocument) {
-  const photo = doc.photoUrl ? `<img class="photo" src="${escapeHtml(doc.photoUrl)}" alt="" />` : "";
+  const photo = renderPhoto(doc);
   const contactLines = doc.contactLines.map((item, index) => renderContactLine(item, index, doc.contactLines)).join("");
   return `<header class="header${doc.photoUrl ? "" : " header--no-photo"}">${photo}<div class="header-content"><h1 class="name">${escapeHtml(doc.name)}</h1><div class="contacts">${contactLines}</div></div></header>`;
 }
