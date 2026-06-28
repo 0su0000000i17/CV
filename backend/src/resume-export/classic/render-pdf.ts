@@ -21,6 +21,20 @@ export async function renderClassicResumePdf(doc: ClassicDocument) {
       waitUntil: "networkidle",
     });
 
+    await page.evaluate(async () => {
+      const images = Array.from(document.images);
+      await Promise.all(
+        images.map((image) => {
+          if (image.complete) return Promise.resolve();
+
+          return new Promise<void>((resolve) => {
+            image.addEventListener("load", () => resolve(), { once: true });
+            image.addEventListener("error", () => resolve(), { once: true });
+          });
+        })
+      );
+    });
+
     return await page.pdf({
       format: "A4",
       printBackground: true,
