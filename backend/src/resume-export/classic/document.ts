@@ -268,6 +268,19 @@ function resolvePhotoUrl(payload: ClassicExportPayload, sourceDocument: SourceRe
   return cleanText(payload.photoUrl) || sourceDocument?.photo?.dataUrl || null;
 }
 
+function normalizePhotoSize(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? Math.round(value * 100) / 100
+    : null;
+}
+
+function resolvePhotoSize(sourceDocument: SourceResumeDocument | null) {
+  const width = normalizePhotoSize(sourceDocument?.photo?.displayWidth);
+  const height = normalizePhotoSize(sourceDocument?.photo?.displayHeight);
+
+  return width && height ? { width, height } : null;
+}
+
 export function getCompanyMeta(snapshot: SourceSnapshot, company: string | null) {
   const companyName = cleanText(company);
   if (!companyName) return null;
@@ -279,5 +292,5 @@ export function buildClassicDocument(params: { sourceTitle: string; sourceText: 
   const snapshot = createSnapshot({ sourceText: params.sourceText, payload: params.payload, sourceDocument });
   const sourceTitle = createBaseName(params.sourceTitle || params.payload.sourceTitle);
   const targetTitle = cleanText(params.payload.adaptation.adaptedResume.headline) || cleanText(params.payload.adaptation.target.title);
-  return { ...params.payload, photoUrl: resolvePhotoUrl(params.payload, sourceDocument), sourceText: params.sourceText, sourceTitle, snapshot, name: cleanText(params.payload.contacts.fullName) || snapshot.sourceName || sourceTitle, contactLines: resolveContactLines(params.payload.contacts, snapshot), targetTitle, skills: resolveSkills({ payload: params.payload, sourceDocument, snapshot }), educationLines: resolveEducationLines({ payload: params.payload, snapshot, sourceDocument }) };
+  return { ...params.payload, photoUrl: resolvePhotoUrl(params.payload, sourceDocument), photoSize: resolvePhotoSize(sourceDocument), sourceText: params.sourceText, sourceTitle, snapshot, name: cleanText(params.payload.contacts.fullName) || snapshot.sourceName || sourceTitle, contactLines: resolveContactLines(params.payload.contacts, snapshot), targetTitle, skills: resolveSkills({ payload: params.payload, sourceDocument, snapshot }), educationLines: resolveEducationLines({ payload: params.payload, snapshot, sourceDocument }) };
 }
