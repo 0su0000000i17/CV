@@ -23,6 +23,11 @@ export type SourceSnapshot = {
   footer: string | null;
 };
 
+export type ClassicPhotoSize = {
+  width: number;
+  height: number;
+};
+
 export type ClassicDocument = ClassicExportPayload & {
   sourceText: string;
   sourceTitle: string;
@@ -32,4 +37,5 @@ export type ClassicDocument = ClassicExportPayload & {
   targetTitle: string;
   skills: string[];
   educationLines: string[];
+  photoSize: ClassicPhotoSize | null;
 };
