@@ -7,6 +7,7 @@ import { promisify } from "node:util";
 import type { ExtractedResumePhoto } from "./types.js";
 
 const execFileAsync = promisify(execFile);
+const CSS_PIXELS_PER_PDF_POINT = 96 / 72;
 
 type Params = {
   fileBuffer: Buffer;
@@ -42,6 +43,15 @@ try:
 except Exception as error:
     print(json.dumps({"ok": False, "reason": f"pymupdf_missing: {error}"}))
     sys.exit(0)
+
+CSS_PIXELS_PER_PDF_POINT = 96 / 72
+
+
+def css_size_from_rect(rect):
+    return {
+        "displayWidth": round(rect.width * CSS_PIXELS_PER_PDF_POINT, 2),
+        "displayHeight": round(rect.height * CSS_PIXELS_PER_PDF_POINT, 2),
+    }
 
 
 def is_reasonable_photo_size(width, height):
@@ -96,8 +106,6 @@ def candidate_score(page, rect, width, height, order_index):
     ratio = box_width / float(box_height)
     score = box_area + image_area * 0.08
 
-    # The personal photo in HH-like resumes is in the first-page header,
-    # usually upper-left. This also naturally rejects the red hh logo.
     if x0 <= page.rect.width * 0.38:
         score *= 3.0
     if y0 <= page.rect.height * 0.28:
@@ -149,6 +157,7 @@ def extract_from_positioned_xrefs(doc):
                     best = {
                         "score": score,
                         "bytes": pix.tobytes("png"),
+                        **css_size_from_rect(rect),
                     }
 
     return best
@@ -173,6 +182,8 @@ def extract_from_unpositioned_xrefs(doc):
                 best = {
                     "score": score,
                     "bytes": pix.tobytes("png"),
+                    "displayWidth": None,
+                    "displayHeight": None,
                 }
 
     return best
@@ -183,8 +194,6 @@ def extract_from_rendered_header_crop(doc):
         return None
 
     page = doc[0]
-    # HH PDF coordinates are in points. This rectangle covers the profile photo
-    # area in the upper-left header without touching the hh logo in the top-right.
     crop = fitz.Rect(34, 54, 124, 164)
     crop = crop & page.rect
 
@@ -198,14 +207,13 @@ def extract_from_rendered_header_crop(doc):
         colorspace=fitz.csRGB,
     )
 
-    # A real photo has a large painted area. Plain white space or a couple of text
-    # glyphs should not pass this fallback.
     if non_white_ratio(pix) < 0.18:
         return None
 
     return {
         "score": crop.width * crop.height,
         "bytes": pix.tobytes("png"),
+        **css_size_from_rect(crop),
     }
 
 
@@ -221,7 +229,11 @@ if not best:
     sys.exit(0)
 
 output_path.write_bytes(best["bytes"])
-print(json.dumps({"ok": True}))
+print(json.dumps({
+    "ok": True,
+    "displayWidth": best.get("displayWidth"),
+    "displayHeight": best.get("displayHeight"),
+}))
 `;
 
 export async function extractPhotoFromPdf(
@@ -264,6 +276,8 @@ export async function extractPhotoFromPdf(
       buffer: await readFile(outputPath),
       contentType: "image/png",
       extension: "png",
+      displayWidth: normalizeDisplaySize(result.displayWidth),
+      displayHeight: normalizeDisplaySize(result.displayHeight),
     };
   } catch (error) {
     console.warn("[resumeProfile] Photo extraction failed", error);
@@ -276,11 +290,19 @@ export async function extractPhotoFromPdf(
   }
 }
 
+function normalizeDisplaySize(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? Math.round(value * 100) / 100
+    : null;
+}
+
 function parsePythonResult(stdout: string) {
   try {
     return JSON.parse(stdout.trim()) as {
       ok: boolean;
       reason?: string;
+      displayWidth?: unknown;
+      displayHeight?: unknown;
     };
   } catch {
     return {
