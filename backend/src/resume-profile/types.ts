@@ -34,4 +34,6 @@ export type ExtractedResumePhoto = {
   buffer: Buffer;
   contentType: "image/png";
   extension: "png";
+  displayWidth: number | null;
+  displayHeight: number | null;
 } | null;
