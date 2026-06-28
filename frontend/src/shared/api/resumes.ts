@@ -51,7 +51,12 @@ export type ResumeProfileExtractionResponse = {
   source: 'hh_pdf' | 'generic_resume';
   profile: ResumePersonalProfile;
   document: SourceResumeDocument;
-  photo: { contentType: string; dataUrl: string } | null;
+  photo: {
+    contentType: string;
+    dataUrl: string;
+    displayWidth?: number | null;
+    displayHeight?: number | null;
+  } | null;
   stats: Record<string, unknown>;
 };
 
@@ -134,8 +139,17 @@ export async function getResumeText(resumeId: string, accessToken: string) {
   return parseApiResponse<ResumeTextResponse>(response, 'Failed to fetch resume text');
 }
 
-export async function updateResumeText(params: { resumeId: string; resumeJson: ResumeAdaptationResult; accessToken: string }) {
-  const response = await fetch(`${getApiUrl()}/api/resumes/${params.resumeId}/text`, { method: 'PATCH', headers: { ...createAuthHeaders(params.accessToken), 'Content-Type': 'application/json' }, body: JSON.stringify({ resumeJson: params.resumeJson }) });
+export async function updateResumeText(params: {
+  resumeId: string;
+  resumeJson: ResumeAdaptationResult;
+  photoUrl?: string | null;
+  accessToken: string;
+}) {
+  const response = await fetch(`${getApiUrl()}/api/resumes/${params.resumeId}/text`, {
+    method: 'PATCH',
+    headers: { ...createAuthHeaders(params.accessToken), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ resumeJson: params.resumeJson, photoUrl: params.photoUrl }),
+  });
   return parseApiResponse<UpdateResumeTextResponse>(response, 'Failed to update resume text');
 }
 
