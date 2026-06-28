@@ -10,7 +10,12 @@ import { extractPhotoFromPdf } from "../resume-profile/extract-photo-from-pdf.js
 import { getStringParam, sendError, sendServerError } from "../utils/api-responses.js";
 import { getUserFromRequest } from "../utils/auth.js";
 
-type ExtractedPhotoResponse = { contentType: string; dataUrl: string } | null;
+type ExtractedPhotoResponse = {
+  contentType: string;
+  dataUrl: string;
+  displayWidth?: number | null;
+  displayHeight?: number | null;
+} | null;
 
 function buildStoredStats(document: SourceResumeDocument, chars: number, photoFound = Boolean(document.photo?.dataUrl)) {
   return {
@@ -30,7 +35,12 @@ async function tryExtractStoredFilePhoto(resume: { file_path: string | null; fil
     const fileBuffer = await downloadResumeFileBuffer(resume.file_path);
     const photo = await extractPhotoFromPdf({ fileBuffer, mimeType: resume.file_type });
     return photo
-      ? { contentType: photo.contentType, dataUrl: createPhotoDataUrl(photo.buffer, photo.contentType) }
+      ? {
+          contentType: photo.contentType,
+          dataUrl: createPhotoDataUrl(photo.buffer, photo.contentType),
+          displayWidth: photo.displayWidth,
+          displayHeight: photo.displayHeight,
+        }
       : null;
   } catch {
     return null;
@@ -53,6 +63,8 @@ export async function extractResumeProfileController(req: Request, res: Response
         ? {
             contentType: document.photo.contentType,
             dataUrl: document.photo.dataUrl,
+            displayWidth: document.photo.displayWidth ?? null,
+            displayHeight: document.photo.displayHeight ?? null,
           }
         : null;
       const filePhoto = storedPhoto ? null : await tryExtractStoredFilePhoto(resume);
@@ -90,7 +102,12 @@ export async function extractResumeProfileController(req: Request, res: Response
       profile: buildProfileFromSourceResumeDocument(document),
       document,
       photo: photo
-        ? { contentType: photo.contentType, dataUrl: createPhotoDataUrl(photo.buffer, photo.contentType) }
+        ? {
+            contentType: photo.contentType,
+            dataUrl: createPhotoDataUrl(photo.buffer, photo.contentType),
+            displayWidth: photo.displayWidth,
+            displayHeight: photo.displayHeight,
+          }
         : null,
       stats: {
         rawChars: extraction.stats.rawChars,
