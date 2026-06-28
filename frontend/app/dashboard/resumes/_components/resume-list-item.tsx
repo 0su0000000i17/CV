@@ -26,8 +26,8 @@ export function ResumeListItem({ resume, isDeleting, onDelete }: Props) {
   return (
     <div className="grid grid-cols-1 gap-5 px-6 py-5 transition-colors hover:bg-muted/40 xl:grid-cols-[minmax(0,1fr)_145px_auto] xl:items-center">
       <div className="flex min-w-0 items-start gap-4">
-        <div className="shrink-0 rounded-xl bg-muted p-3">
-          <FileText className="h-5 w-5 text-foreground" />
+        <div className="shrink-0 rounded-xl bg-blue-500/10 p-3 text-blue-300 ring-1 ring-blue-500/20">
+          <FileText className="h-5 w-5" />
         </div>
 
         <div className="min-w-0">
