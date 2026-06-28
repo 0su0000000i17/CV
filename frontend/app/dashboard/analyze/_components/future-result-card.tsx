@@ -3,13 +3,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   AlertCircle,
+  BarChart3,
   CheckCircle2,
   FileSearch,
   Lightbulb,
   Loader2,
   Search,
   ShieldAlert,
-  Sparkles,
   Target,
   TriangleAlert,
 } from 'lucide-react';
@@ -34,7 +34,6 @@ type LoadingStep = {
 
 const STEP_DURATION_MS = 6_000;
 const LONG_WAIT_STEP_DURATION_MS = 12_000;
-const accentIconClassName = 'bg-blue-500/10 text-blue-300 ring-blue-500/20';
 
 const analysisSteps: LoadingStep[] = [
   {
@@ -125,10 +124,12 @@ const severityClasses: Record<ResumeRedFlag['severity'], string> = {
 };
 
 const sectionIconClasses = {
-  yellow: accentIconClassName,
-  green: accentIconClassName,
-  orange: accentIconClassName,
-  red: accentIconClassName,
+  blue: 'bg-blue-500/10 text-blue-300 ring-blue-500/20',
+  green: 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/20',
+  orange: 'bg-orange-500/10 text-orange-300 ring-orange-500/20',
+  red: 'bg-red-500/10 text-red-300 ring-red-500/20',
+  yellow: 'bg-amber-500/10 text-amber-300 ring-amber-500/20',
+  violet: 'bg-violet-500/10 text-violet-300 ring-violet-500/20',
 };
 
 function getActiveLoadingStep(elapsedMs: number) {
@@ -203,7 +204,7 @@ function RedFlagsBlock({ redFlags }: { redFlags: ResumeRedFlag[] }) {
   return (
     <section className="rounded-2xl border border-border bg-card/60 p-6">
       <div className="mb-5 flex items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300 ring-1 ring-blue-500/20">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-orange-300 ring-1 ring-orange-500/20">
           <TriangleAlert className="h-4 w-4" />
         </div>
 
@@ -258,7 +259,7 @@ function AnalysisLoadingState() {
   return (
     <div className="rounded-2xl border border-border bg-card/60 p-6">
       <div className="flex items-start gap-4">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300 ring-1 ring-blue-500/20">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-orange-300 ring-1 ring-orange-500/20">
           <Loader2 className="h-5 w-5 animate-spin" />
         </div>
 
@@ -331,7 +332,7 @@ export function FutureResultCard({
     return (
       <div className="rounded-2xl border border-border bg-card/60 p-6">
         <div className="mb-6 flex items-start gap-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300 ring-1 ring-blue-500/20">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground ring-1 ring-border">
             <Lightbulb className="h-5 w-5" />
           </div>
 
@@ -369,8 +370,8 @@ export function FutureResultCard({
     <div className="space-y-5">
       <section className="rounded-2xl border border-border bg-card/60 p-6">
         <div className="mb-5 flex items-start gap-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300 ring-1 ring-blue-500/20">
-            <Sparkles className="h-5 w-5" />
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-orange-300 ring-1 ring-orange-500/20">
+            <BarChart3 className="h-5 w-5" />
           </div>
 
           <div>
@@ -422,7 +423,7 @@ export function FutureResultCard({
       {analysis.missingKeywords.length > 0 && (
         <section className="rounded-2xl border border-border bg-card/60 p-6">
           <div className="mb-4 flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300 ring-1 ring-blue-500/20">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300 ring-1 ring-violet-500/20">
               <Search className="h-4 w-4" />
             </div>
 
