@@ -97,6 +97,8 @@ export async function uploadResume(req: Request, res: Response) {
           photo: {
             contentType: photo.contentType,
             dataUrl: createPhotoDataUrl(photo.buffer, photo.contentType),
+            displayWidth: photo.displayWidth,
+            displayHeight: photo.displayHeight,
           },
         }
       : document;
