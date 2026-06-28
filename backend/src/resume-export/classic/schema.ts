@@ -36,6 +36,12 @@ export const classicExportSchema = z.object({
       title: z.string().nullable(),
       company: z.string().nullable(),
       seniority: z.string().nullable(),
+      salary: z.string().nullable().optional().default(null),
+      specializations: z.array(z.string()).optional().default([]),
+      employment: z.string().nullable().optional().default(null),
+      schedule: z.string().nullable().optional().default(null),
+      workFormat: z.string().nullable().optional().default(null),
+      commuteTime: z.string().nullable().optional().default(null),
       keywordsUsed: z.array(z.string()).default([]),
     }),
     adaptedResume: z.object({
