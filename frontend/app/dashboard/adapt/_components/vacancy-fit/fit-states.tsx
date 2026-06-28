@@ -1,11 +1,11 @@
-import { CircleAlert, Sparkles, Target } from 'lucide-react';
+import { CircleAlert, Loader2, Target } from 'lucide-react';
 
 export function FitCheckingState() {
   return (
     <section className="rounded-2xl border border-border bg-card/60 p-5">
       <div className="flex items-start gap-4">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300 ring-1 ring-blue-500/20">
-          <Sparkles className="h-5 w-5 animate-pulse" />
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-300 ring-1 ring-emerald-500/20">
+          <Loader2 className="h-5 w-5 animate-spin" />
         </div>
 
         <div>
@@ -50,7 +50,7 @@ export function FitEmptyState() {
   return (
     <section className="rounded-2xl border border-border bg-card/60 p-5">
       <div className="flex items-start gap-4">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300 ring-1 ring-blue-500/20">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-300 ring-1 ring-emerald-500/20">
           <Target className="h-5 w-5" />
         </div>
 
