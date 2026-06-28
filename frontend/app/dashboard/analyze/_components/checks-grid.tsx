@@ -43,8 +43,8 @@ export function ChecksGrid() {
               key={item.title}
               className="rounded-2xl border border-border bg-background p-5"
             >
-              <div className="mb-4 w-fit rounded-xl bg-muted p-3">
-                <Icon className="h-5 w-5 text-foreground" />
+              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300 ring-1 ring-blue-500/20">
+                <Icon className="h-5 w-5" />
               </div>
 
               <h3 className="font-medium text-foreground">{item.title}</h3>
