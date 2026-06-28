@@ -76,11 +76,20 @@ export function createClassicStyles() {
     .education-row { margin-top: 8px; }
     .education-year, .side-label { color: #8f8f8f; font-size: 11px; line-height: 1.38; }
     .side-label { font-size: 13px; line-height: 1.36; }
-    .education-text { margin: 0; font-size: 15px; line-height: 1.32; }
+    .education-text { margin: 0; font-size: 17px; line-height: 1.3; }
     .skill-row { margin-top: 7px; }
     .language-lines { margin-bottom: 10px; }
-    .skill-tags { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: flex-start; }
-    .skill-tag { display: inline-block; padding: 2px 4px; background: #d4d4d4; font-size: 13px; line-height: 1.18; color: #222; }
+    .skill-tags { display: block; line-height: 1.95; }
+    .skill-tag {
+      display: inline-block;
+      margin: 0 9px 7px 0;
+      padding: 1px 4px 2px;
+      background: #d4d4d4;
+      font-size: 13px;
+      line-height: 1.18;
+      color: #222;
+      white-space: nowrap;
+    }
     .summary { margin: 0; white-space: pre-wrap; font-size: 12.5px; line-height: 1.35; }
     .footer { margin-top: 28px; color: #8f8f8f; font-size: 11px; line-height: 1.3; }
   `;
