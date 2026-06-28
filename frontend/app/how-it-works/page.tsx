@@ -16,6 +16,7 @@ type Step = {
   title: string;
   description: string;
   icon: LucideIcon;
+  iconClassName: string;
 };
 
 const steps: Step[] = [
@@ -25,6 +26,7 @@ const steps: Step[] = [
     description:
       'Добавьте PDF или DOCX. CVPro прочитает содержание резюме и сохранит его в личном кабинете.',
     icon: FileText,
+    iconClassName: 'bg-blue-500/10 text-blue-300 ring-blue-500/20',
   },
   {
     number: '02',
@@ -32,6 +34,7 @@ const steps: Step[] = [
     description:
       'Сервис проверит структуру, опыт, навыки, ATS-совместимость и места, которые стоит усилить перед откликом.',
     icon: BarChart3,
+    iconClassName: 'bg-orange-500/10 text-orange-300 ring-orange-500/20',
   },
   {
     number: '03',
@@ -39,6 +42,7 @@ const steps: Step[] = [
     description:
       'В отчёте будет общий score, детализация по блокам и конкретные рекомендации без технической терминологии.',
     icon: CheckCircle2,
+    iconClassName: 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/20',
   },
   {
     number: '04',
@@ -46,6 +50,7 @@ const steps: Step[] = [
     description:
       'Вставьте описание вакансии — CVPro подготовит новую версию резюме под требования работодателя.',
     icon: Target,
+    iconClassName: 'bg-violet-500/10 text-violet-300 ring-violet-500/20',
   },
   {
     number: '05',
@@ -53,6 +58,7 @@ const steps: Step[] = [
     description:
       'Исходное резюме останется без изменений. Новую версию можно проверить, отредактировать и скачать.',
     icon: ShieldCheck,
+    iconClassName: 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/20',
   },
 ];
 
@@ -133,7 +139,9 @@ export default function HowItWorksPage() {
                     </div>
 
                     <div className="min-w-0 pb-2">
-                      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300 ring-1 ring-blue-500/20">
+                      <div
+                        className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl ring-1 ${step.iconClassName}`}
+                      >
                         <Icon className="h-4 w-4" />
                       </div>
 
