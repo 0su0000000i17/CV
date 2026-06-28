@@ -31,7 +31,8 @@ export function extractSourceResumeData(
   if (profileExtraction?.profile) {
     return {
       contacts: profileToContacts(profileExtraction),
-      photoUrl: profileExtraction.photo?.dataUrl || null,
+      photoUrl:
+        profileExtraction.photo?.dataUrl || getStoredPhotoUrl(resume) || null,
     };
   }
 
@@ -80,8 +81,19 @@ function extractSourceResumeDataFromText(
       relocation: normalizeRelocation(relocationLine),
       businessTrips: extractBusinessTrips(relocationLine),
     },
-    photoUrl: null,
+    photoUrl: getStoredPhotoUrl(resume),
   };
+}
+
+function getStoredPhotoUrl(resume?: UploadedResume) {
+  const document = resume?.source_resume_document;
+  if (!document || typeof document !== 'object') return null;
+
+  const photo = (document as { photo?: unknown }).photo;
+  if (!photo || typeof photo !== 'object') return null;
+
+  const dataUrl = (photo as { dataUrl?: unknown }).dataUrl;
+  return typeof dataUrl === 'string' && dataUrl.trim() ? dataUrl : null;
 }
 
 function toStringValue(value: string | null | undefined) {
