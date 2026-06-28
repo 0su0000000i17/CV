@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "../../lib/supabase.js";
 import { parseSourceResumeDocument } from "../../resume-document/parser/parse-source-resume-document.js";
 import type { SourceResumeDocument } from "../../resume-document/types.js";
+import { extractPhotoFromPdf } from "../../resume-profile/extract-photo-from-pdf.js";
 import { extractResumeMarkdown } from "../../resume-processing/extract-resume-markdown.js";
 
 export type ResumeSourceRecord = {
@@ -18,15 +19,24 @@ export type ResumeExportSource = ResumeSourceRecord & {
   sourceDocument: SourceResumeDocument | null;
 };
 
-async function readOriginalText(resume: ResumeSourceRecord) {
-  const savedText = resume.extracted_text?.trim();
-  if (savedText) return savedText;
-  if (!resume.file_path) return "";
+function createPhotoDataUrl(buffer: Buffer, contentType: string) {
+  return `data:${contentType};base64,${buffer.toString("base64")}`;
+}
+
+async function readOriginalFileBuffer(resume: ResumeSourceRecord) {
+  if (!resume.file_path) return null;
 
   const result = await supabaseAdmin.storage.from("resumes").download(resume.file_path);
   if (result.error) throw result.error;
 
-  const fileBuffer = Buffer.from(await result.data.arrayBuffer());
+  return Buffer.from(await result.data.arrayBuffer());
+}
+
+async function readOriginalText(resume: ResumeSourceRecord, fileBuffer: Buffer | null) {
+  const savedText = resume.extracted_text?.trim();
+  if (savedText) return savedText;
+  if (!fileBuffer) return "";
+
   const extraction = await extractResumeMarkdown({
     fileBuffer,
     fileName: resume.file_name,
@@ -47,6 +57,33 @@ function resolveSourceDocument(resume: ResumeSourceRecord, sourceText: string) {
   return parseSourceResumeDocument(sourceText);
 }
 
+async function attachStoredFilePhoto(params: {
+  resume: ResumeSourceRecord;
+  sourceDocument: SourceResumeDocument | null;
+  fileBuffer: Buffer | null;
+}) {
+  const { resume, sourceDocument, fileBuffer } = params;
+
+  if (!sourceDocument || sourceDocument.photo?.dataUrl || !fileBuffer) {
+    return sourceDocument;
+  }
+
+  const photo = await extractPhotoFromPdf({
+    fileBuffer,
+    mimeType: resume.file_type,
+  });
+
+  if (!photo) return sourceDocument;
+
+  return {
+    ...sourceDocument,
+    photo: {
+      contentType: photo.contentType,
+      dataUrl: createPhotoDataUrl(photo.buffer, photo.contentType),
+    },
+  };
+}
+
 export async function getResumeExportSource(params: {
   userId: string;
   resumeId: string;
@@ -63,11 +100,21 @@ export async function getResumeExportSource(params: {
   const resume = result.data as ResumeSourceRecord | null;
   if (!resume) return null;
 
-  const sourceText = await readOriginalText(resume);
+  const storedDocument = resume.source_resume_document as SourceResumeDocument | null;
+  const needsOriginalFile = Boolean(
+    resume.file_path && (!resume.extracted_text?.trim() || !storedDocument?.photo?.dataUrl)
+  );
+  const fileBuffer = needsOriginalFile ? await readOriginalFileBuffer(resume) : null;
+  const sourceText = await readOriginalText(resume, fileBuffer);
+  const sourceDocument = await attachStoredFilePhoto({
+    resume,
+    sourceDocument: resolveSourceDocument(resume, sourceText),
+    fileBuffer,
+  });
 
   return {
     ...resume,
     sourceText,
-    sourceDocument: resolveSourceDocument(resume, sourceText),
+    sourceDocument,
   };
 }
