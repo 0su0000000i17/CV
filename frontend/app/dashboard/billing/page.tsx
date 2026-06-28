@@ -64,7 +64,7 @@ const securityItems = [
   },
   {
     title: 'Без хранения карт',
-    description: 'CVPro не принимает и не хранит данные банковских карт.',
+    description: 'Мы не храним данные банковских карт.',
     icon: LockKeyhole,
   },
 ];
@@ -157,18 +157,20 @@ export default function Page() {
               ))}
             </ul>
 
-            <button
-              type="button"
-              disabled
-              className={`mt-8 inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-colors disabled:opacity-70 ${
-                plan.featured
-                  ? 'bg-foreground text-background'
-                  : 'border border-border text-foreground'
-              }`}
-            >
-              <CreditCard className="h-4 w-4" />
-              Выбрать тариф
-            </button>
+            <div className="mt-auto pt-8">
+              <button
+                type="button"
+                disabled
+                className={`inline-flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-colors disabled:opacity-70 ${
+                  plan.featured
+                    ? 'bg-foreground text-background'
+                    : 'border border-border text-foreground'
+                }`}
+              >
+                <CreditCard className="h-4 w-4" />
+                Выбрать тариф
+              </button>
+            </div>
           </article>
         ))}
       </section>
