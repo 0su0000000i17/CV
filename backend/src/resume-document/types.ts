@@ -27,6 +27,8 @@ export type ResumeTextBlock =
 export type SourceResumePhoto = {
   contentType: string;
   dataUrl: string;
+  displayWidth?: number | null;
+  displayHeight?: number | null;
 };
 
 export type SourceResumeDocument = {
