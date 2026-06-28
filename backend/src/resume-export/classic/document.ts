@@ -198,6 +198,16 @@ function collectLanguageLines(params: { sourceDocument: SourceResumeDocument | n
   return uniqueStrings([...documentLanguages, ...params.snapshot.languageLines].map(cleanText).filter(Boolean));
 }
 
+function collectLanguagePartKeys(languageLines: string[]) {
+  return new Set(
+    languageLines
+      .flatMap((languageLine) => cleanText(languageLine).split(/\s*[—–-]\s*/u))
+      .flatMap((part) => cleanText(part).split(/\s+/u))
+      .map(skillKey)
+      .filter(Boolean)
+  );
+}
+
 function removeKnownLanguageFragments(value: string, languageLines: string[]) {
   let result = ` ${cleanText(value)} `;
 
@@ -211,9 +221,10 @@ function removeKnownLanguageFragments(value: string, languageLines: string[]) {
   return cleanText(result);
 }
 
-function isKnownLanguageSkill(value: string, languageLines: string[]) {
+function isKnownLanguageSkill(value: string, languageLines: string[], languagePartKeys: Set<string>) {
   const valueKey = skillKey(value);
   if (!valueKey) return true;
+  if (languagePartKeys.has(valueKey)) return true;
 
   return languageLines.some((languageLine) => {
     const line = cleanText(languageLine);
@@ -236,6 +247,7 @@ function resolveSkills(params: { payload: ClassicExportPayload; sourceDocument: 
   const sourceSkills = rawSourceSkills.flatMap((item) => splitSkillValue(item, candidates));
   const adaptedSkills = rawAdaptedSkills.flatMap((item) => splitSkillValue(item, candidates.length ? candidates : sourceSkills));
   const languageLines = collectLanguageLines({ sourceDocument: params.sourceDocument, snapshot: params.snapshot });
+  const languagePartKeys = collectLanguagePartKeys(languageLines);
   const seen = new Set<string>();
   const result: string[] = [];
 
@@ -243,7 +255,7 @@ function resolveSkills(params: { payload: ClassicExportPayload; sourceDocument: 
     const value = removeKnownLanguageFragments(item, languageLines);
     const key = skillKey(value);
 
-    if (!value || !key || isKnownLanguageSkill(value, languageLines) || seen.has(key)) continue;
+    if (!value || !key || isKnownLanguageSkill(value, languageLines, languagePartKeys) || seen.has(key)) continue;
 
     seen.add(key);
     result.push(value);
