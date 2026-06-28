@@ -80,6 +80,8 @@ async function attachStoredFilePhoto(params: {
     photo: {
       contentType: photo.contentType,
       dataUrl: createPhotoDataUrl(photo.buffer, photo.contentType),
+      displayWidth: photo.displayWidth,
+      displayHeight: photo.displayHeight,
     },
   };
 }
