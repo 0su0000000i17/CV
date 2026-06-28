@@ -6,11 +6,48 @@ import {
   type ResumeTextResponse,
 } from '@/src/shared/api/resumes';
 
+import type { ContactDraft } from '@/src/features/resume-editor/model/types';
+
 type UpdateResumeTextVariables = {
   resumeId: string;
   resumeJson: ResumeAdaptationResult;
+  contacts: ContactDraft;
+  photoUrl: string | null;
   accessToken: string;
 };
+
+function updateCachedPhoto(document: ResumeTextResponse['document'], photoUrl: string | null) {
+  if (!document || typeof document !== 'object') return document;
+
+  const currentPhoto = (document as { photo?: unknown }).photo;
+  const keepSize =
+    photoUrl &&
+    typeof currentPhoto === 'object' &&
+    currentPhoto !== null &&
+    (currentPhoto as { dataUrl?: unknown }).dataUrl === photoUrl;
+
+  return {
+    ...document,
+    photo: photoUrl
+      ? {
+          contentType: getPhotoContentType(photoUrl),
+          dataUrl: photoUrl,
+          displayWidth: keepSize
+            ? ((currentPhoto as { displayWidth?: unknown }).displayWidth ?? null)
+            : null,
+          displayHeight: keepSize
+            ? ((currentPhoto as { displayHeight?: unknown }).displayHeight ?? null)
+            : null,
+        }
+      : null,
+  };
+}
+
+function getPhotoContentType(photoUrl: string) {
+  const match = photoUrl.match(/^data:([^;,]+)[;,]/i);
+
+  return match?.[1] || 'image/png';
+}
 
 export function useUpdateResumeTextMutation() {
   const queryClient = useQueryClient();
@@ -28,7 +65,8 @@ export function useUpdateResumeTextMutation() {
           source: 'saved_json',
           markdown: current?.markdown ?? '',
           resumeJson: variables.resumeJson,
-          contacts: current?.contacts ?? null,
+          contacts: variables.contacts,
+          document: updateCachedPhoto(current?.document, variables.photoUrl),
           stats: current?.stats ?? null,
           extractor: {
             mode: 'saved_json',
