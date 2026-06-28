@@ -75,21 +75,88 @@ function skillKey(value: string) {
   return cleanText(value).toLowerCase().replace(/[^a-zа-яё0-9+#.]+/giu, "");
 }
 
-function isLanguageSkill(value: string) {
-  return /^(русский|английский|французский|немецкий|испанский|китайский)\b/i.test(cleanText(value));
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function resolveSkills(payload: ClassicExportPayload) {
-  const { skills } = payload.adaptation.adaptedResume;
+function splitSkillValue(value: string) {
+  return cleanText(value)
+    .split(/[\n,;|•]+/u)
+    .map((item) => cleanText(item))
+    .filter(Boolean);
+}
+
+function collectLanguageLines(params: { sourceDocument: SourceResumeDocument | null; snapshot: SourceSnapshot }) {
+  const documentLanguages = params.sourceDocument
+    ? params.sourceDocument.skills.languages.flatMap((item) => [item.name, item.raw, [item.name, item.level, item.description].map(cleanText).filter(Boolean).join(" — ")])
+    : [];
+
+  return uniqueStrings([...documentLanguages, ...params.snapshot.languageLines].map(cleanText).filter(Boolean));
+}
+
+function removeKnownLanguageFragments(value: string, languageLines: string[]) {
+  let result = ` ${cleanText(value)} `;
+
+  for (const languageLine of [...languageLines].sort((a, b) => b.length - a.length)) {
+    const escaped = escapeRegExp(cleanText(languageLine)).replace(/\s+/g, "\\s+");
+    if (!escaped) continue;
+
+    result = result.replace(new RegExp(`\\s+${escaped}(?=\\s|$)`, "giu"), " ");
+  }
+
+  return cleanText(result);
+}
+
+function isKnownLanguageSkill(value: string, languageLines: string[]) {
+  const valueKey = skillKey(value);
+  if (!valueKey) return true;
+
+  return languageLines.some((languageLine) => {
+    const line = cleanText(languageLine);
+    const lineKey = skillKey(line);
+    const nameKey = skillKey(line.split("—")[0] || line);
+
+    return valueKey === lineKey || Boolean(nameKey && valueKey === nameKey);
+  });
+}
+
+function skillsFromSourceDocument(document: SourceResumeDocument | null) {
+  return document ? document.skills.items.map(cleanText).filter(Boolean) : [];
+}
+
+function isCompositeKnownSkillLine(value: string, sourceSkillKeys: Set<string>) {
+  const valueKey = skillKey(value);
+  if (!valueKey || sourceSkillKeys.size < 2) return false;
+
+  let matches = 0;
+  for (const key of sourceSkillKeys) {
+    if (key && valueKey.includes(key)) matches += 1;
+    if (matches >= 3) return true;
+  }
+
+  return false;
+}
+
+function resolveSkills(params: { payload: ClassicExportPayload; sourceDocument: SourceResumeDocument | null; snapshot: SourceSnapshot }) {
+  const { skills } = params.payload.adaptation.adaptedResume;
+  const sourceSkills = skillsFromSourceDocument(params.sourceDocument);
+  const sourceSkillKeys = new Set(sourceSkills.map(skillKey).filter(Boolean));
+  const languageLines = collectLanguageLines({ sourceDocument: params.sourceDocument, snapshot: params.snapshot });
+  const adaptedSkills = [...skills.primary, ...skills.secondary, ...skills.deprioritized].flatMap(splitSkillValue);
   const seen = new Set<string>();
   const result: string[] = [];
-  for (const item of [...skills.primary, ...skills.secondary, ...skills.deprioritized]) {
-    const value = cleanText(item);
+
+  for (const item of [...sourceSkills, ...adaptedSkills]) {
+    const value = removeKnownLanguageFragments(item, languageLines);
     const key = skillKey(value);
-    if (!value || isLanguageSkill(value) || seen.has(key)) continue;
+
+    if (!value || !key || isKnownLanguageSkill(value, languageLines) || seen.has(key)) continue;
+    if (!sourceSkillKeys.has(key) && isCompositeKnownSkillLine(value, sourceSkillKeys)) continue;
+
     seen.add(key);
     result.push(value);
   }
+
   return result;
 }
 
@@ -104,5 +171,5 @@ export function buildClassicDocument(params: { sourceTitle: string; sourceText: 
   const snapshot = createSnapshot({ sourceText: params.sourceText, payload: params.payload, sourceDocument });
   const sourceTitle = createBaseName(params.sourceTitle || params.payload.sourceTitle);
   const targetTitle = cleanText(params.payload.adaptation.adaptedResume.headline) || cleanText(params.payload.adaptation.target.title);
-  return { ...params.payload, sourceText: params.sourceText, sourceTitle, snapshot, name: cleanText(params.payload.contacts.fullName) || snapshot.sourceName || sourceTitle, contactLines: resolveContactLines(params.payload.contacts, snapshot), targetTitle, skills: resolveSkills(params.payload), educationLines: resolveEducationLines({ payload: params.payload, snapshot, sourceDocument }) };
+  return { ...params.payload, sourceText: params.sourceText, sourceTitle, snapshot, name: cleanText(params.payload.contacts.fullName) || snapshot.sourceName || sourceTitle, contactLines: resolveContactLines(params.payload.contacts, snapshot), targetTitle, skills: resolveSkills({ payload: params.payload, sourceDocument, snapshot }), educationLines: resolveEducationLines({ payload: params.payload, snapshot, sourceDocument }) };
 }
