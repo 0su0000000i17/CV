@@ -1,57 +1,83 @@
 import Link from 'next/link';
-import { title } from 'process';
+import {
+  ArrowRight,
+  BarChart3,
+  CheckCircle2,
+  FileText,
+  ShieldCheck,
+  Target,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
-type MetricStatus = 'good' | 'medium' | 'needs work';
+type MetricStatus = 'good' | 'medium' | 'needsWork';
 
-const metrics: { label: string; status: MetricStatus }[] = [
-  { label: 'Позиционирование', status: 'good' },
-  { label: 'Соответствие', status: 'medium' },
-  { label: 'ATS', status: 'needs work' },
-  { label: 'Доказательность', status: 'good' },
+type Step = {
+  number: string;
+  title: string;
+  description: string;
+  icon: LucideIcon;
+};
+
+const steps: Step[] = [
+  {
+    number: '01',
+    title: 'Загрузите резюме',
+    description:
+      'Добавьте PDF или DOCX. CVPro прочитает содержание резюме и сохранит его в личном кабинете.',
+    icon: FileText,
+  },
+  {
+    number: '02',
+    title: 'Получите оценку',
+    description:
+      'Сервис проверит структуру, опыт, навыки, ATS-совместимость и места, которые стоит усилить перед откликом.',
+    icon: BarChart3,
+  },
+  {
+    number: '03',
+    title: 'Разберите результат',
+    description:
+      'В отчёте будет общий score, детализация по блокам и конкретные рекомендации без технической терминологии.',
+    icon: CheckCircle2,
+  },
+  {
+    number: '04',
+    title: 'Адаптируйте под вакансию',
+    description:
+      'Вставьте описание вакансии — CVPro подготовит новую версию резюме под требования работодателя.',
+    icon: Target,
+  },
+  {
+    number: '05',
+    title: 'Скачайте готовый файл',
+    description:
+      'Исходное резюме останется без изменений. Новую версию можно проверить, отредактировать и скачать.',
+    icon: ShieldCheck,
+  },
+];
+
+const metrics: { label: string; value: string; status: MetricStatus }[] = [
+  { label: 'Структура', value: 'Хорошо', status: 'good' },
+  { label: 'Опыт', value: 'Средне', status: 'medium' },
+  { label: 'ATS', value: 'Усилить', status: 'needsWork' },
+  { label: 'Доказательность', value: 'Хорошо', status: 'good' },
 ];
 
 const statusColor: Record<MetricStatus, string> = {
   good: 'text-emerald-500',
-  medium: 'text-yellow-500',
-  'needs work': 'text-red-500',
+  medium: 'text-orange-400',
+  needsWork: 'text-red-500',
 };
 
+const resultItems = [
+  'Оценка резюме по понятным критериям',
+  'Сильные стороны и зоны роста',
+  'ATS-проблемы и недостающие ключевые слова',
+  'Адаптация под конкретную вакансию',
+  'Сопроводительное письмо в нужном тоне',
+];
+
 export default function HowItWorksPage() {
-  const steps = [
-    {
-      number: '01',
-      title: 'Загрузи резюме',
-      description:
-        'Добавь PDF или DOCX из личного кабинета. Файл остаётся привязан к твоему аккаунту и используется для анализа.',
-    },
-    {
-      number: '02',
-      title: 'Сервис извлечёт содержание',
-      description:
-        'Backend преобразует резюме в текстовый формат, чтобы анализировать не картинку файла, а реальное содержание: опыт, роли, навыки и структуру.',
-    },
-    {
-      number: '03',
-      title: 'AI найдёт сильные места и риски',
-      description:
-        'Модель помогает выделить факты, red flags, ATS-проблемы и зоны улучшения. Финальную оценку считает backend по собственной рубрике.',
-    },
-
-    {
-      number: '04',
-      title: 'Адаптируй резюме под вакансию',
-      description:
-        'Выбери резюме, вставь ссылку на вакансию — сервис создаст новую версию, которая точнее попадает в требования работодателя. Исходный файл останется без изменений.',
-    },
-
-    {
-      number: '05',
-      title: 'Получишь понятный результат',
-      description:
-        'В личном кабинете появится итоговая оценка, детализация по метрикам и рекомендации, что стоит усилить перед откликом.',
-    },
-  ];
-
   return (
     <div className="flex flex-1 flex-col">
       <div className="flex-1">
@@ -59,110 +85,144 @@ export default function HowItWorksPage() {
           Как это работает / How it works
         </p>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_auto] lg:gap-12">
-          <div className="space-y-8">
-            <h1 className="text-4xl font-normal leading-[1.1] tracking-tight text-foreground sm:text-5xl md:text-6xl">
-              Проверь резюме <br />
+        <section className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-12">
+          <div>
+            <h1 className="max-w-4xl text-4xl font-normal leading-[1.1] tracking-tight text-foreground sm:text-5xl md:text-6xl">
+              От резюме до готового отклика{' '}
               <span className="font-medium text-foreground">
-                перед откликом
+                в одном кабинете
               </span>
             </h1>
 
-            <p className="max-w-2xl text-base font-light leading-relaxed tracking-tight text-muted-foreground md:text-lg">
-              CVPro анализирует резюме как первичный HR-скан: оценивает
-              структуру, релевантность опыта, доказательность, ATS-совместимость
-              и риски, которые могут мешать отклику.
+            <p className="mt-6 max-w-2xl text-base font-light leading-relaxed tracking-tight text-muted-foreground md:text-lg">
+              CVPro помогает понять, насколько резюме готово к отклику, что в
+              нём стоит усилить и как адаптировать его под конкретную вакансию.
             </p>
 
-            <Link
-              href="/dashboard/analyze"
-              className="inline-block rounded-xl bg-emerald-500 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-emerald-600"
-            >
-              Проверить резюме
-            </Link>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <Link
+                href="/dashboard/analyze"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-emerald-600"
+              >
+                Проверить резюме
+                <ArrowRight className="h-4 w-4" />
+              </Link>
 
-            <div className="mt-12 space-y-8">
-              {steps.map((step, index) => (
-                <div key={step.number} className="flex gap-5">
-                  <div className="flex flex-col items-center">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border text-sm font-medium text-muted-foreground">
-                      {step.number}
+              <Link
+                href="/dashboard/adapt"
+                className="inline-flex items-center justify-center rounded-xl border border-border px-6 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+              >
+                Адаптировать под вакансию
+              </Link>
+            </div>
+
+            <div className="mt-12 space-y-6">
+              {steps.map((step, index) => {
+                const Icon = step.icon;
+
+                return (
+                  <div key={step.number} className="flex gap-5">
+                    <div className="flex flex-col items-center">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-card text-sm font-medium text-muted-foreground">
+                        {step.number}
+                      </div>
+
+                      {index < steps.length - 1 ? (
+                        <div className="mt-2 h-14 w-px bg-border/60" />
+                      ) : null}
                     </div>
-                    {index < steps.length - 1 && (
-                      <div className="mt-1 h-12 w-px bg-border/60" />
-                    )}
-                  </div>
 
-                  <div>
-                    <h3 className="text-lg font-medium text-foreground sm:text-xl">
-                      {step.title}
-                    </h3>
-                    <p className="mt-1 max-w-xl text-sm text-muted-foreground sm:text-base">
-                      {step.description}
-                    </p>
+                    <div className="min-w-0 pb-2">
+                      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300 ring-1 ring-blue-500/20">
+                        <Icon className="h-4 w-4" />
+                      </div>
+
+                      <h2 className="text-lg font-medium text-foreground sm:text-xl">
+                        {step.title}
+                      </h2>
+
+                      <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+                        {step.description}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
-          <div className="flex flex-col items-start justify-start gap-6 pt-1 lg:pt-0">
-            <div className="w-full max-w-[260px] rounded-2xl border border-border bg-background p-5">
-              <div className="flex items-center justify-between">
+          <aside className="space-y-5 lg:sticky lg:top-24 lg:self-start">
+            <div className="rounded-3xl border border-border bg-card/60 p-5">
+              <div className="flex items-center justify-between gap-4">
                 <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-                  Resume analysis
+                  Пример оценки
                 </p>
-                <span className="text-xs font-medium text-emerald-500">
-                  ● Live
+
+                <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-500">
+                  Готово
                 </span>
               </div>
 
-              <div className="mt-4 flex items-end gap-1">
-                <span className="text-4xl font-semibold text-foreground">
+              <div className="mt-5 flex items-end gap-1">
+                <span className="text-5xl font-semibold tracking-tight text-foreground">
                   78
                 </span>
-                <span className="pb-1 text-sm text-muted-foreground">
+
+                <span className="pb-1.5 text-sm text-muted-foreground">
                   / 100
                 </span>
               </div>
 
-              <div className="mt-4 space-y-2">
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                Резюме можно отправлять, но есть блоки, которые стоит доработать
+                перед откликом.
+              </p>
+
+              <div className="mt-5 space-y-2">
                 {metrics.map((metric) => (
                   <div
                     key={metric.label}
-                    className="flex items-center justify-between border-b border-border/60 py-1.5 last:border-0"
+                    className="flex items-center justify-between border-b border-border/60 py-2 last:border-0"
                   >
                     <span className="text-sm text-muted-foreground">
                       {metric.label}
                     </span>
+
                     <span
                       className={`text-sm font-medium ${statusColor[metric.status]}`}
                     >
-                      {metric.status === 'good' && '● Good'}
-                      {metric.status === 'medium' && '● Medium'}
-                      {metric.status === 'needs work' && '● Needs work'}
+                      {metric.value}
                     </span>
                   </div>
                 ))}
               </div>
+            </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
-                <span className="rounded-full border border-border px-2.5 py-0.5 text-xs text-muted-foreground">
-                  ATS
-                </span>
-                <span className="rounded-full border border-border px-2.5 py-0.5 text-xs text-muted-foreground">
-                  HR scan
-                </span>
-                <span className="rounded-full border border-border px-2.5 py-0.5 text-xs text-muted-foreground">
-                  Score
-                </span>
-                <span className="rounded-full border border-border px-2.5 py-0.5 text-xs text-muted-foreground">
-                  Red flags
-                </span>
+            <div className="rounded-3xl border border-border bg-background p-5">
+              <h2 className="text-lg font-medium text-foreground">
+                Что вы получите
+              </h2>
+
+              <div className="mt-4 space-y-3">
+                {resultItems.map((item) => (
+                  <div key={item} className="flex items-start gap-3">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                    <p className="text-sm leading-relaxed text-muted-foreground">
+                      {item}
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
-        </div>
+
+            <div className="rounded-3xl border border-border bg-card/60 p-5">
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                CVPro не заменяет ваше решение. Сервис помогает быстрее увидеть
+                слабые места резюме и подготовить более точный отклик.
+              </p>
+            </div>
+          </aside>
+        </section>
       </div>
     </div>
   );
