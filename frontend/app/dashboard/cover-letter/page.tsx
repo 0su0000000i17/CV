@@ -16,22 +16,8 @@ export default function CoverLetterPage() {
     <div className="space-y-6">
       <CoverLetterHeader />
 
-      <div className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)] xl:items-start">
-        <aside className="order-2 space-y-5 xl:order-1 xl:sticky xl:top-24">
-          <CoverLetterToneCard
-            selectedTone={page.selectedTone}
-            isGenerating={page.isGenerating}
-            canGenerate={Boolean(
-              page.accessToken && page.selectedResume && page.vacancyInput.trim()
-            )}
-            onSelectTone={page.handleSelectTone}
-            onGenerate={page.handleGenerateCoverLetter}
-          />
-
-          <CoverLetterSidebar />
-        </aside>
-
-        <div className="order-1 space-y-6 xl:order-2">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
+        <div className="space-y-6">
           <CoverLetterResumeCard
             selectedResume={page.selectedResume}
             resumes={page.resumes}
@@ -64,6 +50,20 @@ export default function CoverLetterPage() {
             onChange={page.setCoverLetterDraft}
           />
         </div>
+
+        <aside className="space-y-5 xl:sticky xl:top-24">
+          <CoverLetterToneCard
+            selectedTone={page.selectedTone}
+            isGenerating={page.isGenerating}
+            canGenerate={Boolean(
+              page.accessToken && page.selectedResume && page.vacancyInput.trim()
+            )}
+            onSelectTone={page.handleSelectTone}
+            onGenerate={page.handleGenerateCoverLetter}
+          />
+
+          <CoverLetterSidebar />
+        </aside>
       </div>
     </div>
   );
