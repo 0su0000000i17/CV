@@ -140,11 +140,11 @@ export function DashboardLayoutClient({ children }: { children: ReactNode }) {
 
               <div className="mt-3 flex items-end justify-between gap-3">
                 <p className="text-xs text-muted-foreground">
-                  Бесплатные генерации
+                  Бесплатные действия
                 </p>
 
                 <p className="whitespace-nowrap text-sm font-semibold text-foreground">
-                  0<span className="text-muted-foreground"> / 5</span>
+                  0<span className="text-muted-foreground"> / 3</span>
                 </p>
               </div>
 
