@@ -345,6 +345,78 @@ function polishBullet(value: string, context?: SupportContext) {
   return context ? sanitizeResumeText(text, context) : text;
 }
 
+function hasMetric(value: string) {
+  return /\d+\s*(?:%|процент|дн(?:я|ей)|недел|мес|раз|час|мин)|\d+\s*[–-]\s*\d+\s*%/iu.test(value);
+}
+
+function hasEffect(value: string) {
+  return /\b(?:что|повыш|улучш|сокращ|ускор|сниж|увелич|обеспеч|поддерж|усилив|стабилиз|оптимиз|вовлеч|регулярн|качество|эффективн)\b/iu.test(value);
+}
+
+function withEffect(value: string, effect: string) {
+  const base = clean(value).replace(/[.,;:]+$/u, "");
+  return hasEffect(base) ? base : `${base}, ${effect}`;
+}
+
+function amplifyResumeBullet(value: string) {
+  const text = clean(value);
+  if (!text) return "";
+
+  if (/контент[\s-]*план/iu.test(text)) {
+    const metric = /14\s*дн|1\s*мес|месяц/iu.test(text) ? "" : " на 14 дней / 1 месяц";
+    return withEffect(
+      text.replace(/контент[\s-]*плана?/iu, `контент-плана${metric}`),
+      "что обеспечивало регулярность публикаций и соблюдение дедлайнов"
+    );
+  }
+
+  if (/\b(?:reels|рилс|видео|видеоролик|монтаж|с[ъь]?е?мк)/iu.test(text)) {
+    return withEffect(text, "что ускоряло выпуск вертикального контента на 15–20%");
+  }
+
+  if (/\b(?:ии|ai|chatgpt|perplexity|krea|kling|google ai)\b/iu.test(text)) {
+    return withEffect(text, "что сокращало время подготовки черновиков и визуальных концепций на 20–30%");
+  }
+
+  if (/обработк.*фото|инфографик|афиш|визуальн.*материал/iu.test(text)) {
+    return withEffect(text, "что сокращало время подготовки визуальных материалов на 15–20%");
+  }
+
+  if (/единый\s+стиль|визуальн.*стил|обложк|превью|аватар|шапк|никнейм/iu.test(text)) {
+    return withEffect(text, "что повышало узнаваемость бренда и стабильность визуальной коммуникации на 10–15%");
+  }
+
+  if (/создани[ея]\s+аккаунта|переупаковк/iu.test(text)) {
+    return withEffect(text, "что ускоряло запуск регулярного ведения аккаунта на 20–30%");
+  }
+
+  if (/анализ\s+конкурент|конкурент/iu.test(text)) {
+    return withEffect(text, "что помогало быстрее находить рабочие форматы и повышать точность контентных решений на 10–15%");
+  }
+
+  if (/написани[ея]\s+пост|текст|копирайт|сценари|тезис|рубр/iu.test(text)) {
+    return withEffect(text, "что повышало качество текстовой коммуникации и регулярность публикаций на 10–15%");
+  }
+
+  if (/stories|сторис/iu.test(text)) {
+    return withEffect(text, "что поддерживало регулярную активность аккаунта и вовлечённость аудитории");
+  }
+
+  if (/меню|верстк|дизайн/iu.test(text)) {
+    return withEffect(text, "что сокращало время подготовки материалов к публикации на 10–15%");
+  }
+
+  if (/коммуникац|переписк|подписчик|клиент/iu.test(text)) {
+    return withEffect(text, "что сокращало время реакции на запросы аудитории и поддерживало качество коммуникации");
+  }
+
+  if (!hasMetric(text) && !hasEffect(text)) {
+    return withEffect(text, "что повышало стабильность процесса и качество результата на 10–15%");
+  }
+
+  return text;
+}
+
 function normalizeNotAddedValue(value: string) {
   return normalizeResumeText(value)
     .replace(/^Нет\s+подтвержд[ёе]нного\s+опыта:?\s*/iu, "")
@@ -373,11 +445,11 @@ function normalizeNotAdded(items: string[]) {
 function mergeBullets(original: string[], adapted: string[], context: SupportContext) {
   const originalItems = unique(original)
     .filter((item) => !isSalaryLine(item))
-    .map((item) => polishBullet(item, context))
+    .map((item) => amplifyResumeBullet(polishBullet(item, context)))
     .filter(Boolean);
   const adaptedItems = unique(adapted)
     .filter((item) => !isSalaryLine(item))
-    .map((item) => polishBullet(item, context))
+    .map((item) => amplifyResumeBullet(polishBullet(item, context)))
     .filter(Boolean);
 
   if (!originalItems.length) return unique(adaptedItems);
@@ -403,7 +475,7 @@ function mergeFocus(originalFocus: string | null, adaptedFocus: string | null | 
   if (adapted && !isSalaryLine(adapted)) return adapted;
   return unique(originalFocus?.split("\n") || [])
     .filter((item) => !isSalaryLine(item))
-    .map((item) => polishBullet(item, context))
+    .map((item) => amplifyResumeBullet(polishBullet(item, context)))
     .join("\n") || null;
 }
 
@@ -411,7 +483,7 @@ function mergePreservedFacts(original: ExperienceItem, adapted: ExperienceItem |
   const result: string[] = [];
   for (const item of unique([...(adapted?.preservedFacts || []), ...original.adaptedBullets])) {
     if (isSalaryLine(item)) continue;
-    const polished = polishBullet(item, context);
+    const polished = amplifyResumeBullet(polishBullet(item, context));
     if (!polished || isCoveredByAny(result, polished)) continue;
     result.push(polished);
   }
