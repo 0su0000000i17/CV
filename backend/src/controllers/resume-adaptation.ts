@@ -7,6 +7,7 @@ import { loadSourceResumeDocument } from "../resume-adaptation/load-source-resum
 import { stringifyResumeAdaptationAiPayload } from "../resume-adaptation/resume-ai-payload.js";
 import type { ResumeVacancyFitResult } from "../resume-adaptation/types.js";
 import { findResumeFileRecord } from "../resume-analysis/repositories/resumes-repository.js";
+import { createAiDebugArtifactWriter } from "../utils/ai-debug-artifacts.js";
 import { formatVacancyForAdaptation } from "../vacancy-ai/format-vacancy-for-adaptation.js";
 import type { NormalizedVacancy } from "../vacancy-ai/types.js";
 import { getStringParam, sendError, sendServerError } from "../utils/api-responses.js";
@@ -64,17 +65,28 @@ export async function adaptResumeToVacancyController(req: Request, res: Response
 
     const source = await loadSourceResumeDocument(resume);
     const resumeJson = stringifyResumeAdaptationAiPayload(source.document);
+    const debugWriter = await createAiDebugArtifactWriter({
+      kind: "resume-adaptation",
+      resumeId: resume.id,
+      extra: {
+        vacancyInputChars: vacancyText.length,
+        sourceMarkdownChars: source.markdown.length,
+        sourceMarkdownLimited: source.markdownLimited,
+      },
+    });
     const result = await generateResumeAdaptation({
       resumeMarkdown: resumeJson,
       vacancy,
       vacancyText,
       fit,
       settings: normalizeSettings(body.data.adaptationSettings),
+      debugWriter,
     });
     const adaptation = applySourceResumeStructure({
       adaptation: result.adaptation,
       sourceDocument: source.document,
     });
+    await debugWriter?.writeJson("08-final-after-source-structure.json", adaptation);
 
     await saveProductEvent({
       userId: user.id,
@@ -93,6 +105,7 @@ export async function adaptResumeToVacancyController(req: Request, res: Response
         markdownLimited: source.markdownLimited,
         provider: result.generation.provider,
         model: result.generation.model,
+        debugArtifactDir: debugWriter?.artifactDir || null,
       },
     });
   } catch (error) {
