@@ -72,6 +72,7 @@ export async function checkResumeVacancyFitController(req: Request, res: Respons
         provider: result.generation.provider,
         model: result.generation.model,
         debugArtifactDir: debugWriter?.artifactDir || null,
+        debugReportPath: debugWriter?.reportPath || null,
       },
     });
   } catch (error) {
