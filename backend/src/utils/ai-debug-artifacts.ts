@@ -4,6 +4,7 @@ import path from "node:path";
 
 export type AiDebugArtifactWriter = {
   artifactDir: string;
+  reportPath: string;
   writeJson: (fileName: string, value: unknown) => Promise<void>;
   writeText: (fileName: string, value: string) => Promise<void>;
 };
@@ -12,6 +13,22 @@ type CreateAiDebugArtifactWriterParams = {
   kind: "vacancy-fit" | "resume-adaptation" | "cover-letter";
   resumeId?: string;
   extra?: Record<string, unknown>;
+};
+
+type AiDebugReportEntry =
+  | {
+      type: "json";
+      value: unknown;
+    }
+  | {
+      type: "text";
+      value: string;
+    };
+
+type AiDebugReport = {
+  readme: string;
+  context: Record<string, unknown>;
+  artifacts: Record<string, AiDebugReportEntry>;
 };
 
 function isDebugEnabled() {
@@ -38,6 +55,21 @@ async function safeWrite(filePath: string, value: string) {
   }
 }
 
+function createReadme(params: CreateAiDebugArtifactWriterParams) {
+  return [
+    "CVPro AI debug artifacts",
+    "",
+    `kind: ${params.kind}`,
+    `createdAt: ${new Date().toISOString()}`,
+    params.resumeId ? `resumeId: ${params.resumeId}` : null,
+    "",
+    "All debug artifacts are bundled into this single debug-report.json file.",
+    "Use artifacts keys to inspect prompt -> raw AI -> parsed JSON -> normalized JSON -> final JSON pipeline.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 export async function createAiDebugArtifactWriter(
   params: CreateAiDebugArtifactWriterParams
 ): Promise<AiDebugArtifactWriter | null> {
@@ -49,6 +81,7 @@ export async function createAiDebugArtifactWriter(
   const resumePart = params.resumeId ? `-${createSafeFileNamePart(params.resumeId)}` : "";
   const runId = `${timestamp}-${params.kind}${resumePart}-${randomUUID().slice(0, 8)}`;
   const artifactDir = path.join(getBaseDir(), params.kind, runId);
+  const reportPath = path.join(artifactDir, "debug-report.json");
 
   try {
     await mkdir(artifactDir, { recursive: true });
@@ -57,44 +90,43 @@ export async function createAiDebugArtifactWriter(
     return null;
   }
 
-  const writer: AiDebugArtifactWriter = {
-    artifactDir,
-    async writeJson(fileName, value) {
-      await safeWrite(
-        path.join(artifactDir, fileName),
-        `${JSON.stringify(value, null, 2)}\n`
-      );
-    },
-    async writeText(fileName, value) {
-      await safeWrite(path.join(artifactDir, fileName), value.endsWith("\n") ? value : `${value}\n`);
-    },
-  };
-
-  await writer.writeText(
-    "README.txt",
-    [
-      "CVPro AI debug artifacts",
-      "",
-      `kind: ${params.kind}`,
-      `createdAt: ${new Date().toISOString()}`,
-      params.resumeId ? `resumeId: ${params.resumeId}` : null,
-      "",
-      "Files are generated only in local/dev mode or when CVPRO_AI_DEBUG=1.",
-      "This folder is for debugging prompt -> raw AI -> normalized JSON -> final JSON pipeline.",
-    ]
-      .filter(Boolean)
-      .join("\n")
-  );
-
-  await writer.writeJson("00-context.json", {
+  const context = {
     kind: params.kind,
     resumeId: params.resumeId || null,
     createdAt: new Date().toISOString(),
     nodeEnv: process.env.NODE_ENV || null,
     ...params.extra,
-  });
+  };
 
-  console.info(`[ai-debug] artifacts: ${artifactDir}`);
+  const report: AiDebugReport = {
+    readme: createReadme(params),
+    context,
+    artifacts: {},
+  };
+
+  async function flushReport() {
+    await safeWrite(reportPath, `${JSON.stringify(report, null, 2)}\n`);
+  }
+
+  const writer: AiDebugArtifactWriter = {
+    artifactDir,
+    reportPath,
+    async writeJson(fileName, value) {
+      report.artifacts[fileName] = { type: "json", value };
+      await flushReport();
+    },
+    async writeText(fileName, value) {
+      report.artifacts[fileName] = {
+        type: "text",
+        value: value.endsWith("\n") ? value : `${value}\n`,
+      };
+      await flushReport();
+    },
+  };
+
+  await flushReport();
+
+  console.info(`[ai-debug] report: ${reportPath}`);
 
   return writer;
 }
