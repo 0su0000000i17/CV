@@ -50,10 +50,18 @@ function key(value: string) {
   return clean(value).toLowerCase().replace(/[^a-zа-яё0-9+#.]+/giu, "");
 }
 
+function normalizeToken(token: string) {
+  const normalized = token.toLowerCase();
+  if (normalized.length <= 5) return normalized;
+
+  return normalized.slice(0, 5);
+}
+
 function tokens(value: string) {
   return clean(value)
     .toLowerCase()
     .split(/[^a-zа-яё0-9+#.]+/giu)
+    .map(normalizeToken)
     .filter((token) => token.length > 2 && !stopWords.has(token));
 }
 
@@ -66,7 +74,7 @@ function similarity(a: string, b: string) {
 }
 
 function isSimilar(a: string, b: string) {
-  return similarity(a, b) >= 0.58;
+  return similarity(a, b) >= 0.42;
 }
 
 function extractSalary(value?: string | null) {
@@ -138,6 +146,12 @@ function isSupportedClaim(value: string, context: SupportContext) {
   if (!itemKey) return false;
   if (context.sourceTextKey.includes(itemKey)) return true;
 
+  const valueTokens = tokens(value);
+  const supportedTokenCount = valueTokens.filter((token) => context.sourceTextKey.includes(token)).length;
+  if (valueTokens.length > 0 && supportedTokenCount / valueTokens.length >= 0.65) {
+    return true;
+  }
+
   return context.originalSkills.some((skill) => key(skill) === itemKey || isSimilar(skill, value));
 }
 
@@ -183,8 +197,11 @@ function mergeBullets(original: string[], adapted: string[], context: SupportCon
   if (!originalItems.length) return adaptedItems;
   if (!adaptedItems.length) return originalItems;
 
-  const targetCount = Math.min(originalItems.length, 16);
-  const minimumUsefulAdaptedCount = Math.max(3, Math.ceil(originalItems.length * 0.45));
+  const targetCount = Math.min(Math.max(originalItems.length, adaptedItems.length), 16);
+  const minimumUsefulAdaptedCount = Math.max(
+    originalItems.length >= 8 ? 7 : originalItems.length,
+    Math.ceil(originalItems.length * 0.75)
+  );
 
   if (adaptedItems.length >= minimumUsefulAdaptedCount) {
     return adaptedItems.slice(0, targetCount);
@@ -192,10 +209,9 @@ function mergeBullets(original: string[], adapted: string[], context: SupportCon
 
   const result = [...adaptedItems];
   const seen = new Set(result.map(key));
-  const fallbackCount = Math.max(result.length, Math.ceil(originalItems.length * 0.65));
 
   for (const bullet of originalItems) {
-    if (result.length >= fallbackCount) break;
+    if (result.length >= targetCount) break;
     const bulletKey = key(bullet);
     if (seen.has(bulletKey) || result.some((item) => isSimilar(item, bullet))) continue;
     seen.add(bulletKey);
@@ -233,27 +249,45 @@ function mergeExperienceItem(
   };
 }
 
-function findSupportedSkill(value: string, originalSkills: string[]) {
-  const valueKey = key(value);
-  const exact = originalSkills.find((skill) => key(skill) === valueKey);
-  if (exact) return exact;
-
-  return originalSkills.some((skill) => isSimilar(skill, value)) ? clean(value) : null;
+function splitSkillLine(value: string) {
+  return clean(value)
+    .replace(/([а-яёa-z])\s+([А-ЯЁA-Z])/g, "$1|$2")
+    .split(/[|,;•]+/g)
+    .map((item) => item.trim())
+    .filter((item) => item.length > 1 && !/русский|родной/i.test(item));
 }
 
-function mergeSkills(original: AdaptedResumeSkills, adapted: AdaptedResumeSkills) {
-  const originalSkills = unique([...original.primary, ...original.secondary]);
+function createOriginalSkillPhrases(original: AdaptedResumeSkills) {
+  return unique([...original.primary, ...original.secondary].flatMap(splitSkillLine));
+}
+
+function findSupportedSkill(value: string, context: SupportContext) {
+  const normalized = sanitizeUnsupportedClaims(value, context);
+  if (!normalized) return null;
+
+  const valueKey = key(normalized);
+  const exact = context.originalSkills.find((skill) => key(skill) === valueKey);
+  if (exact) return normalized;
+
+  if (isSupportedClaim(normalized, context)) return normalized;
+
+  return context.originalSkills.some((skill) => isSimilar(skill, normalized)) ? normalized : null;
+}
+
+function mergeSkills(original: AdaptedResumeSkills, adapted: AdaptedResumeSkills, context: SupportContext) {
   const addSupported = (items: string[]) =>
     unique(items)
-      .map((item) => findSupportedSkill(item, originalSkills))
+      .map((item) => findSupportedSkill(item, context))
       .filter((item): item is string => Boolean(item));
+
   const primary = unique(addSupported([...adapted.primary, ...adapted.secondary]));
   const used = new Set(primary.map(key));
-  const secondary = originalSkills.filter((skill) => !used.has(key(skill)));
+  const secondary = context.originalSkills.filter((skill) => !used.has(key(skill)));
+
   return {
     primary: primary.length ? primary : unique(original.primary),
     secondary,
-    deprioritized: unique(adapted.deprioritized).filter((item) => Boolean(findSupportedSkill(item, originalSkills))),
+    deprioritized: unique(adapted.deprioritized).filter((item) => Boolean(findSupportedSkill(item, context))),
     notAdded: unique(adapted.notAdded),
   };
 }
@@ -269,10 +303,7 @@ function collectText(value: unknown): string[] {
 }
 
 function createSupportContext(original: ResumeAdaptationResult): SupportContext {
-  const originalSkills = unique([
-    ...original.adaptedResume.skills.primary,
-    ...original.adaptedResume.skills.secondary,
-  ]);
+  const originalSkills = createOriginalSkillPhrases(original.adaptedResume.skills);
   const sourceText = collectText(original).join("\n");
 
   return {
@@ -302,9 +333,9 @@ export function applySourceResumeStructure(params: {
     ...adapted,
     target: {
       title: target.title,
-      company: adapted.target.company,
-      seniority: adapted.target.seniority,
-      salary: target.salary || adapted.target.salary || sourceSalary || null,
+      company: null,
+      seniority: target.seniority || null,
+      salary: target.salary || sourceSalary || null,
       specializations: target.specializations || [],
       employment: target.employment || null,
       schedule: target.schedule || null,
@@ -316,7 +347,7 @@ export function applySourceResumeStructure(params: {
       ...adapted.adaptedResume,
       summary: sanitizeUnsupportedClaims(adapted.adaptedResume.summary, context),
       experience,
-      skills: mergeSkills(original.adaptedResume.skills, adapted.adaptedResume.skills),
+      skills: mergeSkills(original.adaptedResume.skills, adapted.adaptedResume.skills, context),
       education: original.adaptedResume.education,
       additionalInfo: [],
     },
