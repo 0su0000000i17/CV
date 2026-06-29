@@ -78,8 +78,8 @@ export function VacancyForm({
           <h2 className="text-xl font-medium text-foreground">Вакансия</h2>
 
           <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Вставьте ссылку или полный текст. Сначала проверим, можно ли
-            адаптировать выбранное резюме под эту роль.
+            Вставьте ссылку или полный текст: сначала проверим, можно ли
+            адаптировать выбранное резюме под эту роль
           </p>
         </div>
       </div>
