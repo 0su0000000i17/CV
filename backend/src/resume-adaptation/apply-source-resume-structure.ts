@@ -42,6 +42,16 @@ const protectedClaims = [
   "Инстаграм",
 ];
 
+const unsupportedSkillSpecifics: Array<{ pattern: RegExp; support: RegExp }> = [
+  { pattern: /коротк.*динамичн|динамичн.*коротк|динамичн.*видео/iu, support: /коротк|динамичн/iu },
+  { pattern: /цветокоррекц/iu, support: /цветокоррекц/iu },
+  { pattern: /субтитр/iu, support: /субтитр/iu },
+  { pattern: /звуков|работа\s+со\s+звуком|работа\s+с\s+звуком/iu, support: /звуков|работа\s+со\s+звуком|работа\s+с\s+звуком/iu },
+  { pattern: /динамичн.*переход|смен[аыой]+\s+кадр/iu, support: /динамичн.*переход|смен[аыой]+\s+кадр/iu },
+  { pattern: /блогер/iu, support: /блогер/iu },
+  { pattern: /telegram|vk|вконтакте|instagram|инстаграм/iu, support: /telegram|vk|вконтакте|instagram|инстаграм/iu },
+];
+
 function clean(value?: string | null) {
   return value?.replace(/\s+/g, " ").trim() || "";
 }
@@ -160,6 +170,17 @@ function isSupportedClaim(value: string, context: SupportContext) {
   return context.originalSkills.some((skill) => key(skill) === itemKey || isSimilar(skill, value));
 }
 
+function isDanglingClaimText(value: string) {
+  const text = clean(value).replace(/[.,;:]+$/u, "");
+
+  return (
+    !text ||
+    /^(?:работа|навык|навыки|опыт|владение|знание)$/iu.test(text) ||
+    /^(?:работа|навык|навыки|опыт|владение|знание)\s+(?:в|с|со|на|для)$/iu.test(text) ||
+    /^(?:создание|разработка|ведение|подготовка|монтаж)\s*$/iu.test(text)
+  );
+}
+
 function cleanupUnsupportedClaimText(value: string) {
   return value
     .replace(/\((?:\s*[,/;]?\s*)+\)/g, "")
@@ -168,8 +189,9 @@ function cleanupUnsupportedClaimText(value: string) {
     .replace(/,\s*([).])/g, "$1")
     .replace(/\s+,/g, ",")
     .replace(/(?:включая|в том числе)\s*[,.]?\s*([.)])/giu, "$1")
-    .replace(/\b(?:в|на|для|через|с помощью)\s*[,.]/giu, ".")
+    .replace(/\b(?:в|на|для|через|с помощью|с)\s*[,.]/giu, ".")
     .replace(/\b(?:включая|в том числе)\s*$/giu, "")
+    .replace(/\b(?:в|на|для|через|с помощью|с|со)\s*$/giu, "")
     .replace(/\s{2,}/g, " ")
     .replace(/\s+\./g, ".")
     .replace(/\.{2,}/g, ".")
@@ -185,7 +207,8 @@ function sanitizeUnsupportedClaims(value: string, context: SupportContext) {
     result = result.replace(new RegExp(`\\b${escapeRegExp(claim)}\\b`, "giu"), "");
   }
 
-  return cleanupUnsupportedClaimText(result);
+  const cleaned = cleanupUnsupportedClaimText(result);
+  return isDanglingClaimText(cleaned) ? "" : cleaned;
 }
 
 function escapeRegExp(value: string) {
@@ -194,6 +217,7 @@ function escapeRegExp(value: string) {
 
 function normalizeResumeText(value: string) {
   return clean(value)
+    .replace(/^\*?\s*ПОРТФОЛИО\s*$/giu, "Портфолио")
     .replace(/\bРИЛС\b/giu, "Reels")
     .replace(/сьемк/giu, "съёмк")
     .replace(/съемк/giu, "съёмк")
@@ -288,15 +312,25 @@ function polishBullet(value: string) {
 }
 
 function normalizeNotAddedValue(value: string) {
-  const normalized = clean(value)
+  const normalized = normalizeResumeText(value)
     .replace(/^Нет\s+подтвержд[ёе]нного\s+опыта:\s*/iu, "")
-    .replace(/^Нет\s+подтвержд[ёе]нного\s+опыта\s+работы\s+с\s+/iu, "")
-    .replace(/^Нет\s+опыта\s+работы\s+с\s+/iu, "")
-    .replace(/^Опыт\s+работы\s+с\s+/iu, "")
-    .replace(/^Выдумывание\s+опыта\s+работы\s+с\s+/iu, "");
+    .replace(/^Нет\s+подтвержд[ёе]нного\s+опыта\s+работы\s+(?:с|со|в)\s+/iu, "")
+    .replace(/^Нет\s+опыта\s+работы\s+(?:с|со|в)\s+/iu, "")
+    .replace(/^Опыт\s+работы\s+(?:с|со|в)\s+/iu, "")
+    .replace(/^Работа\s+(?:с|со|в)\s+/iu, "")
+    .replace(/^Выдумывание\s+опыта\s+работы\s+(?:с|со|в)\s+/iu, "")
+    .replace(/^Умение\s+создавать\s+/iu, "")
+    .replace(/[.,;:]+$/u, "");
 
+  if (/telegram|vk|вконтакте|instagram|инстаграм/i.test(normalized)) return "Telegram / VK / Instagram";
+  if (/after\s*effects/i.test(normalized)) return "After Effects";
+  if (/premiere\s*pro/i.test(normalized)) return "Premiere Pro";
+  if (/^vn$/i.test(normalized)) return "VN";
   if (/блогер/i.test(normalized)) return "Работа с блогерами";
-  if (/цветокоррекц|звук|субтитр|динамичн.*переход/i.test(normalized)) {
+  if (/коротк.*динамичн.*видео|динамичн.*коротк.*видео/i.test(normalized)) {
+    return "Короткие динамичные видео с субтитрами, музыкой, звуковыми эффектами и сменой кадров";
+  }
+  if (/цветокоррекц|звук|субтитр|динамичн.*переход|смен[аыой]+\s+кадр/i.test(normalized)) {
     return "Цветокоррекция, звук, субтитры и динамичные переходы";
   }
 
@@ -310,7 +344,7 @@ function normalizeNotAdded(items: string[]) {
   for (const item of items) {
     const normalized = normalizeNotAddedValue(item);
     const itemKey = key(normalized);
-    if (!normalized || seen.has(itemKey)) continue;
+    if (!normalized || isDanglingClaimText(normalized) || seen.has(itemKey)) continue;
     seen.add(itemKey);
     result.push(normalized);
   }
@@ -364,13 +398,19 @@ function mergeFocus(originalFocus: string | null, adaptedFocus: string | null | 
     .join("\n") || null;
 }
 
+function mergePreservedFacts(original: ExperienceItem, adapted: ExperienceItem | null) {
+  return unique([...(adapted?.preservedFacts || []), ...original.adaptedBullets])
+    .filter((item) => !isSalaryLine(item))
+    .map(normalizeResumeText)
+    .slice(0, 16);
+}
+
 function mergeExperienceItem(
   original: ExperienceItem,
   adapted: ExperienceItem | null,
   context: SupportContext
 ): ExperienceItem {
   const adaptedBullets = adapted?.adaptedBullets || [];
-  const preservedFacts = adapted?.preservedFacts?.length ? adapted.preservedFacts : original.preservedFacts;
   return {
     sourceIndex: original.sourceIndex,
     company: original.company,
@@ -379,7 +419,7 @@ function mergeExperienceItem(
     dates: original.dates,
     adaptedBullets: mergeBullets(original.adaptedBullets, adaptedBullets, context),
     focus: mergeFocus(original.focus, adapted?.focus, context),
-    preservedFacts: unique(preservedFacts).slice(0, 16),
+    preservedFacts: mergePreservedFacts(original, adapted),
     warnings: adapted?.warnings || [],
   };
 }
@@ -396,9 +436,16 @@ function createOriginalSkillPhrases(original: AdaptedResumeSkills) {
   return unique([...original.primary, ...original.secondary].flatMap(splitSkillLine));
 }
 
+function hasUnsupportedSpecificSkill(value: string, context: SupportContext) {
+  return unsupportedSkillSpecifics.some(
+    ({ pattern, support }) => pattern.test(value) && !support.test(context.sourceText)
+  );
+}
+
 function findSupportedSkill(value: string, context: SupportContext) {
   const normalized = sanitizeUnsupportedClaims(value, context);
-  if (!normalized) return null;
+  if (!normalized || isDanglingClaimText(normalized)) return null;
+  if (hasUnsupportedSpecificSkill(value, context) || hasUnsupportedSpecificSkill(normalized, context)) return null;
 
   const valueKey = key(normalized);
   const exact = context.originalSkills.find((skill) => key(skill) === valueKey);
@@ -425,6 +472,34 @@ function mergeSkills(original: AdaptedResumeSkills, adapted: AdaptedResumeSkills
     deprioritized: unique(adapted.deprioritized).filter((item) => Boolean(findSupportedSkill(item, context))),
     notAdded: normalizeNotAdded(adapted.notAdded),
   };
+}
+
+function isUsefulAdditionalInfo(value: string) {
+  return (
+    /портфолио|https?:\/\//iu.test(value) ||
+    /canva|figma|photoshop|capcut|bazaart|pocket/iu.test(value) ||
+    /chatgpt|perplexity|krea|kling|google\s+ai|нейросет|\bai\b|\bии\b/iu.test(value)
+  );
+}
+
+function normalizeAdditionalInfoItem(value: string, context: SupportContext) {
+  const normalized = normalizeResumeText(value);
+  const sanitized = sanitizeUnsupportedClaims(normalized, context);
+
+  if (!sanitized || isDanglingClaimText(sanitized) || !isUsefulAdditionalInfo(sanitized)) return null;
+  return sanitized;
+}
+
+function mergeAdditionalInfo(original: string[], adapted: string[], context: SupportContext) {
+  const adaptedItems = adapted
+    .map((item) => normalizeAdditionalInfoItem(item, context))
+    .filter((item): item is string => Boolean(item));
+  const originalPortfolioItems = original
+    .filter((item) => /портфолио|https?:\/\//iu.test(item))
+    .map((item) => normalizeAdditionalInfoItem(item, context))
+    .filter((item): item is string => Boolean(item));
+
+  return unique([...adaptedItems, ...originalPortfolioItems]).slice(0, 8);
 }
 
 function collectText(value: unknown): string[] {
@@ -502,7 +577,11 @@ export function applySourceResumeStructure(params: {
       experience,
       skills: mergeSkills(original.adaptedResume.skills, adapted.adaptedResume.skills, context),
       education: original.adaptedResume.education,
-      additionalInfo: [],
+      additionalInfo: mergeAdditionalInfo(
+        original.adaptedResume.additionalInfo,
+        adapted.adaptedResume.additionalInfo,
+        context
+      ),
     },
   };
 }
