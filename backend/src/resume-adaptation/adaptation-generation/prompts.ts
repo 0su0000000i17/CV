@@ -48,6 +48,12 @@ ATS-ОПТИМИЗАЦИЯ:
 - Если 1-3 факта, сохрани все факты.
 - Можно менять акценты и формулировки, но нельзя обеднять опыт.
 
+ФОРМАТ JSON:
+- adaptedBullets должен быть массивом строк, не массивом объектов.
+- preservedFacts, warnings, skills и keywordsUsed тоже должны быть массивами строк.
+- dates должен быть строкой формата "Месяц год — Месяц год" или null.
+- Не возвращай { "text": "..." } внутри adaptedBullets.
+
 СТИЛЬ:
 - Пиши делово, конкретно, как для job board.
 - Без маркетинговой воды.
@@ -108,9 +114,19 @@ ${createSettingsPrompt(params.settings)}
   "changes": [], "warnings": [], "forbiddenClaims": []
 }
 
-Для каждого места работы experience используй:
-{ "sourceIndex": 0, "company": null, "position": null, "dates": null, "adaptedBullets": [], "focus": null, "preservedFacts": [], "warnings": [] }
+Для каждого места работы experience используй только такие типы:
+{
+  "sourceIndex": 0,
+  "company": "строка или null",
+  "position": "строка или null",
+  "dates": "строка или null",
+  "adaptedBullets": ["строка", "строка"],
+  "focus": "строка или null",
+  "preservedFacts": ["строка"],
+  "warnings": ["строка"]
+}
 
+adaptedBullets — строго массив строк. Не возвращай объекты вида { "text": "..." }.
 Сделай сильную ATS-адаптацию. Учитывай fit.gaps, fit.blockingGaps и fit.forbiddenChanges.
 Верни все места работы и сохрани объём опыта.
 Верни только JSON.
