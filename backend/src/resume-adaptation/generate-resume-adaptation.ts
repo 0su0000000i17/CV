@@ -67,7 +67,7 @@ export async function generateResumeAdaptation(
 
   const generationResult = await aiProvider.generateText({
     messages,
-    temperature: 0,
+    temperature: 0.18,
     maxTokens: ADAPT_MAX_TOKENS,
   });
 
