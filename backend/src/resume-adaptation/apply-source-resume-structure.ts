@@ -187,15 +187,130 @@ function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function normalizeResumeText(value: string) {
+  return clean(value)
+    .replace(/\bРИЛС\b/giu, "Reels")
+    .replace(/сьемк/giu, "съёмк")
+    .replace(/некнейм/giu, "никнейм")
+    .replace(/шапка профиля\+/giu, "шапка профиля +")
+    .replace(/,stories/giu, ", stories")
+    .replace(/Abode Photoshop/giu, "Adobe Photoshop")
+    .replace(/Google AI Stutio/giu, "Google AI Studio")
+    .replace(/\s*\/\s*/g, " / ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+function polishBullet(value: string) {
+  const text = normalizeResumeText(value);
+  const lower = text.toLowerCase();
+
+  if (/^анализ(?:ировал)?\s+конкурент/u.test(lower)) {
+    return "Анализировал конкурентную среду и контент-подходы, чтобы уточнять рубрики, визуальный стиль и подачу бренда";
+  }
+
+  if (/формирован|формировал.*един.*стил/u.test(lower)) {
+    return "Формировал единый визуальный стиль аккаунта, передающий атмосферу бренда и поддерживающий цельную подачу в ленте";
+  }
+
+  if (/создан.*аккаунт.*с нуля|создавал.*аккаунт.*с нуля|запускал.*аккаунт/u.test(lower)) {
+    return "Запускал аккаунт с нуля: подбирал позиционирование, структуру профиля, визуальную подачу и первые рубрики";
+  }
+
+  if (/переупаков/u.test(lower)) {
+    return "Переупаковывал аккаунт: обновлял визуальную подачу, структуру профиля и оформление ключевых разделов";
+  }
+
+  if (/контент[- ]план/u.test(lower)) {
+    return "Разрабатывал контент-план на 14 дней / 1 месяц с учётом рубрик, визуальной логики, тем публикаций и регулярности выхода контента";
+  }
+
+  if (/reels|рилс/u.test(lower)) {
+    return "Создавал Reels-контент: искал референсы, писал сценарии, организовывал съёмки и монтировал ролики под задачи бренда";
+  }
+
+  if (/написан.*пост|писал.*пост/u.test(lower)) {
+    return "Писал посты с учётом тональности бренда, задачи публикации и вовлечения аудитории";
+  }
+
+  if (/никнейм|шапк.*профил|аватар/u.test(lower)) {
+    return "Прорабатывал упаковку профиля: подбирал никнейм, оформлял шапку аккаунта и аватар под позиционирование бренда";
+  }
+
+  if (/stories|сторис/u.test(lower)) {
+    return "Вёл stories: готовил ежедневные форматы, визуальные материалы и коммуникационные сценарии для поддержания активности аккаунта";
+  }
+
+  if (/обработ.*фото|инфограф/u.test(lower)) {
+    return "Обрабатывал фотографии и создавал инфографику для афиш, stories и постов в едином визуальном стиле";
+  }
+
+  if (/работ.*ии|нейросет|chatgpt|perplexity|krea|kling/u.test(lower)) {
+    return "Использовал ИИ-инструменты для подготовки визуальных идей, текстов и контентных материалов";
+  }
+
+  if (/актуальн/u.test(lower)) {
+    return "Оформлял актуальные разделы профиля: продумывал названия, обложки и визуальную структуру для быстрого доступа к ключевой информации";
+  }
+
+  if (/верстк.*меню|дизайн.*меню/u.test(lower)) {
+    return "Верстал меню и разрабатывал его дизайн, сохраняя единый визуальный стиль бренда";
+  }
+
+  if (/коммуникац|подписчик/u.test(lower)) {
+    return "Коммуницировал с подписчиками, поддерживал обратную связь и вовлечение аудитории в аккаунте";
+  }
+
+  if (/подготовк.*тем|рубрик|сценар/u.test(lower)) {
+    return "Готовил темы, рубрики и сценарии публикаций: искал идеи, формулировал тезисы и подбирал референсы";
+  }
+
+  if (/координац.*контент|планирован.*срок|контроль публикац/u.test(lower)) {
+    return "Координировал выпуск контента: планировал сроки, собирал материалы и контролировал публикации по графику";
+  }
+
+  if (/визуальн.*оформ|обложк|превью/u.test(lower)) {
+    return "Создавал визуальное оформление для постов: обложки, превью и единый стиль ленты";
+  }
+
+  if (/видеосъемк|видео.*съемк|монтаж видео|обработка видео/u.test(lower)) {
+    return "Снимал и монтировал видеоконтент для коротких форматов, адаптируя визуальную подачу под задачи публикации";
+  }
+
+  return text;
+}
+
+function normalizeNotAdded(items: string[]) {
+  const result: string[] = [];
+  const seen = new Set<string>();
+
+  for (const item of items) {
+    const normalized = clean(item)
+      .replace(/^Нет\s+подтвержд[ёе]нного\s+опыта:\s*/iu, "")
+      .replace(/^Нет\s+опыта\s+работы\s+с\s+/iu, "")
+      .replace(/^Опыт\s+работы\s+с\s+/iu, "");
+
+    const itemKey = key(normalized);
+    if (!normalized || seen.has(itemKey)) continue;
+    seen.add(itemKey);
+    result.push(normalized);
+  }
+
+  return result;
+}
+
 function mergeBullets(original: string[], adapted: string[], context: SupportContext) {
-  const originalItems = unique(original).filter((item) => !isSalaryLine(item));
+  const originalItems = unique(original)
+    .filter((item) => !isSalaryLine(item))
+    .map(polishBullet);
   const adaptedItems = unique(adapted)
     .filter((item) => !isSalaryLine(item))
     .map((item) => sanitizeUnsupportedClaims(item, context))
-    .filter(Boolean);
+    .filter(Boolean)
+    .map(polishBullet);
 
-  if (!originalItems.length) return adaptedItems;
-  if (!adaptedItems.length) return originalItems;
+  if (!originalItems.length) return unique(adaptedItems);
+  if (!adaptedItems.length) return unique(originalItems);
 
   const targetCount = Math.min(Math.max(originalItems.length, adaptedItems.length), 16);
   const minimumUsefulAdaptedCount = Math.max(
@@ -204,7 +319,7 @@ function mergeBullets(original: string[], adapted: string[], context: SupportCon
   );
 
   if (adaptedItems.length >= minimumUsefulAdaptedCount) {
-    return adaptedItems.slice(0, targetCount);
+    return unique(adaptedItems).slice(0, targetCount);
   }
 
   const result = [...adaptedItems];
@@ -218,7 +333,7 @@ function mergeBullets(original: string[], adapted: string[], context: SupportCon
     result.push(bullet);
   }
 
-  return result.length ? result.slice(0, targetCount) : originalItems;
+  return unique(result).slice(0, targetCount);
 }
 
 function mergeFocus(originalFocus: string | null, adaptedFocus: string | null | undefined, context: SupportContext) {
@@ -226,6 +341,7 @@ function mergeFocus(originalFocus: string | null, adaptedFocus: string | null | 
   if (adapted && !isSalaryLine(adapted)) return adapted;
   return unique(originalFocus?.split("\n") || [])
     .filter((item) => !isSalaryLine(item))
+    .map(polishBullet)
     .join("\n") || null;
 }
 
@@ -288,7 +404,7 @@ function mergeSkills(original: AdaptedResumeSkills, adapted: AdaptedResumeSkills
     primary: primary.length ? primary : unique(original.primary),
     secondary,
     deprioritized: unique(adapted.deprioritized).filter((item) => Boolean(findSupportedSkill(item, context))),
-    notAdded: unique(adapted.notAdded),
+    notAdded: normalizeNotAdded(adapted.notAdded),
   };
 }
 
@@ -332,7 +448,7 @@ export function applySourceResumeStructure(params: {
   return {
     ...adapted,
     target: {
-      title: target.title,
+      title: adapted.target.title || adapted.adaptedResume.headline || target.title,
       company: null,
       seniority: target.seniority || null,
       salary: target.salary || sourceSalary || null,
