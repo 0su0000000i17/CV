@@ -86,6 +86,48 @@ function createSettingsPrompt(settings: AdaptationSettings) {
 `.trim();
 }
 
+type SourceResumeForCounts = {
+  experience?: {
+    items?: Array<{
+      sourceIndex?: number;
+      blocks?: Array<{ type?: string; text?: string | null }>;
+    }>;
+  };
+};
+
+function requiredMinBullets(sourceCount: number) {
+  if (sourceCount <= 0) return 0;
+  if (sourceCount <= 5) return sourceCount;
+  return Math.min(sourceCount, 10);
+}
+
+function createBulletCountPrompt(resumeMarkdown: string) {
+  try {
+    const parsed = JSON.parse(resumeMarkdown) as SourceResumeForCounts;
+    const items = parsed.experience?.items || [];
+    const lines = items
+      .map((item, index) => {
+        const sourceIndex = typeof item.sourceIndex === "number" ? item.sourceIndex : index;
+        const sourceCount = (item.blocks || []).filter((block) => block.type === "bullet" && block.text).length;
+        const minCount = requiredMinBullets(sourceCount);
+        if (!sourceCount || !minCount) return null;
+        return `- sourceIndex ${sourceIndex}: исходно ${sourceCount} bullets → верни минимум ${minCount} adaptedBullets`;
+      })
+      .filter((line): line is string => Boolean(line));
+
+    if (!lines.length) return "";
+
+    return `
+ОБЯЗАТЕЛЬНЫЙ ПЛАН ОБЪЁМА ПО КАЖДОМУ МЕСТУ РАБОТЫ:
+${lines.join("\n")}
+
+Если по sourceIndex вернёшь меньше указанного минимума adaptedBullets, ответ считается невалидным. Лучше сократить summary/skills, чем урезать опыт.
+`.trim();
+  } catch {
+    return "";
+  }
+}
+
 function isGenericForbiddenChange(value: string) {
   return (
     /личные\s+данные|контакты/iu.test(value) ||
@@ -129,6 +171,8 @@ ${params.vacancyText}
 ${createAdaptationFitPrompt(params.fit)}
 
 ${createSettingsPrompt(params.settings)}
+
+${createBulletCountPrompt(params.resumeMarkdown)}
 
 СДЕЛАЙ АДАПТАЦИЮ ВНУТРИ СЕБЯ ПО ЦЕПОЧКЕ:
 1. Определи роль, уровень, домен, задачи и ATS-слова вакансии.
