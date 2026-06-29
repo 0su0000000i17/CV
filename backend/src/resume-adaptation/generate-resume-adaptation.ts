@@ -67,15 +67,36 @@ export async function generateResumeAdaptation(
     },
   ];
 
+  await params.debugWriter?.writeJson("01-input.json", {
+    settings: params.settings,
+    fit: params.fit,
+    resumeChars: resumeForPrompt.length,
+    vacancyChars: vacancyForPrompt.length,
+  });
+  await params.debugWriter?.writeJson("02-prompts.json", { messages });
+
   const generationResult = await aiProvider.generateText({
     messages,
     temperature: 0.18,
     maxTokens: ADAPT_MAX_TOKENS,
   });
 
+  await params.debugWriter?.writeText("03-model-output.txt", generationResult.text);
+  await params.debugWriter?.writeJson("04-generation.json", {
+    provider: generationResult.provider,
+    model: generationResult.model,
+    temperature: 0.18,
+    maxTokens: ADAPT_MAX_TOKENS,
+  });
+
   const parsedJson = parseJsonFromModelResponse(generationResult.text);
+  await params.debugWriter?.writeJson("05-parsed.json", parsedJson);
+
   const normalized = normalizeAdaptationResult(parsedJson);
+  await params.debugWriter?.writeJson("06-normalized.json", normalized);
+
   const guarded = applyAdaptationFitGuard(normalized, params.fit);
+  await params.debugWriter?.writeJson("07-fit-guarded.json", guarded);
 
   return {
     adaptation: guarded,
