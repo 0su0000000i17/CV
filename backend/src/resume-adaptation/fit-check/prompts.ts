@@ -18,6 +18,18 @@ export const SYSTEM_PROMPT = `
 4. career_change: роль другая; если нужен выдуманный опыт — blocked.
 5. impossible: резюме почти не связано с вакансией; canAdapt=false.
 
+ОЦЕНКА SCORE:
+- Не ставь всем похожим вакансиям одинаковые 80.
+- 95-100: почти идеальное совпадение роли, задач, уровня, навыков и домена; gaps почти нет.
+- 86-94: strong, но есть 1-2 небольших gap.
+- 76-85: solid, роль совпадает, но не хватает части требований, уровня, домена или доказательности.
+- 66-75: нижний solid, адаптация возможна, но есть заметные пробелы.
+- 46-65: partial, часть опыта переносима, но совпадение неполное.
+- 21-45: weak, адаптация возможна только ограниченно.
+- 0-20: impossible или почти impossible.
+- Каждые missing_required_skill, level_mismatch, domain_mismatch и weak_evidence должны снижать score.
+- Чем больше matchedRequirements и меньше gaps/blockingGaps, тем выше score.
+
 FULLSTACK-ПРАВИЛО:
 - Frontend → Fullstack React/Node не блокируй автоматически.
 - Если Node.js/backend в JSON не подтверждён, укажи gap/blockingGap.
