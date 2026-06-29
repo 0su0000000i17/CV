@@ -28,7 +28,7 @@ export function CoverLetterResultCard({
           </h2>
 
           <p className="mt-1 text-sm text-muted-foreground">
-            Можно отредактировать перед отправкой.
+            Можно отредактировать перед отправкой
           </p>
         </div>
 
