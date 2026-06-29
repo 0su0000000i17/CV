@@ -14,11 +14,11 @@ export function CoverLetterResumeCard(props: Props) {
     <ResumeSelectorCard
       {...props}
       title="Резюме"
-      description="Выберите резюме, на основе которого нужно написать письмо."
+      description="Выберите резюме, на основе которого нужно написать письмо"
       modalTitle="Выберите резюме"
-      modalDescription="Выбранный файл будет использован для генерации сопроводительного письма."
+      modalDescription="Выбранный файл будет использован для генерации сопроводительного письма"
       emptyTitle="Резюме не выбрано"
-      emptyDescription="Загрузите резюме или выберите файл из списка."
+      emptyDescription="Загрузите резюме или выберите файл из списка"
     />
   );
 }
