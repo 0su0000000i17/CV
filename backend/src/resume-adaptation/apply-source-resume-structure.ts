@@ -46,7 +46,10 @@ const unsupportedSkillSpecifics: Array<{ pattern: RegExp; support: RegExp }> = [
   { pattern: /коротк.*динамичн|динамичн.*коротк|динамичн.*видео/iu, support: /коротк|динамичн/iu },
   { pattern: /цветокоррекц/iu, support: /цветокоррекц/iu },
   { pattern: /субтитр/iu, support: /субтитр/iu },
-  { pattern: /звуков|работа\s+со\s+звуком|работа\s+с\s+звуком/iu, support: /звуков|работа\s+со\s+звуком|работа\s+с\s+звуком/iu },
+  {
+    pattern: /звуков|работа\s+со\s+звуком|работа\s+с\s+звуком/iu,
+    support: /звуков|работа\s+со\s+звуком|работа\s+с\s+звуком/iu,
+  },
   { pattern: /динамичн.*переход|смен[аыой]+\s+кадр/iu, support: /динамичн.*переход|смен[аыой]+\s+кадр/iu },
   { pattern: /блогер/iu, support: /блогер/iu },
   { pattern: /telegram|vk|вконтакте|instagram|инстаграм/iu, support: /telegram|vk|вконтакте|instagram|инстаграм/iu },
@@ -124,6 +127,18 @@ function unique(values: string[]) {
 
 function isAiRelated(value: string) {
   return /нейросет|искусственн\s+интеллект|\b(?:ai|ии)\b|chatgpt|perplexity|krea|kling|google\s+ai/iu.test(value);
+}
+
+function extractSupportedAiTools(context: SupportContext) {
+  const tools: Array<[string, RegExp]> = [
+    ["ChatGPT", /chatgpt/iu],
+    ["Perplexity", /perplexity/iu],
+    ["Krea", /krea/iu],
+    ["Kling AI", /kling\s*ai|\bkling\b/iu],
+    ["Google AI Studio", /google\s+ai\s+studio/iu],
+  ];
+
+  return tools.filter(([, pattern]) => pattern.test(context.sourceText)).map(([name]) => name);
 }
 
 function collectExperienceSalary(items: ExperienceItem[]) {
@@ -236,7 +251,7 @@ function normalizeResumeText(value: string) {
     .trim();
 }
 
-function polishBullet(value: string) {
+function polishBullet(value: string, context?: SupportContext) {
   const text = normalizeResumeText(value);
   const lower = text.toLowerCase();
 
@@ -261,7 +276,7 @@ function polishBullet(value: string) {
   }
 
   if (/reels|рилс/u.test(lower)) {
-    return "Создавал Reels-контент: искал референсы, писал сценарии, организовывал съёмки и монтировал ролики под задачи бренда";
+    return "Создавал Reels-контент полного цикла: подбирал референсы, писал сценарии, организовывал съёмки и монтировал ролики под задачи бренда";
   }
 
   if (/написан.*пост|писал.*пост/u.test(lower)) {
@@ -273,7 +288,7 @@ function polishBullet(value: string) {
   }
 
   if (/stories|сторис/u.test(lower)) {
-    return "Вёл stories: готовил ежедневные форматы, визуальные материалы и коммуникационные сценарии для поддержания активности аккаунта";
+    return "Вёл stories: готовил регулярные форматы, визуальные материалы и коммуникационные сценарии для поддержания активности аккаунта";
   }
 
   if (/обработ.*фото|инфограф/u.test(lower)) {
@@ -281,7 +296,9 @@ function polishBullet(value: string) {
   }
 
   if (/работ.*ии|нейросет|chatgpt|perplexity|krea|kling/u.test(lower)) {
-    return "Использовал ИИ-инструменты для подготовки визуальных идей, текстов и контентных материалов";
+    const tools = context ? extractSupportedAiTools(context) : [];
+    const toolsText = tools.length ? ` (${tools.join(", ")})` : "";
+    return `Использовал ИИ-инструменты${toolsText} для подготовки визуальных идей, текстовых материалов и контентных гипотез`;
   }
 
   if (/актуальн/u.test(lower)) {
@@ -359,26 +376,17 @@ function normalizeNotAdded(items: string[]) {
 function mergeBullets(original: string[], adapted: string[], context: SupportContext) {
   const originalItems = unique(original)
     .filter((item) => !isSalaryLine(item))
-    .map(polishBullet);
+    .map((item) => polishBullet(item, context));
   const adaptedItems = unique(adapted)
     .filter((item) => !isSalaryLine(item))
     .map((item) => sanitizeUnsupportedClaims(item, context))
     .filter(Boolean)
-    .map(polishBullet);
+    .map((item) => polishBullet(item, context));
 
   if (!originalItems.length) return unique(adaptedItems);
   if (!adaptedItems.length) return unique(originalItems);
 
   const targetCount = Math.min(Math.max(originalItems.length, adaptedItems.length), 16);
-  const minimumUsefulAdaptedCount = Math.max(
-    originalItems.length >= 8 ? 7 : originalItems.length,
-    Math.ceil(originalItems.length * 0.75)
-  );
-
-  if (adaptedItems.length >= minimumUsefulAdaptedCount) {
-    return unique(adaptedItems).slice(0, targetCount);
-  }
-
   const result = [...adaptedItems];
   const seen = new Set(result.map(key));
 
@@ -398,7 +406,7 @@ function mergeFocus(originalFocus: string | null, adaptedFocus: string | null | 
   if (adapted && !isSalaryLine(adapted)) return adapted;
   return unique(originalFocus?.split("\n") || [])
     .filter((item) => !isSalaryLine(item))
-    .map(polishBullet)
+    .map((item) => polishBullet(item, context))
     .join("\n") || null;
 }
 
