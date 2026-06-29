@@ -3,11 +3,13 @@ import { sourceDocumentToEditableResume } from "../resume-editor/source-document
 import type { AdaptedResumeSkills, ResumeAdaptationResult } from "./types.js";
 
 type ExperienceItem = ResumeAdaptationResult["adaptedResume"]["experience"][number];
+type CandidateGender = "female" | "male" | "unknown";
 
 type SupportContext = {
   sourceText: string;
   sourceTextKey: string;
   originalSkills: string[];
+  gender: CandidateGender;
 };
 
 const stopWords = new Set([
@@ -40,6 +42,7 @@ const protectedClaims = [
   "ВКонтакте",
   "Instagram",
   "Инстаграм",
+  "Shorts",
 ];
 
 const unsupportedSkillSpecifics: Array<{ pattern: RegExp; support: RegExp }> = [
@@ -53,6 +56,71 @@ const unsupportedSkillSpecifics: Array<{ pattern: RegExp; support: RegExp }> = [
   { pattern: /динамичн.*переход|смен[аыой]+\s+кадр/iu, support: /динамичн.*переход|смен[аыой]+\s+кадр/iu },
   { pattern: /блогер/iu, support: /блогер/iu },
   { pattern: /telegram|vk|вконтакте|instagram|инстаграм/iu, support: /telegram|vk|вконтакте|instagram|инстаграм/iu },
+  { pattern: /shorts|средн.*видео/iu, support: /shorts|средн.*видео/iu },
+  { pattern: /телефон|камера|ракурс|стабилизац|свет/iu, support: /телефон|камера|ракурс|стабилизац|свет/iu },
+];
+
+const feminineVerbPairs: Array<[RegExp, string]> = [
+  [/\bОсуществлял\b/giu, "Осуществляла"],
+  [/\bосуществлял\b/giu, "осуществляла"],
+  [/\bРазрабатывал\b/giu, "Разрабатывала"],
+  [/\bразрабатывал\b/giu, "разрабатывала"],
+  [/\bвел\b/giu, "вела"],
+  [/\bвёл\b/giu, "вела"],
+  [/\bСоздавал\b/giu, "Создавала"],
+  [/\bсоздавал\b/giu, "создавала"],
+  [/\bМонтировал\b/giu, "Монтировала"],
+  [/\bмонтировал\b/giu, "монтировала"],
+  [/\bГенерировал\b/giu, "Генерировала"],
+  [/\bгенерировал\b/giu, "генерировала"],
+  [/\bВзаимодействовал\b/giu, "Взаимодействовала"],
+  [/\bвзаимодействовал\b/giu, "взаимодействовала"],
+  [/\bАнализировал\b/giu, "Анализировала"],
+  [/\bанализировал\b/giu, "анализировала"],
+  [/\bВыявлял\b/giu, "Выявляла"],
+  [/\bвыявлял\b/giu, "выявляла"],
+  [/\bФормировал\b/giu, "Формировала"],
+  [/\bформировал\b/giu, "формировала"],
+  [/\bЗапускал\b/giu, "Запускала"],
+  [/\bзапускал\b/giu, "запускала"],
+  [/\bПодбирал\b/giu, "Подбирала"],
+  [/\bподбирал\b/giu, "подбирала"],
+  [/\bПисал\b/giu, "Писала"],
+  [/\bписал\b/giu, "писала"],
+  [/\bОрганизовывал\b/giu, "Организовывала"],
+  [/\bорганизовывал\b/giu, "организовывала"],
+  [/\bСнимал\b/giu, "Снимала"],
+  [/\bснимал\b/giu, "снимала"],
+  [/\bИспользовал\b/giu, "Использовала"],
+  [/\bиспользовал\b/giu, "использовала"],
+  [/\bОформлял\b/giu, "Оформляла"],
+  [/\bоформлял\b/giu, "оформляла"],
+  [/\bВерстал\b/giu, "Верстала"],
+  [/\bверстал\b/giu, "верстала"],
+  [/\bКоммуницировал\b/giu, "Коммуницировала"],
+  [/\bкоммуницировал\b/giu, "коммуницировала"],
+  [/\bПоддерживал\b/giu, "Поддерживала"],
+  [/\bподдерживал\b/giu, "поддерживала"],
+  [/\bКонтролировал\b/giu, "Контролировала"],
+  [/\bконтролировал\b/giu, "контролировала"],
+  [/\bСобирал\b/giu, "Собирала"],
+  [/\bсобирал\b/giu, "собирала"],
+  [/\bПланировал\b/giu, "Планировала"],
+  [/\bпланировал\b/giu, "планировала"],
+  [/\bАдаптировал\b/giu, "Адаптировала"],
+  [/\bадаптировал\b/giu, "адаптировала"],
+  [/\bУточнял\b/giu, "Уточняла"],
+  [/\bуточнял\b/giu, "уточняла"],
+  [/\bГотовил\b/giu, "Готовила"],
+  [/\bготовил\b/giu, "готовила"],
+  [/\bПрорабатывал\b/giu, "Прорабатывала"],
+  [/\bпрорабатывал\b/giu, "прорабатывала"],
+  [/\bПереупаковывал\b/giu, "Переупаковывала"],
+  [/\bпереупаковывал\b/giu, "переупаковывала"],
+  [/\bОбрабатывал\b/giu, "Обрабатывала"],
+  [/\bобрабатывал\b/giu, "обрабатывала"],
+  [/\bОбеспечивал\b/giu, "Обеспечивала"],
+  [/\bобеспечивал\b/giu, "обеспечивала"],
 ];
 
 function clean(value?: string | null) {
@@ -94,6 +162,35 @@ function isNearDuplicate(a: string, b: string) {
   return similarity(a, b) >= 0.82;
 }
 
+function detectCandidateGender(sourceDocument: SourceResumeDocument): CandidateGender {
+  const gender = clean(sourceDocument.personal.gender).toLowerCase();
+  if (/жен|female|woman/u.test(gender)) return "female";
+  if (/муж|male|man/u.test(gender)) return "male";
+
+  const fullName = clean(sourceDocument.personal.fullName).toLowerCase();
+  if (/(?:овна|евна|ична|инична)\b/u.test(fullName)) return "female";
+  if (/(?:ович|евич)\b/u.test(fullName)) return "male";
+  if (/\b[а-яё]+(?:ова|ева|ёва|ина|ая)\b/u.test(fullName)) return "female";
+  if (/\b[а-яё]+(?:ов|ев|ёв|ин|ий|ый)\b/u.test(fullName)) return "male";
+
+  return "unknown";
+}
+
+function applyGenderInflection(value: string, gender: CandidateGender) {
+  let result = value;
+  if (gender === "female") {
+    for (const [pattern, replacement] of feminineVerbPairs) {
+      result = result.replace(pattern, replacement);
+    }
+
+    result = result
+      .replace(/\bПрофессиональный\s+SMM-специалист\b/giu, "SMM-специалист")
+      .replace(/\bпрофессиональный\s+SMM-специалист\b/giu, "SMM-специалист");
+  }
+
+  return result;
+}
+
 function extractSalary(value?: string | null) {
   const text = clean(value);
   const match = text.match(
@@ -130,6 +227,7 @@ function isAiRelated(value: string) {
 }
 
 function extractSupportedAiTools(context: SupportContext) {
+  const sourceText = normalizeResumeText(context.sourceText);
   const tools: Array<[string, RegExp]> = [
     ["ChatGPT", /chatgpt/iu],
     ["Perplexity", /perplexity/iu],
@@ -138,7 +236,7 @@ function extractSupportedAiTools(context: SupportContext) {
     ["Google AI Studio", /google\s+ai\s+studio/iu],
   ];
 
-  return tools.filter(([, pattern]) => pattern.test(context.sourceText)).map(([name]) => name);
+  return tools.filter(([, pattern]) => pattern.test(sourceText)).map(([name]) => name);
 }
 
 function collectExperienceSalary(items: ExperienceItem[]) {
@@ -230,6 +328,10 @@ function sanitizeUnsupportedClaims(value: string, context: SupportContext) {
   return isDanglingClaimText(cleaned) ? "" : cleaned;
 }
 
+function sanitizeResumeText(value: string, context: SupportContext) {
+  return applyGenderInflection(sanitizeUnsupportedClaims(value, context), context.gender);
+}
+
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -251,85 +353,112 @@ function normalizeResumeText(value: string) {
     .trim();
 }
 
+function normalizeSkillText(value: string, context: SupportContext) {
+  const text = normalizeResumeText(value);
+
+  if (/создание\s+видеоконтента|монтаж\s+коротк|reels/i.test(text)) {
+    return "Reels-контент: сценарии, съёмка и монтаж";
+  }
+
+  if (/генерац.*нейросет|работа\s+с\s+(?:ии|ai)|нейросет/i.test(text)) {
+    const tools = extractSupportedAiTools(context);
+    return tools.length ? `ИИ-инструменты: ${tools.join(", ")}` : "Работа с ИИ-инструментами";
+  }
+
+  if (/photoshop|figma|canva/i.test(text)) {
+    const tools = ["Canva", "Figma", "Adobe Photoshop"].filter((tool) =>
+      new RegExp(escapeRegExp(tool.replace("Adobe ", "")), "iu").test(context.sourceText)
+    );
+    return tools.length ? tools.join(" / ") : text;
+  }
+
+  if (/разработка\s+сценар/i.test(text)) return "Сценарии для Reels и публикаций";
+  if (/разработка\s+дизайна|дизайн\s+постов|сторис/i.test(text)) return "Дизайн постов, stories, обложек и инфографики";
+  if (/взаимодействие\s+с\s+аудитор/i.test(text)) return "Коммуникация с подписчиками";
+
+  return text;
+}
+
 function polishBullet(value: string, context?: SupportContext) {
   const text = normalizeResumeText(value);
   const lower = text.toLowerCase();
+  const finish = (result: string) => applyGenderInflection(result, context?.gender || "unknown");
 
   if (/^анализ(?:ировал)?\s+конкурент/u.test(lower)) {
-    return "Анализировал конкурентную среду и контент-подходы, чтобы уточнять рубрики, визуальный стиль и подачу бренда";
+    return finish("Анализировал конкурентную среду и контент-подходы, чтобы уточнять рубрики, визуальный стиль и подачу бренда");
   }
 
   if (/формирован|формировал.*един.*стил/u.test(lower)) {
-    return "Формировал единый визуальный стиль аккаунта, передающий атмосферу бренда и поддерживающий цельную подачу в ленте";
+    return finish("Формировал единый визуальный стиль аккаунта, передающий атмосферу бренда и поддерживающий цельную подачу в ленте");
   }
 
   if (/создан.*аккаунт.*с нуля|создавал.*аккаунт.*с нуля|запускал.*аккаунт/u.test(lower)) {
-    return "Запускал аккаунт с нуля: подбирал позиционирование, структуру профиля, визуальную подачу и первые рубрики";
+    return finish("Запускал аккаунт с нуля: подбирал позиционирование, структуру профиля, визуальную подачу и первые рубрики");
   }
 
   if (/переупаков/u.test(lower)) {
-    return "Переупаковывал аккаунт: обновлял визуальную подачу, структуру профиля и оформление ключевых разделов";
+    return finish("Переупаковывал аккаунт: обновлял визуальную подачу, структуру профиля и оформление ключевых разделов");
   }
 
   if (/контент[- ]план/u.test(lower)) {
-    return "Разрабатывал контент-план на 14 дней / 1 месяц с учётом рубрик, визуальной логики, тем публикаций и регулярности выхода контента";
+    return finish("Разрабатывал контент-план на 14 дней / 1 месяц с учётом рубрик, визуальной логики, тем публикаций и регулярности выхода контента");
   }
 
   if (/reels|рилс/u.test(lower)) {
-    return "Создавал Reels-контент полного цикла: подбирал референсы, писал сценарии, организовывал съёмки и монтировал ролики под задачи бренда";
+    return finish("Создавал Reels-контент полного цикла: подбирал референсы, писал сценарии, организовывал съёмки и монтировал ролики под задачи бренда");
   }
 
   if (/написан.*пост|писал.*пост/u.test(lower)) {
-    return "Писал посты с учётом тональности бренда, задачи публикации и вовлечения аудитории";
+    return finish("Писал посты с учётом тональности бренда, задачи публикации и вовлечения аудитории");
   }
 
   if (/никнейм|шапк.*профил|аватар/u.test(lower)) {
-    return "Прорабатывал упаковку профиля: подбирал никнейм, оформлял шапку аккаунта и аватар под позиционирование бренда";
+    return finish("Прорабатывал упаковку профиля: подбирал никнейм, оформлял шапку аккаунта и аватар под позиционирование бренда");
   }
 
   if (/stories|сторис/u.test(lower)) {
-    return "Вёл stories: готовил регулярные форматы, визуальные материалы и коммуникационные сценарии для поддержания активности аккаунта";
+    return finish("Вёл stories: готовил регулярные форматы, визуальные материалы и коммуникационные сценарии для поддержания активности аккаунта");
   }
 
   if (/обработ.*фото|инфограф/u.test(lower)) {
-    return "Обрабатывал фотографии и создавал инфографику для афиш, stories и постов в едином визуальном стиле";
+    return finish("Обрабатывал фотографии и создавал инфографику для афиш, stories и постов в едином визуальном стиле");
   }
 
   if (/работ.*ии|нейросет|chatgpt|perplexity|krea|kling/u.test(lower)) {
     const tools = context ? extractSupportedAiTools(context) : [];
     const toolsText = tools.length ? ` (${tools.join(", ")})` : "";
-    return `Использовал ИИ-инструменты${toolsText} для подготовки визуальных идей, текстовых материалов и контентных гипотез`;
+    return finish(`Использовал ИИ-инструменты${toolsText} для подготовки визуальных идей, текстовых материалов и контентных гипотез`);
   }
 
   if (/актуальн/u.test(lower)) {
-    return "Оформлял актуальные разделы профиля: продумывал названия, обложки и визуальную структуру для быстрого доступа к ключевой информации";
+    return finish("Оформлял актуальные разделы профиля: продумывал названия, обложки и визуальную структуру для быстрого доступа к ключевой информации");
   }
 
   if (/верстк.*меню|дизайн.*меню/u.test(lower)) {
-    return "Верстал меню и разрабатывал его дизайн, сохраняя единый визуальный стиль бренда";
+    return finish("Верстал меню и разрабатывал его дизайн, сохраняя единый визуальный стиль бренда");
   }
 
   if (/коммуникац|подписчик/u.test(lower)) {
-    return "Коммуницировал с подписчиками, поддерживал обратную связь и вовлечение аудитории в аккаунте";
+    return finish("Коммуницировал с подписчиками, поддерживал обратную связь и вовлечение аудитории в аккаунте");
   }
 
   if (/подготовк.*тем|рубрик|сценар/u.test(lower)) {
-    return "Готовил темы, рубрики и сценарии публикаций: искал идеи, формулировал тезисы и подбирал референсы";
+    return finish("Готовил темы, рубрики и сценарии публикаций: искал идеи, формулировал тезисы и подбирал референсы");
   }
 
   if (/координац.*контент|планирован.*срок|контроль публикац/u.test(lower)) {
-    return "Координировал выпуск контента: планировал сроки, собирал материалы и контролировал публикации по графику";
+    return finish("Координировал выпуск контента: планировал сроки, собирал материалы и контролировал публикации по графику");
   }
 
   if (/визуальн.*оформ|обложк|превью/u.test(lower)) {
-    return "Создавал визуальное оформление для постов: обложки, превью и единый стиль ленты";
+    return finish("Создавал визуальное оформление для постов: обложки, превью и единый стиль ленты");
   }
 
   if (/видеосъ[её]мк|видео.*съ[её]мк|монтаж видео|обработка видео/u.test(lower)) {
-    return "Снимал и монтировал видеоконтент для коротких форматов, адаптируя визуальную подачу под задачи публикации";
+    return finish("Снимал и монтировал видеоконтент для коротких форматов, адаптируя визуальную подачу под задачи публикации");
   }
 
-  return text;
+  return finish(text);
 }
 
 function normalizeNotAddedValue(value: string) {
@@ -344,10 +473,12 @@ function normalizeNotAddedValue(value: string) {
     .replace(/[.,;:]+$/u, "");
 
   if (/telegram|vk|вконтакте|instagram|инстаграм/i.test(normalized)) return "Telegram / VK / Instagram";
-  if (/after\s*effects/i.test(normalized)) return "After Effects";
+  if (/after\s*effects|после\s*effects/i.test(normalized)) return "After Effects";
   if (/premiere\s*pro/i.test(normalized)) return "Premiere Pro";
   if (/^vn$/i.test(normalized)) return "VN";
   if (/блогер/i.test(normalized)) return "Работа с блогерами";
+  if (/shorts|средн.*видео/i.test(normalized)) return "Shorts и средние видео";
+  if (/телефон|камера|ракурс|стабилизац|свет/i.test(normalized)) return "Съёмка на телефон или камеру с учётом света, ракурсов и стабилизации";
   if (/коротк.*динамичн.*видео|динамичн.*коротк.*видео/i.test(normalized)) {
     return "Короткие динамичные видео с субтитрами, музыкой, звуковыми эффектами и сменой кадров";
   }
@@ -379,7 +510,7 @@ function mergeBullets(original: string[], adapted: string[], context: SupportCon
     .map((item) => polishBullet(item, context));
   const adaptedItems = unique(adapted)
     .filter((item) => !isSalaryLine(item))
-    .map((item) => sanitizeUnsupportedClaims(item, context))
+    .map((item) => sanitizeResumeText(item, context))
     .filter(Boolean)
     .map((item) => polishBullet(item, context));
 
@@ -402,7 +533,7 @@ function mergeBullets(original: string[], adapted: string[], context: SupportCon
 }
 
 function mergeFocus(originalFocus: string | null, adaptedFocus: string | null | undefined, context: SupportContext) {
-  const adapted = sanitizeUnsupportedClaims(clean(adaptedFocus), context);
+  const adapted = sanitizeResumeText(clean(adaptedFocus), context);
   if (adapted && !isSalaryLine(adapted)) return adapted;
   return unique(originalFocus?.split("\n") || [])
     .filter((item) => !isSalaryLine(item))
@@ -455,7 +586,7 @@ function hasUnsupportedSpecificSkill(value: string, context: SupportContext) {
 }
 
 function findSupportedSkill(value: string, context: SupportContext) {
-  const normalized = sanitizeUnsupportedClaims(value, context);
+  const normalized = normalizeSkillText(sanitizeResumeText(value, context), context);
   if (!normalized || isDanglingClaimText(normalized)) return null;
   if (hasUnsupportedSpecificSkill(value, context) || hasUnsupportedSpecificSkill(normalized, context)) return null;
 
@@ -496,7 +627,7 @@ function isUsefulAdditionalInfo(value: string) {
 
 function normalizeAdditionalInfoItem(value: string, context: SupportContext) {
   const normalized = normalizeResumeText(value);
-  const sanitized = sanitizeUnsupportedClaims(normalized, context);
+  const sanitized = sanitizeResumeText(normalized, context);
 
   if (!sanitized || isDanglingClaimText(sanitized) || !isUsefulAdditionalInfo(sanitized)) return null;
   return sanitized;
@@ -506,12 +637,12 @@ function mergeAdditionalInfo(original: string[], adapted: string[], context: Sup
   const adaptedItems = adapted
     .map((item) => normalizeAdditionalInfoItem(item, context))
     .filter((item): item is string => Boolean(item));
-  const originalPortfolioItems = original
-    .filter((item) => /портфолио|https?:\/\//iu.test(item))
+  const originalUsefulItems = original
+    .filter(isUsefulAdditionalInfo)
     .map((item) => normalizeAdditionalInfoItem(item, context))
     .filter((item): item is string => Boolean(item));
 
-  return unique([...adaptedItems, ...originalPortfolioItems]).slice(0, 8);
+  return unique([...adaptedItems, ...originalUsefulItems]).slice(0, 12);
 }
 
 function collectText(value: unknown): string[] {
@@ -524,7 +655,7 @@ function collectText(value: unknown): string[] {
   return [];
 }
 
-function createSupportContext(original: ResumeAdaptationResult): SupportContext {
+function createSupportContext(original: ResumeAdaptationResult, sourceDocument: SourceResumeDocument): SupportContext {
   const originalSkills = createOriginalSkillPhrases(original.adaptedResume.skills);
   const sourceText = collectText(original).join("\n");
 
@@ -532,21 +663,30 @@ function createSupportContext(original: ResumeAdaptationResult): SupportContext 
     sourceText,
     sourceTextKey: key(sourceText),
     originalSkills,
+    gender: detectCandidateGender(sourceDocument),
   };
 }
 
 function filterSupportedKeywords(items: string[], context: SupportContext) {
-  return unique(items).filter((item) => isSupportedClaim(item, context));
+  return unique(items)
+    .map((item) => normalizeSkillText(item, context))
+    .filter((item) => isSupportedClaim(item, context) && !hasUnsupportedSpecificSkill(item, context));
+}
+
+function normalizeHeadline(value: string | null | undefined, context: SupportContext) {
+  const sanitized = sanitizeResumeText(clean(value), context);
+  return sanitized.replace(/^Профессиональный\s+/iu, "").replace(/^Профессиональная\s+/iu, "");
 }
 
 function resolveTargetTitle(params: {
   sourceTitle?: string | null;
   adaptedTitle?: string | null;
   headline?: string | null;
+  context: SupportContext;
 }) {
   const sourceTitle = clean(params.sourceTitle);
-  const adaptedTitle = clean(params.adaptedTitle);
-  const headline = clean(params.headline);
+  const adaptedTitle = normalizeHeadline(params.adaptedTitle, params.context);
+  const headline = normalizeHeadline(params.headline, params.context);
 
   if (headline && headline !== sourceTitle) return headline;
   if (adaptedTitle) return adaptedTitle;
@@ -560,18 +700,21 @@ export function applySourceResumeStructure(params: {
   const original = sourceDocumentToEditableResume(params.sourceDocument).resumeJson;
   const adapted = params.adaptation;
   const target = original.target;
-  const context = createSupportContext(original);
+  const context = createSupportContext(original, params.sourceDocument);
   const sourceSalary = collectExperienceSalary(original.adaptedResume.experience);
   const experience = original.adaptedResume.experience.map((item, index) =>
     mergeExperienceItem(item, findAdapted(adapted.adaptedResume.experience, item.sourceIndex, index), context)
   );
+  const headline = normalizeHeadline(adapted.adaptedResume.headline, context);
+
   return {
     ...adapted,
     target: {
       title: resolveTargetTitle({
         sourceTitle: target.title,
         adaptedTitle: adapted.target.title,
-        headline: adapted.adaptedResume.headline,
+        headline,
+        context,
       }),
       company: null,
       seniority: target.seniority || null,
@@ -585,7 +728,8 @@ export function applySourceResumeStructure(params: {
     },
     adaptedResume: {
       ...adapted.adaptedResume,
-      summary: sanitizeUnsupportedClaims(adapted.adaptedResume.summary, context),
+      headline,
+      summary: sanitizeResumeText(adapted.adaptedResume.summary, context),
       experience,
       skills: mergeSkills(original.adaptedResume.skills, adapted.adaptedResume.skills, context),
       education: original.adaptedResume.education,
