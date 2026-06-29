@@ -21,6 +21,28 @@ function clean(value?: string | null) {
   return value?.replace(/\s+/g, " ").trim() || "";
 }
 
+function salaryDigits(value: string) {
+  return clean(value).replace(/\D/g, "");
+}
+
+function isKnownSalaryLine(value: string, salary: string) {
+  const text = clean(value).toLowerCase();
+  const knownSalary = clean(salary).toLowerCase();
+
+  if (!text || !knownSalary) return false;
+  if (text === knownSalary || text.includes(knownSalary)) return true;
+
+  const textDigits = salaryDigits(text);
+  const salaryDigitsValue = salaryDigits(knownSalary);
+
+  return Boolean(
+    textDigits &&
+      salaryDigitsValue &&
+      textDigits === salaryDigitsValue &&
+      /(?:₽|руб\.?|rub)/i.test(text)
+  );
+}
+
 function renderMutedAfterDash(value: string) {
   const match = value.match(/^(.+?)(\s+—\s+.+)$/u);
   if (!match?.[1] || !match[2]) return escapeHtml(value);
@@ -90,9 +112,9 @@ function targetDetailLines(doc: ClassicDocument) {
     return result;
   }
 
-  const salary = targetSalary(doc).toLowerCase();
+  const salary = targetSalary(doc);
   return doc.snapshot.targetDetails
-    .filter((item) => clean(item).toLowerCase() !== salary)
+    .filter((item) => !isKnownSalaryLine(item, salary))
     .map((item) => ({ text: item, indent: item.startsWith("—") }));
 }
 
@@ -123,22 +145,26 @@ function looksLikeUrl(value: string) {
 }
 
 function renderCompanyMeta(doc: ClassicDocument, item: ClassicExperienceItem) {
+  const salary = targetSalary(doc);
   const metaLines = getCompanyMeta(doc.snapshot, item.company)?.lines ?? [];
   const lines = item.companyUrl && !metaLines.includes(item.companyUrl)
     ? [item.companyUrl, ...metaLines]
     : metaLines;
   return lines
+    .filter((text) => !isKnownSalaryLine(text, salary))
     .map((text) => `<p class="${looksLikeUrl(text) ? "company-meta company-meta--muted" : "company-meta"}">${escapeHtml(text)}</p>`)
     .join("");
 }
 
-function renderFocus(item: ClassicExperienceItem) {
+function renderFocus(item: ClassicExperienceItem, salary: string) {
   return toTextLines(item.focus)
+    .filter((focusLine) => !isKnownSalaryLine(focusLine, salary))
     .map((focusLine) => `<p class="work-text">${escapeHtml(focusLine)}</p>`)
     .join("");
 }
 
 function renderExperienceItem(doc: ClassicDocument, item: ClassicExperienceItem) {
+  const salary = targetSalary(doc);
   const duration = calculateExperienceDuration(item.dates);
   const dates = [...splitDateLines(item.dates), duration]
     .filter(Boolean)
@@ -147,9 +173,10 @@ function renderExperienceItem(doc: ClassicDocument, item: ClassicExperienceItem)
   const bullets = item.adaptedBullets
     .map(stripBullet)
     .filter(Boolean)
+    .filter((bullet) => !isKnownSalaryLine(bullet, salary))
     .map((bullet) => `<p class="bullet">- ${escapeHtml(bullet)}</p>`)
     .join("");
-  return `<article class="experience-item"><div class="dates">${dates}</div><div>${item.company ? `<h3 class="company">${escapeHtml(item.company)}</h3>` : ""}${renderCompanyMeta(doc, item)}${item.position ? `<h4 class="position">${escapeHtml(item.position)}</h4>` : ""}${renderFocus(item)}${bullets}</div></article>`;
+  return `<article class="experience-item"><div class="dates">${dates}</div><div>${item.company ? `<h3 class="company">${escapeHtml(item.company)}</h3>` : ""}${renderCompanyMeta(doc, item)}${item.position ? `<h4 class="position">${escapeHtml(item.position)}</h4>` : ""}${renderFocus(item, salary)}${bullets}</div></article>`;
 }
 
 function renderExperience(doc: ClassicDocument) {
