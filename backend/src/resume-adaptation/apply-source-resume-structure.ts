@@ -18,6 +18,7 @@ const stopWords = new Set([
   "в",
   "на",
   "с",
+  "со",
   "по",
   "для",
   "что",
@@ -28,6 +29,7 @@ const stopWords = new Set([
   "при",
   "от",
   "до",
+  "или",
 ]);
 
 const feminineVerbPairs: Array<[RegExp, string]> = [
@@ -124,7 +126,6 @@ function key(value: string) {
 function normalizeToken(token: string) {
   const normalized = token.toLowerCase();
   if (normalized.length <= 5) return normalized;
-
   return normalized.slice(0, 5);
 }
 
@@ -152,6 +153,41 @@ function isNearDuplicate(a: string, b: string) {
   return similarity(a, b) >= 0.82;
 }
 
+function stripEffectClause(value: string) {
+  return clean(value)
+    .toLowerCase()
+    .replace(/\b(?:что|котор(?:ый|ая|ое|ые)|позвол(?:ило|ила|яет|ял[ао]?|или)|обеспеч(?:ило|ила|ивает|ивал[ао]?|ивали)|способств(?:овало|овала|ует|овали))\b.*$/iu, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+function coreFactText(value: string) {
+  return stripEffectClause(value)
+    .replace(/^(?:анализ(?:ировала|ировал)?|формир(?:овала|овал|ование)|созда(?:вала|вал|ние)|разрабатыва(?:ла|л|ние)|вела|вел|ведение|подготовка|подготавливала|производство|производила|координация|координировала|оформление|оформляла|верстка|верстала|коммуникация|коммуницировала|работа|использовала|использовал|монтаж|монтировала|монтировал)\s+/iu, "")
+    .replace(/[.,;:]+$/u, "")
+    .trim();
+}
+
+function factCoverage(existing: string, candidate: string) {
+  const existingTokens = new Set(tokens(coreFactText(existing)));
+  const candidateTokens = tokens(coreFactText(candidate));
+  if (!existingTokens.size || !candidateTokens.length) return 0;
+  const matched = candidateTokens.filter((token) => existingTokens.has(token)).length;
+  return matched / candidateTokens.length;
+}
+
+function isFactCovered(existing: string, candidate: string) {
+  const existingKey = key(coreFactText(existing));
+  const candidateKey = key(coreFactText(candidate));
+  if (candidateKey.length >= 14 && existingKey.includes(candidateKey)) return true;
+  if (existingKey.length >= 14 && candidateKey.includes(existingKey)) return true;
+  return factCoverage(existing, candidate) >= 0.72 || similarity(existing, candidate) >= 0.6;
+}
+
+function isCoveredByAny(items: string[], candidate: string) {
+  return items.some((item) => isNearDuplicate(item, candidate) || isFactCovered(item, candidate));
+}
+
 function detectCandidateGender(sourceDocument: SourceResumeDocument): CandidateGender {
   const gender = clean(sourceDocument.personal.gender).toLowerCase();
   if (/жен|female|woman/u.test(gender)) return "female";
@@ -173,7 +209,6 @@ function applyGenderInflection(value: string, gender: CandidateGender) {
       result = result.replace(pattern, replacement);
     }
   }
-
   return result;
 }
 
@@ -182,16 +217,13 @@ function extractSalary(value?: string | null) {
   const match = text.match(
     /\d[\d\s]{1,14}\s*(?:₽|руб\.?|RUB)(?:\s*(?:на руки|net|gross|до вычета налогов|до вычета|после вычета))?/iu
   );
-
   return match?.[0] ? clean(match[0]) : null;
 }
 
 function isSalaryLine(value?: string | null) {
   const text = clean(value);
   const salary = extractSalary(text);
-
   if (!text || !salary) return false;
-
   return text.replace(/[.,;:]$/u, "").length <= salary.length + 14;
 }
 
@@ -218,21 +250,17 @@ function collectExperienceSalary(items: ExperienceItem[]) {
     const bulletSalary = item.adaptedBullets
       .map((bullet) => (isSalaryLine(bullet) ? extractSalary(bullet) : null))
       .find(Boolean);
-
     if (bulletSalary) return bulletSalary;
   }
-
   return null;
 }
 
 function resolvePosition(original: ExperienceItem, adapted: ExperienceItem | null) {
   const originalPosition = clean(original.position);
   const adaptedPosition = clean(adapted?.position);
-
   if (isSalaryLine(originalPosition)) {
     return adaptedPosition && !isSalaryLine(adaptedPosition) ? adaptedPosition : null;
   }
-
   return originalPosition || (adaptedPosition && !isSalaryLine(adaptedPosition) ? adaptedPosition : null);
 }
 
@@ -242,22 +270,18 @@ function findAdapted(items: ExperienceItem[], sourceIndex: number, fallbackIndex
 
 function isSupportedClaim(value: string, context: SupportContext) {
   const itemKey = key(value);
-
   if (!itemKey) return false;
   if (context.sourceTextKey.includes(itemKey)) return true;
 
   const valueTokens = tokens(value);
   const supportedTokenCount = valueTokens.filter((token) => context.sourceTextKey.includes(token)).length;
-  if (valueTokens.length > 0 && supportedTokenCount / valueTokens.length >= 0.65) {
-    return true;
-  }
+  if (valueTokens.length > 0 && supportedTokenCount / valueTokens.length >= 0.65) return true;
 
   return context.originalSkills.some((skill) => key(skill) === itemKey || isSimilar(skill, value));
 }
 
 function isDanglingClaimText(value: string) {
   const text = clean(value).replace(/[.,;:]+$/u, "");
-
   return (
     !text ||
     /^(?:работа|навык|навыки|опыт|владение|знание)$/iu.test(text) ||
@@ -284,30 +308,23 @@ function cleanupUnsupportedClaimText(value: string) {
 }
 
 function removeUnsupportedClaim(value: string, claim: string) {
-  const escaped = escapeRegExp(claim);
-  return value
-    .replace(new RegExp(`\\b${escaped}\\b`, "giu"), "")
-    .replace(new RegExp(`(?:,|;|/)\\s*${escaped}\\s*(?:,|;|/)`, "giu"), ", ");
+  const claimKey = key(claim);
+  if (!claimKey || key(value) === claimKey) return "";
+  return value.split(claim).join("");
 }
 
 function sanitizeUnsupportedClaims(value: string, context: SupportContext) {
   let result = clean(value);
-
   for (const claim of context.unsupportedClaims) {
     if (!claim || isSupportedClaim(claim, context)) continue;
     result = removeUnsupportedClaim(result, claim);
   }
-
   const cleaned = cleanupUnsupportedClaimText(result);
   return isDanglingClaimText(cleaned) ? "" : cleaned;
 }
 
 function sanitizeResumeText(value: string, context: SupportContext) {
   return applyGenderInflection(sanitizeUnsupportedClaims(value, context), context.gender);
-}
-
-function escapeRegExp(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function normalizeResumeText(value: string) {
@@ -343,7 +360,6 @@ function normalizeNotAddedValue(value: string) {
 function normalizeNotAdded(items: string[]) {
   const result: string[] = [];
   const seen = new Set<string>();
-
   for (const item of items) {
     const normalized = normalizeNotAddedValue(item);
     const itemKey = key(normalized);
@@ -351,7 +367,6 @@ function normalizeNotAdded(items: string[]) {
     seen.add(itemKey);
     result.push(normalized);
   }
-
   return result;
 }
 
@@ -375,7 +390,7 @@ function mergeBullets(original: string[], adapted: string[], context: SupportCon
   for (const bullet of originalItems) {
     if (result.length >= targetCount) break;
     const bulletKey = key(bullet);
-    if (seen.has(bulletKey) || result.some((item) => isNearDuplicate(item, bullet))) continue;
+    if (seen.has(bulletKey) || isCoveredByAny(result, bullet)) continue;
     seen.add(bulletKey);
     result.push(bullet);
   }
@@ -393,11 +408,14 @@ function mergeFocus(originalFocus: string | null, adaptedFocus: string | null | 
 }
 
 function mergePreservedFacts(original: ExperienceItem, adapted: ExperienceItem | null, context: SupportContext) {
-  return unique([...(adapted?.preservedFacts || []), ...original.adaptedBullets])
-    .filter((item) => !isSalaryLine(item))
-    .map((item) => polishBullet(item, context))
-    .filter(Boolean)
-    .slice(0, 16);
+  const result: string[] = [];
+  for (const item of unique([...(adapted?.preservedFacts || []), ...original.adaptedBullets])) {
+    if (isSalaryLine(item)) continue;
+    const polished = polishBullet(item, context);
+    if (!polished || isCoveredByAny(result, polished)) continue;
+    result.push(polished);
+  }
+  return result.slice(0, 16);
 }
 
 function mergeExperienceItem(
@@ -434,13 +452,10 @@ function createOriginalSkillPhrases(original: AdaptedResumeSkills) {
 function findSupportedSkill(value: string, context: SupportContext) {
   const normalized = normalizeSkillText(value, context);
   if (!normalized || isDanglingClaimText(normalized)) return null;
-
   const valueKey = key(normalized);
   const exact = context.originalSkills.find((skill) => key(skill) === valueKey);
   if (exact) return normalized;
-
   if (isSupportedClaim(normalized, context)) return normalized;
-
   return context.originalSkills.some((skill) => isSimilar(skill, normalized)) ? normalized : null;
 }
 
@@ -453,7 +468,6 @@ function mergeSkills(original: AdaptedResumeSkills, adapted: AdaptedResumeSkills
   const primary = unique(addSupported([...adapted.primary, ...adapted.secondary]));
   const used = new Set(primary.map(key));
   const secondary = context.originalSkills.filter((skill) => !used.has(key(skill)));
-
   return {
     primary: primary.length ? primary : unique(original.primary),
     secondary,
@@ -475,7 +489,6 @@ function mergeAdditionalInfo(original: string[], adapted: string[], context: Sup
   const originalItems = original
     .map((item) => normalizeAdditionalInfoItem(item, context))
     .filter((item): item is string => Boolean(item));
-
   return unique([...adaptedItems, ...originalItems]).slice(0, 12);
 }
 
@@ -485,7 +498,6 @@ function collectText(value: unknown): string[] {
   if (value && typeof value === "object") {
     return Object.values(value as Record<string, unknown>).flatMap(collectText);
   }
-
   return [];
 }
 
@@ -496,13 +508,22 @@ function extractAtomicUnsupportedClaims(value: string) {
     .filter((item) => item.length > 1 && /[a-zа-яё0-9]/iu.test(item));
 }
 
+function isGenericForbiddenClaim(value: string) {
+  return (
+    /личные\s+данные|контакты/iu.test(value) ||
+    /компании,\s*должности,\s*даты/iu.test(value) ||
+    /повышать\s+уровень\s+кандидата/iu.test(value)
+  );
+}
+
 function createUnsupportedClaims(adapted: ResumeAdaptationResult) {
   const explicit = [
     ...adapted.adaptedResume.skills.notAdded,
     ...adapted.forbiddenClaims,
     ...adapted.warnings,
-  ].flatMap((item) => [item, ...extractAtomicUnsupportedClaims(item)]);
-
+  ]
+    .filter((item) => !isGenericForbiddenClaim(item))
+    .flatMap((item) => [item, ...extractAtomicUnsupportedClaims(item)]);
   return unique(explicit.map(normalizeNotAddedValue)).filter(Boolean).slice(0, 80);
 }
 
@@ -513,7 +534,6 @@ function createSupportContext(
 ): SupportContext {
   const originalSkills = createOriginalSkillPhrases(original.adaptedResume.skills);
   const sourceText = collectText(original).join("\n");
-
   return {
     sourceText,
     sourceTextKey: key(sourceText),
@@ -545,7 +565,6 @@ function normalizeHeadline(value: string | null | undefined, context: SupportCon
     .replace(/^Профессиональн(?:ый|ая)\s+/iu, "")
     .replace(/^Сильн(?:ый|ая)\s+/iu, "")
     .replace(/^Квалифицированн(?:ый|ая)\s+/iu, "");
-
   if (sourceTitle && (!sanitized || isMarketingTitle(sanitized))) return sourceTitle;
   return sanitized || sourceTitle;
 }
@@ -558,10 +577,8 @@ function resolveTargetTitle(params: {
 }) {
   const sourceTitle = normalizeResumeText(params.sourceTitle || "");
   if (sourceTitle) return sourceTitle;
-
   const adaptedTitle = normalizeHeadline(params.adaptedTitle, params.context, sourceTitle);
   const headline = normalizeHeadline(params.headline, params.context, sourceTitle);
-
   return adaptedTitle || headline || null;
 }
 
