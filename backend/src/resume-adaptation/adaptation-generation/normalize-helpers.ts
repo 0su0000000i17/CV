@@ -1,11 +1,17 @@
 export function toNullableString(value: unknown) {
-  if (typeof value !== "string") {
-    return null;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed ? trimmed : null;
   }
 
-  const trimmed = value.trim();
+  if (isRecord(value)) {
+    const textValue =
+      value.text ?? value.value ?? value.name ?? value.title ?? value.label;
 
-  return trimmed ? trimmed : null;
+    return typeof textValue === "string" ? toNullableString(textValue) : null;
+  }
+
+  return null;
 }
 
 export function toStringArray(value: unknown, limit: number) {
@@ -14,8 +20,8 @@ export function toStringArray(value: unknown, limit: number) {
   }
 
   return value
-    .map((item) => (typeof item === "string" ? item.trim() : ""))
-    .filter(Boolean)
+    .map(toNullableString)
+    .filter((item): item is string => Boolean(item))
     .slice(0, limit);
 }
 
