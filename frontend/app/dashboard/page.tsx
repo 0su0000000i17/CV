@@ -367,22 +367,6 @@ export default function DashboardPage() {
           >
             Загрузить резюме
           </UploadResumeButton>
-
-          <Link
-            href={analyzeHref}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-5 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-          >
-            <BarChart3 className="h-4 w-4 text-orange-300" />
-            Оценить резюме
-          </Link>
-
-          <Link
-            href={adaptHref}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-5 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-          >
-            <Target className="h-4 w-4 text-emerald-300" />
-            Адаптировать под вакансию
-          </Link>
         </div>
       </section>
 
