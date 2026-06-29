@@ -424,7 +424,7 @@ function polishBullet(value: string, context?: SupportContext) {
     return finish("Обрабатывал фотографии и создавал инфографику для афиш, stories и постов в едином визуальном стиле");
   }
 
-  if (/работ.*ии|нейросет|chatgpt|perplexity|krea|kling/u.test(lower)) {
+  if (/(?:работа|использован(?:ие)?|использовал[аи]?)\s+с\s+(?:ии|ai)\b|нейросет|chatgpt|perplexity|krea|kling/u.test(lower)) {
     const tools = context ? extractSupportedAiTools(context) : [];
     const toolsText = tools.length ? ` (${tools.join(", ")})` : "";
     return finish(`Использовал ИИ-инструменты${toolsText} для подготовки визуальных идей, текстовых материалов и контентных гипотез`);
@@ -673,9 +673,25 @@ function filterSupportedKeywords(items: string[], context: SupportContext) {
     .filter((item) => isSupportedClaim(item, context) && !hasUnsupportedSpecificSkill(item, context));
 }
 
-function normalizeHeadline(value: string | null | undefined, context: SupportContext) {
-  const sanitized = sanitizeResumeText(clean(value), context);
-  return sanitized.replace(/^Профессиональный\s+/iu, "").replace(/^Профессиональная\s+/iu, "");
+function isMarketingTitle(value: string) {
+  return (
+    /\b(?:опытн(?:ый|ая)|профессиональн(?:ый|ая)|сильн(?:ый|ая)|квалифицированн(?:ый|ая))\b/iu.test(value) ||
+    /\bс\s+фокусом\s+на\b/iu.test(value) ||
+    /\b(?:более\s+чем|летним\s+опытом|опыт\s+создания|экспертиза\s+в)\b/iu.test(value) ||
+    clean(value).split(/\s+/u).length > 8
+  );
+}
+
+function normalizeHeadline(value: string | null | undefined, context: SupportContext, fallbackTitle?: string | null) {
+  const sourceTitle = normalizeResumeText(fallbackTitle || "");
+  const sanitized = sanitizeResumeText(clean(value), context)
+    .replace(/^Опытн(?:ый|ая)\s+/iu, "")
+    .replace(/^Профессиональн(?:ый|ая)\s+/iu, "")
+    .replace(/^Сильн(?:ый|ая)\s+/iu, "")
+    .replace(/^Квалифицированн(?:ый|ая)\s+/iu, "");
+
+  if (sourceTitle && (!sanitized || isMarketingTitle(sanitized))) return sourceTitle;
+  return sanitized || sourceTitle;
 }
 
 function resolveTargetTitle(params: {
@@ -684,13 +700,13 @@ function resolveTargetTitle(params: {
   headline?: string | null;
   context: SupportContext;
 }) {
-  const sourceTitle = clean(params.sourceTitle);
-  const adaptedTitle = normalizeHeadline(params.adaptedTitle, params.context);
-  const headline = normalizeHeadline(params.headline, params.context);
+  const sourceTitle = normalizeResumeText(params.sourceTitle || "");
+  if (sourceTitle) return sourceTitle;
 
-  if (headline && headline !== sourceTitle) return headline;
-  if (adaptedTitle) return adaptedTitle;
-  return sourceTitle || null;
+  const adaptedTitle = normalizeHeadline(params.adaptedTitle, params.context, sourceTitle);
+  const headline = normalizeHeadline(params.headline, params.context, sourceTitle);
+
+  return adaptedTitle || headline || null;
 }
 
 export function applySourceResumeStructure(params: {
@@ -705,7 +721,7 @@ export function applySourceResumeStructure(params: {
   const experience = original.adaptedResume.experience.map((item, index) =>
     mergeExperienceItem(item, findAdapted(adapted.adaptedResume.experience, item.sourceIndex, index), context)
   );
-  const headline = normalizeHeadline(adapted.adaptedResume.headline, context);
+  const headline = normalizeHeadline(adapted.adaptedResume.headline, context, target.title);
 
   return {
     ...adapted,
