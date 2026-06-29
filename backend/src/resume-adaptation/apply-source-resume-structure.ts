@@ -4,12 +4,14 @@ import type { AdaptedResumeSkills, ResumeAdaptationResult } from "./types.js";
 
 type ExperienceItem = ResumeAdaptationResult["adaptedResume"]["experience"][number];
 type CandidateGender = "female" | "male" | "unknown";
+type ResumeDomain = "smm" | "frontend" | "generic";
 
 type SupportContext = {
   sourceText: string;
   sourceTextKey: string;
   originalSkills: string[];
   gender: CandidateGender;
+  domain: ResumeDomain;
 };
 
 const stopWords = new Set([
@@ -174,6 +176,34 @@ function detectCandidateGender(sourceDocument: SourceResumeDocument): CandidateG
   if (/\b[а-яё]+(?:ов|ев|ёв|ин|ий|ый)\b/u.test(fullName)) return "male";
 
   return "unknown";
+}
+
+function detectResumeDomain(original: ResumeAdaptationResult, sourceText: string): ResumeDomain {
+  const rolesText = [
+    original.target.title,
+    ...original.target.specializations,
+    ...original.adaptedResume.experience.map((item) => item.position || ""),
+  ].join("\n");
+  const rolesKey = rolesText.toLowerCase();
+  const sourceKey = sourceText.toLowerCase();
+
+  if (/\b(?:smm|смм)\b|контент[-\s]?менедж|контент[-\s]?мейкер|дизайнер|соцсет|stories|сторис|reels|рилс/iu.test(rolesKey)) {
+    return "smm";
+  }
+
+  if (/frontend|front[-\s]?end|фронтенд|react|next\.js|typescript|javascript|redux|websocket|html|css/iu.test(rolesKey)) {
+    return "frontend";
+  }
+
+  if (/\b(?:smm|смм)\b|контент[-\s]?план|ведение\s+stories|ведение\s+сторис|reels|рилс|подписчик|актуальн(?:ых|ые)/iu.test(sourceKey)) {
+    return "smm";
+  }
+
+  if (/frontend|front[-\s]?end|react|next\.js|typescript|javascript|redux|websocket|html5?|css3?|rest\s+api/iu.test(sourceKey)) {
+    return "frontend";
+  }
+
+  return "generic";
 }
 
 function applyGenderInflection(value: string, gender: CandidateGender) {
@@ -356,13 +386,19 @@ function normalizeResumeText(value: string) {
 function normalizeSkillText(value: string, context: SupportContext) {
   const text = normalizeResumeText(value);
 
-  if (/создание\s+видеоконтента|монтаж\s+коротк|reels/i.test(text)) {
-    return "Reels-контент: сценарии, съёмка и монтаж";
-  }
+  if (context.domain === "smm") {
+    if (/создание\s+видеоконтента|монтаж\s+коротк|reels/i.test(text)) {
+      return "Reels-контент: сценарии, съёмка и монтаж";
+    }
 
-  if (/генерац.*нейросет|работа\s+с\s+(?:ии|ai)|нейросет/i.test(text)) {
-    const tools = extractSupportedAiTools(context);
-    return tools.length ? `ИИ-инструменты: ${tools.join(", ")}` : "Работа с ИИ-инструментами";
+    if (/генерац.*нейросет|работа\s+с\s+(?:ии|ai)|нейросет/i.test(text)) {
+      const tools = extractSupportedAiTools(context);
+      return tools.length ? `ИИ-инструменты: ${tools.join(", ")}` : "Работа с ИИ-инструментами";
+    }
+
+    if (/разработка\s+сценар/i.test(text)) return "Сценарии для Reels и публикаций";
+    if (/разработка\s+дизайна|дизайн\s+постов|сторис/i.test(text)) return "Дизайн постов, stories, обложек и инфографики";
+    if (/взаимодействие\s+с\s+аудитор/i.test(text)) return "Коммуникация с подписчиками";
   }
 
   if (/photoshop|figma|canva/i.test(text)) {
@@ -372,10 +408,6 @@ function normalizeSkillText(value: string, context: SupportContext) {
     return tools.length ? tools.join(" / ") : text;
   }
 
-  if (/разработка\s+сценар/i.test(text)) return "Сценарии для Reels и публикаций";
-  if (/разработка\s+дизайна|дизайн\s+постов|сторис/i.test(text)) return "Дизайн постов, stories, обложек и инфографики";
-  if (/взаимодействие\s+с\s+аудитор/i.test(text)) return "Коммуникация с подписчиками";
-
   return text;
 }
 
@@ -384,78 +416,80 @@ function polishBullet(value: string, context?: SupportContext) {
   const lower = text.toLowerCase();
   const finish = (result: string) => applyGenderInflection(result, context?.gender || "unknown");
 
-  if (/^анализ(?:ировал)?\s+конкурент/u.test(lower)) {
-    return finish("Анализировал конкурентную среду и контент-подходы, чтобы уточнять рубрики, визуальный стиль и подачу бренда");
-  }
+  if (context?.domain === "smm") {
+    if (/^анализ(?:ировал)?\s+конкурент/u.test(lower)) {
+      return finish("Анализировал конкурентную среду и контент-подходы, чтобы уточнять рубрики, визуальный стиль и подачу бренда");
+    }
 
-  if (/формирован|формировал.*един.*стил/u.test(lower)) {
-    return finish("Формировал единый визуальный стиль аккаунта, передающий атмосферу бренда и поддерживающий цельную подачу в ленте");
-  }
+    if (/формирован|формировал.*един.*стил/u.test(lower)) {
+      return finish("Формировал единый визуальный стиль аккаунта, передающий атмосферу бренда и поддерживающий цельную подачу в ленте");
+    }
 
-  if (/создан.*аккаунт.*с нуля|создавал.*аккаунт.*с нуля|запускал.*аккаунт/u.test(lower)) {
-    return finish("Запускал аккаунт с нуля: подбирал позиционирование, структуру профиля, визуальную подачу и первые рубрики");
-  }
+    if (/создан.*аккаунт.*с нуля|создавал.*аккаунт.*с нуля|запускал.*аккаунт/u.test(lower)) {
+      return finish("Запускал аккаунт с нуля: подбирал позиционирование, структуру профиля, визуальную подачу и первые рубрики");
+    }
 
-  if (/переупаков/u.test(lower)) {
-    return finish("Переупаковывал аккаунт: обновлял визуальную подачу, структуру профиля и оформление ключевых разделов");
-  }
+    if (/переупаков/u.test(lower)) {
+      return finish("Переупаковывал аккаунт: обновлял визуальную подачу, структуру профиля и оформление ключевых разделов");
+    }
 
-  if (/контент[- ]план/u.test(lower)) {
-    return finish("Разрабатывал контент-план на 14 дней / 1 месяц с учётом рубрик, визуальной логики, тем публикаций и регулярности выхода контента");
-  }
+    if (/контент[- ]план/u.test(lower)) {
+      return finish("Разрабатывал контент-план на 14 дней / 1 месяц с учётом рубрик, визуальной логики, тем публикаций и регулярности выхода контента");
+    }
 
-  if (/reels|рилс/u.test(lower)) {
-    return finish("Создавал Reels-контент полного цикла: подбирал референсы, писал сценарии, организовывал съёмки и монтировал ролики под задачи бренда");
-  }
+    if (/reels|рилс/u.test(lower)) {
+      return finish("Создавал Reels-контент полного цикла: подбирал референсы, писал сценарии, организовывал съёмки и монтировал ролики под задачи бренда");
+    }
 
-  if (/написан.*пост|писал.*пост/u.test(lower)) {
-    return finish("Писал посты с учётом тональности бренда, задачи публикации и вовлечения аудитории");
-  }
+    if (/написан.*пост|писал.*пост/u.test(lower)) {
+      return finish("Писал посты с учётом тональности бренда, задачи публикации и вовлечения аудитории");
+    }
 
-  if (/никнейм|шапк.*профил|аватар/u.test(lower)) {
-    return finish("Прорабатывал упаковку профиля: подбирал никнейм, оформлял шапку аккаунта и аватар под позиционирование бренда");
-  }
+    if (/никнейм|шапк.*профил|аватар/u.test(lower)) {
+      return finish("Прорабатывал упаковку профиля: подбирал никнейм, оформлял шапку аккаунта и аватар под позиционирование бренда");
+    }
 
-  if (/stories|сторис/u.test(lower)) {
-    return finish("Вёл stories: готовил регулярные форматы, визуальные материалы и коммуникационные сценарии для поддержания активности аккаунта");
-  }
+    if (/stories|сторис/u.test(lower)) {
+      return finish("Вёл stories: готовил регулярные форматы, визуальные материалы и коммуникационные сценарии для поддержания активности аккаунта");
+    }
 
-  if (/обработ.*фото|инфограф/u.test(lower)) {
-    return finish("Обрабатывал фотографии и создавал инфографику для афиш, stories и постов в едином визуальном стиле");
-  }
+    if (/обработ.*фото|инфограф/u.test(lower)) {
+      return finish("Обрабатывал фотографии и создавал инфографику для афиш, stories и постов в едином визуальном стиле");
+    }
 
-  if (/(?:работа|использован(?:ие)?|использовал[аи]?)\s+с\s+(?:ии|ai)\b|нейросет|chatgpt|perplexity|krea|kling/u.test(lower)) {
-    const tools = context ? extractSupportedAiTools(context) : [];
-    const toolsText = tools.length ? ` (${tools.join(", ")})` : "";
-    return finish(`Использовал ИИ-инструменты${toolsText} для подготовки визуальных идей, текстовых материалов и контентных гипотез`);
-  }
+    if (/(?:работа|использован(?:ие)?|использовал[аи]?)\s+с\s+(?:ии|ai)\b|нейросет|chatgpt|perplexity|krea|kling/u.test(lower)) {
+      const tools = extractSupportedAiTools(context);
+      const toolsText = tools.length ? ` (${tools.join(", ")})` : "";
+      return finish(`Использовал ИИ-инструменты${toolsText} для подготовки визуальных идей, текстовых материалов и контентных гипотез`);
+    }
 
-  if (/актуальн/u.test(lower)) {
-    return finish("Оформлял актуальные разделы профиля: продумывал названия, обложки и визуальную структуру для быстрого доступа к ключевой информации");
-  }
+    if (/актуальн/u.test(lower)) {
+      return finish("Оформлял актуальные разделы профиля: продумывал названия, обложки и визуальную структуру для быстрого доступа к ключевой информации");
+    }
 
-  if (/верстк.*меню|дизайн.*меню/u.test(lower)) {
-    return finish("Верстал меню и разрабатывал его дизайн, сохраняя единый визуальный стиль бренда");
-  }
+    if (/верстк.*меню|дизайн.*меню/u.test(lower)) {
+      return finish("Верстал меню и разрабатывал его дизайн, сохраняя единый визуальный стиль бренда");
+    }
 
-  if (/коммуникац|подписчик/u.test(lower)) {
-    return finish("Коммуницировал с подписчиками, поддерживал обратную связь и вовлечение аудитории в аккаунте");
-  }
+    if (/коммуникац|подписчик/u.test(lower)) {
+      return finish("Коммуницировал с подписчиками, поддерживал обратную связь и вовлечение аудитории в аккаунте");
+    }
 
-  if (/подготовк.*тем|рубрик|сценар/u.test(lower)) {
-    return finish("Готовил темы, рубрики и сценарии публикаций: искал идеи, формулировал тезисы и подбирал референсы");
-  }
+    if (/подготовк.*тем|рубрик|сценар/u.test(lower)) {
+      return finish("Готовил темы, рубрики и сценарии публикаций: искал идеи, формулировал тезисы и подбирал референсы");
+    }
 
-  if (/координац.*контент|планирован.*срок|контроль публикац/u.test(lower)) {
-    return finish("Координировал выпуск контента: планировал сроки, собирал материалы и контролировал публикации по графику");
-  }
+    if (/координац.*контент|планирован.*срок|контроль публикац/u.test(lower)) {
+      return finish("Координировал выпуск контента: планировал сроки, собирал материалы и контролировал публикации по графику");
+    }
 
-  if (/визуальн.*оформ|обложк|превью/u.test(lower)) {
-    return finish("Создавал визуальное оформление для постов: обложки, превью и единый стиль ленты");
-  }
+    if (/визуальн.*оформ|обложк|превью/u.test(lower)) {
+      return finish("Создавал визуальное оформление для постов: обложки, превью и единый стиль ленты");
+    }
 
-  if (/видеосъ[её]мк|видео.*съ[её]мк|монтаж видео|обработка видео/u.test(lower)) {
-    return finish("Снимал и монтировал видеоконтент для коротких форматов, адаптируя визуальную подачу под задачи публикации");
+    if (/видеосъ[её]мк|видео.*съ[её]мк|монтаж видео|обработка видео/u.test(lower)) {
+      return finish("Снимал и монтировал видеоконтент для коротких форматов, адаптируя визуальную подачу под задачи публикации");
+    }
   }
 
   return finish(text);
@@ -664,6 +698,7 @@ function createSupportContext(original: ResumeAdaptationResult, sourceDocument: 
     sourceTextKey: key(sourceText),
     originalSkills,
     gender: detectCandidateGender(sourceDocument),
+    domain: detectResumeDomain(original, sourceText),
   };
 }
 
