@@ -141,6 +141,22 @@ function isSupportedClaim(value: string, context: SupportContext) {
   return context.originalSkills.some((skill) => key(skill) === itemKey || isSimilar(skill, value));
 }
 
+function cleanupUnsupportedClaimText(value: string) {
+  return value
+    .replace(/\((?:\s*[,/;]?\s*)+\)/g, "")
+    .replace(/\(\s*\)/g, "")
+    .replace(/(?:,\s*){2,}/g, ", ")
+    .replace(/,\s*([).])/g, "$1")
+    .replace(/\s+,/g, ",")
+    .replace(/(?:включая|в том числе)\s*[,.]?\s*([.)])/giu, "$1")
+    .replace(/\b(?:в|на|для|через|с помощью)\s*[,.]/giu, ".")
+    .replace(/\b(?:включая|в том числе)\s*$/giu, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\s+\./g, ".")
+    .replace(/\.{2,}/g, ".")
+    .trim();
+}
+
 function sanitizeUnsupportedClaims(value: string, context: SupportContext) {
   let result = clean(value);
 
@@ -150,16 +166,7 @@ function sanitizeUnsupportedClaims(value: string, context: SupportContext) {
     result = result.replace(new RegExp(`\\b${escapeRegExp(claim)}\\b`, "giu"), "");
   }
 
-  return result
-    .replace(/\((?:\s*[,/;]?\s*)+\)/g, "")
-    .replace(/\(\s*\)/g, "")
-    .replace(/(?:,\s*){2,}/g, ", ")
-    .replace(/,\s*([).])/g, "$1")
-    .replace(/\s+,/g, ",")
-    .replace(/(?:включая|в том числе)\s*[,.]?\s*([.)])/giu, "$1")
-    .replace(/\s{2,}/g, " ")
-    .replace(/\s+\./g, ".")
-    .trim();
+  return cleanupUnsupportedClaimText(result);
 }
 
 function escapeRegExp(value: string) {
