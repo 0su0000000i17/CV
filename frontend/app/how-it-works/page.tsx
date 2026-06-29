@@ -24,7 +24,7 @@ const steps: Step[] = [
     number: '01',
     title: 'Загрузите резюме',
     description:
-      'Добавьте PDF или DOCX. CVPro прочитает содержание резюме и сохранит его в личном кабинете.',
+      'Добавьте PDF или DOCX: CVPro прочитает содержание резюме и сохранит его в личном кабинете',
     icon: FileText,
     iconClassName: 'bg-blue-500/10 text-blue-300 ring-blue-500/20',
   },
@@ -32,7 +32,7 @@ const steps: Step[] = [
     number: '02',
     title: 'Получите оценку',
     description:
-      'Сервис проверит структуру, опыт, навыки, ATS-совместимость и места, которые стоит усилить перед откликом.',
+      'Сервис проверит структуру, опыт, навыки, ATS-совместимость и места, которые стоит усилить перед откликом',
     icon: BarChart3,
     iconClassName: 'bg-orange-500/10 text-orange-300 ring-orange-500/20',
   },
@@ -40,7 +40,7 @@ const steps: Step[] = [
     number: '03',
     title: 'Разберите результат',
     description:
-      'В отчёте будет общий score, детализация по блокам и конкретные рекомендации без технической терминологии.',
+      'В отчёте будет общий score, детализация по блокам и конкретные рекомендации без технической терминологии',
     icon: CheckCircle2,
     iconClassName: 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/20',
   },
@@ -48,7 +48,7 @@ const steps: Step[] = [
     number: '04',
     title: 'Адаптируйте под вакансию',
     description:
-      'Вставьте описание вакансии — CVPro подготовит новую версию резюме под требования работодателя.',
+      'Вставьте описание вакансии — CVPro подготовит новую версию резюме под требования работодателя',
     icon: Target,
     iconClassName: 'bg-violet-500/10 text-violet-300 ring-violet-500/20',
   },
@@ -56,7 +56,7 @@ const steps: Step[] = [
     number: '05',
     title: 'Скачайте готовый файл',
     description:
-      'Исходное резюме останется без изменений. Новую версию можно проверить, отредактировать и скачать.',
+      'Исходное резюме останется без изменений: новую версию можно проверить, отредактировать и скачать',
     icon: ShieldCheck,
     iconClassName: 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/20',
   },
@@ -102,7 +102,7 @@ export default function HowItWorksPage() {
 
             <p className="mt-6 max-w-2xl text-base font-light leading-relaxed tracking-tight text-muted-foreground md:text-lg">
               CVPro помогает понять, насколько резюме готово к отклику, что в
-              нём стоит усилить и как адаптировать его под конкретную вакансию.
+              нём стоит усилить и как адаптировать его под конкретную вакансию
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -183,7 +183,7 @@ export default function HowItWorksPage() {
 
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                 Резюме можно отправлять, но есть блоки, которые стоит доработать
-                перед откликом.
+                перед откликом
               </p>
 
               <div className="mt-5 space-y-2">
@@ -225,8 +225,8 @@ export default function HowItWorksPage() {
 
             <div className="rounded-3xl border border-border bg-card/60 p-5">
               <p className="text-sm leading-relaxed text-muted-foreground">
-                CVPro не заменяет ваше решение. Сервис помогает быстрее увидеть
-                слабые места резюме и подготовить более точный отклик.
+                CVPro не заменяет ваше решение: сервис помогает быстрее увидеть
+                слабые места резюме и подготовить более точный отклик
               </p>
             </div>
           </aside>
