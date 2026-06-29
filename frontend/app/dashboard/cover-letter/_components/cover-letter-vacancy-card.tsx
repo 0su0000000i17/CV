@@ -75,8 +75,7 @@ export function CoverLetterVacancyCard({
           <h2 className="text-xl font-medium text-foreground">Вакансия</h2>
 
           <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-            Вставьте ссылку или полный текст вакансии. Поле останется компактным
-            для ссылки и увеличится, если вы добавите описание.
+            Вставьте ссылку или описание вакансии
           </p>
         </div>
       </div>
@@ -104,7 +103,7 @@ export function CoverLetterVacancyCard({
           rows={1}
           value={vacancyInput}
           onChange={(event) => onVacancyInputChange(event.target.value)}
-          placeholder="Ссылка на вакансию или полный текст описания..."
+          placeholder="Ссылка на вакансию или полный текст описания"
           className="min-h-[44px] w-full resize-none rounded-xl border border-border bg-background px-4 py-3 text-sm leading-relaxed text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-foreground/40"
         />
       )}
