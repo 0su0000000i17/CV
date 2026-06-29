@@ -41,7 +41,7 @@ export default function Home() {
 
             <p className="max-w-2xl text-lg leading-8 text-muted-foreground md:text-xl">
               Оценивай, адаптируй и создавай сильные сопроводительные под
-              конкретные вакансии.
+              конкретные вакансии
             </p>
           </div>
 
