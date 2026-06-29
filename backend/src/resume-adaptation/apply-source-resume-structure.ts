@@ -36,12 +36,16 @@ function tokens(value: string) {
     .filter((token) => token.length > 2 && !stopWords.has(token));
 }
 
-function isSimilar(a: string, b: string) {
+function similarity(a: string, b: string) {
   const first = new Set(tokens(a));
   const second = new Set(tokens(b));
-  if (!first.size || !second.size) return false;
+  if (!first.size || !second.size) return 0;
   const intersection = [...first].filter((token) => second.has(token)).length;
-  return intersection / Math.min(first.size, second.size) >= 0.58;
+  return intersection / Math.min(first.size, second.size);
+}
+
+function isSimilar(a: string, b: string) {
+  return similarity(a, b) >= 0.58;
 }
 
 function unique(values: string[]) {
@@ -62,29 +66,38 @@ function findAdapted(items: ExperienceItem[], sourceIndex: number, fallbackIndex
 }
 
 function mergeBullets(original: string[], adapted: string[]) {
-  const result = unique(adapted);
-  const seen = new Set(result.map(key));
   const originalItems = unique(original);
+  const adaptedItems = unique(adapted);
+
+  if (!originalItems.length) return adaptedItems;
+  if (!adaptedItems.length) return originalItems;
+
   const targetCount = Math.min(originalItems.length, 16);
+  const minimumUsefulAdaptedCount = Math.max(3, Math.ceil(originalItems.length * 0.45));
+
+  if (adaptedItems.length >= minimumUsefulAdaptedCount) {
+    return adaptedItems.slice(0, targetCount);
+  }
+
+  const result = [...adaptedItems];
+  const seen = new Set(result.map(key));
+  const fallbackCount = Math.max(result.length, Math.ceil(originalItems.length * 0.65));
 
   for (const bullet of originalItems) {
-    if (result.length >= targetCount) break;
+    if (result.length >= fallbackCount) break;
     const bulletKey = key(bullet);
     if (seen.has(bulletKey) || result.some((item) => isSimilar(item, bullet))) continue;
     seen.add(bulletKey);
     result.push(bullet);
   }
 
-  return result.length ? result : originalItems;
+  return result.length ? result.slice(0, targetCount) : originalItems;
 }
 
 function mergeFocus(originalFocus: string | null, adaptedFocus?: string | null) {
-  const originalLines = originalFocus?.split("\n") || [];
   const adapted = clean(adaptedFocus);
-  if (!adapted || originalLines.some((line) => isSimilar(line, adapted))) {
-    return unique(originalLines).join("\n") || null;
-  }
-  return unique([...originalLines, adapted]).slice(0, 5).join("\n") || null;
+  if (adapted) return adapted;
+  return unique(originalFocus?.split("\n") || []).join("\n") || null;
 }
 
 function mergeExperienceItem(original: ExperienceItem, adapted: ExperienceItem | null): ExperienceItem {
@@ -103,12 +116,19 @@ function mergeExperienceItem(original: ExperienceItem, adapted: ExperienceItem |
   };
 }
 
+function findSupportedSkill(value: string, originalSkills: string[]) {
+  const valueKey = key(value);
+  const exact = originalSkills.find((skill) => key(skill) === valueKey);
+  if (exact) return exact;
+
+  return originalSkills.some((skill) => isSimilar(skill, value)) ? clean(value) : null;
+}
+
 function mergeSkills(original: AdaptedResumeSkills, adapted: AdaptedResumeSkills) {
   const originalSkills = unique([...original.primary, ...original.secondary]);
-  const canonical = new Map(originalSkills.map((skill) => [key(skill), skill]));
   const addSupported = (items: string[]) =>
     unique(items)
-      .map((item) => canonical.get(key(item)))
+      .map((item) => findSupportedSkill(item, originalSkills))
       .filter((item): item is string => Boolean(item));
   const primary = unique(addSupported([...adapted.primary, ...adapted.secondary]));
   const used = new Set(primary.map(key));
@@ -116,7 +136,7 @@ function mergeSkills(original: AdaptedResumeSkills, adapted: AdaptedResumeSkills
   return {
     primary: primary.length ? primary : unique(original.primary),
     secondary,
-    deprioritized: unique(adapted.deprioritized).filter((item) => canonical.has(key(item))),
+    deprioritized: unique(adapted.deprioritized).filter((item) => Boolean(findSupportedSkill(item, originalSkills))),
     notAdded: unique(adapted.notAdded),
   };
 }
