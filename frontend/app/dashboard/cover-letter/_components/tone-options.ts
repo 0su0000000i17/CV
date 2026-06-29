@@ -8,16 +8,16 @@ export const coverLetterToneOptions: Array<{
   {
     value: 'strict_professional',
     title: 'Строгий профессиональный',
-    description: 'Официально, спокойно, без эмоций и лишней воды.',
+    description: 'Официально, спокойно и по делу',
   },
   {
     value: 'friendly_neutral',
     title: 'Дружелюбный нейтральный',
-    description: 'Человеческий тон без фамильярности и канцелярита.',
+    description: 'Человеческий тон без фамильярности и лишней официальности',
   },
   {
     value: 'confident_short',
     title: 'Уверенный короткий',
-    description: 'Максимально по делу, с акцентом на пользу кандидата.',
+    description: 'Максимально по делу, с акцентом на пользу кандидата',
   },
 ];
