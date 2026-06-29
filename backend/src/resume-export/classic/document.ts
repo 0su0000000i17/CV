@@ -392,36 +392,118 @@ function resolvePhotoSize(sourceDocument: SourceResumeDocument | null) {
   return width && height ? { width, height } : null;
 }
 
-function isSalaryLine(value: string) {
-  return /\d[\d\s]*(?:₽|руб\.?|RUB)/i.test(cleanText(value));
-}
-
 function salaryDigits(value: string) {
   return cleanText(value).replace(/\D/g, "");
+}
+
+function extractSalaryCandidates(value?: string | null) {
+  const text = value || "";
+
+  return Array.from(
+    text.matchAll(
+      /\d[\d\s]{1,14}\s*(?:₽|руб\.?|RUB)(?:\s*(?:на руки|net|gross|до вычета налогов|до вычета|после вычета))?/giu
+    )
+  )
+    .map((match) => cleanText(match[0]))
+    .filter(Boolean);
+}
+
+function isStandaloneSalaryCandidate(value?: string | null) {
+  const text = cleanText(value);
+  if (!text) return false;
+
+  const candidates = extractSalaryCandidates(text);
+  if (!candidates.length) return false;
+
+  return candidates.some((candidate) => {
+    const normalizedCandidate = cleanText(candidate);
+    const normalizedText = text.replace(/[.,;:]$/u, "");
+
+    return (
+      normalizedText === normalizedCandidate ||
+      normalizedText.length <= normalizedCandidate.length + 14
+    );
+  });
+}
+
+function collectSourceTextTargetSalaries(sourceText: string) {
+  const lines = sourceText.split(/\n+/u).map(cleanText).filter(Boolean);
+  const targetIndex = lines.findIndex((line) =>
+    line.startsWith("Желаемая должность")
+  );
+
+  if (targetIndex < 0) return [];
+
+  const nextSectionIndex = lines.findIndex(
+    (line, index) => index > targetIndex && line.startsWith("Опыт работы")
+  );
+  const targetLines = lines.slice(
+    targetIndex,
+    nextSectionIndex > targetIndex ? nextSectionIndex : targetIndex + 12
+  );
+
+  return targetLines.flatMap(extractSalaryCandidates);
+}
+
+function collectDocumentExperienceSalaries(
+  sourceDocument: SourceResumeDocument | null
+) {
+  if (!sourceDocument) return [];
+
+  return sourceDocument.experience.items
+    .flatMap((item) => item.raw)
+    .map(cleanText)
+    .filter(isStandaloneSalaryCandidate)
+    .flatMap(extractSalaryCandidates);
+}
+
+function collectAdaptedExperienceSalaries(payload: ClassicExportPayload) {
+  return payload.adaptation.adaptedResume.experience
+    .flatMap((item) => [
+      item.focus,
+      ...(item.preservedFacts ?? []),
+      ...item.adaptedBullets,
+    ])
+    .flatMap((value) => String(value || "").split(/\n+/u))
+    .map(cleanText)
+    .filter(isStandaloneSalaryCandidate)
+    .flatMap(extractSalaryCandidates);
+}
+
+function pickBestSalary(candidates: string[]) {
+  const uniqueCandidates = uniqueStrings(candidates.map(cleanText).filter(Boolean));
+  const firstCandidate = uniqueCandidates[0] || "";
+  if (!firstCandidate) return "";
+
+  const firstDigits = salaryDigits(firstCandidate);
+  const richerCandidate = uniqueCandidates.find((candidate) => {
+    const digits = salaryDigits(candidate);
+
+    return (
+      digits &&
+      firstDigits &&
+      digits === firstDigits &&
+      /(на руки|net|gross|до вычета|после вычета)/i.test(candidate)
+    );
+  });
+
+  return richerCandidate || firstCandidate;
 }
 
 function resolveTargetSalary(params: {
   payload: ClassicExportPayload;
   sourceDocument: SourceResumeDocument | null;
   snapshot: SourceSnapshot;
+  sourceText: string;
 }) {
-  const explicitSalary = cleanText(params.payload.adaptation.target.salary);
-  if (explicitSalary) return explicitSalary;
-
-  const sourceSalary = cleanText(params.sourceDocument?.target.salary);
-  const snapshotSalary =
-    params.snapshot.targetDetails.map(cleanText).find(isSalaryLine) || "";
-
-  if (snapshotSalary) {
-    const sourceDigits = salaryDigits(sourceSalary);
-    const snapshotDigits = salaryDigits(snapshotSalary);
-
-    if (!sourceDigits || snapshotDigits.includes(sourceDigits)) {
-      return snapshotSalary;
-    }
-  }
-
-  return sourceSalary;
+  return pickBestSalary([
+    cleanText(params.payload.adaptation.target.salary),
+    cleanText(params.sourceDocument?.target.salary),
+    ...params.snapshot.targetDetails.flatMap(extractSalaryCandidates),
+    ...collectSourceTextTargetSalaries(params.sourceText),
+    ...collectDocumentExperienceSalaries(params.sourceDocument),
+    ...collectAdaptedExperienceSalaries(params.payload),
+  ]);
 }
 
 export function getCompanyMeta(snapshot: SourceSnapshot, company: string | null) {
@@ -452,6 +534,7 @@ export function buildClassicDocument(params: {
     payload: params.payload,
     sourceDocument,
     snapshot,
+    sourceText: params.sourceText,
   });
   const payload = {
     ...params.payload,
