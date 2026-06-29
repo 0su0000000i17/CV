@@ -30,7 +30,7 @@ export function CoverLetterToneCard({
           <h2 className="text-xl font-medium text-foreground">Тон письма</h2>
 
           <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-            Выберите стиль, в котором будет написано сопроводительное.
+            Выберите стиль письма
           </p>
         </div>
       </div>
