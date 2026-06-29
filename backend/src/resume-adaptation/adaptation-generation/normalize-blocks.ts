@@ -47,6 +47,32 @@ export function normalizeExperience(value: unknown): AdaptedResumeExperienceItem
   return result.slice(0, 7);
 }
 
+function normalizeDateRange(value: unknown) {
+  const direct = toNullableString(value);
+  if (direct) return direct;
+
+  if (!isRecord(value)) return null;
+
+  const start = toNullableString(value.start);
+  const end = toNullableString(value.end);
+
+  if (start && end) return `${start} — ${end}`;
+  if (start) return start;
+  if (end) return end;
+
+  return toNullableString(value.duration);
+}
+
+function normalizeAdaptedBullets(value: Record<string, unknown>) {
+  const bullets = toStringArray(value.adaptedBullets, 14);
+  if (bullets.length) return bullets;
+
+  const fallbackBullets = toStringArray(value.bullets, 14);
+  if (fallbackBullets.length) return fallbackBullets;
+
+  return toStringArray(value.blocks, 14);
+}
+
 function normalizeExperienceItem(
   value: unknown,
   index: number
@@ -61,8 +87,8 @@ function normalizeExperienceItem(
     company: toNullableString(value.company),
     companyUrl: toNullableString(value.companyUrl),
     position: toNullableString(value.position),
-    dates: toNullableString(value.dates),
-    adaptedBullets: toStringArray(value.adaptedBullets, 14),
+    dates: normalizeDateRange(value.dates),
+    adaptedBullets: normalizeAdaptedBullets(value),
     focus: toNullableString(value.focus),
     preservedFacts: toStringArray(value.preservedFacts, 16),
     warnings: toStringArray(value.warnings, 8),
