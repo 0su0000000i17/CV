@@ -87,6 +87,10 @@ function isSimilar(a: string, b: string) {
   return similarity(a, b) >= 0.42;
 }
 
+function isNearDuplicate(a: string, b: string) {
+  return similarity(a, b) >= 0.82;
+}
+
 function extractSalary(value?: string | null) {
   const text = clean(value);
   const match = text.match(
@@ -381,7 +385,7 @@ function mergeBullets(original: string[], adapted: string[], context: SupportCon
   for (const bullet of originalItems) {
     if (result.length >= targetCount) break;
     const bulletKey = key(bullet);
-    if (seen.has(bulletKey) || result.some((item) => isSimilar(item, bullet))) continue;
+    if (seen.has(bulletKey) || result.some((item) => isNearDuplicate(item, bullet))) continue;
     seen.add(bulletKey);
     result.push(bullet);
   }
