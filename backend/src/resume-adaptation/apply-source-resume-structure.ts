@@ -4,6 +4,12 @@ import type { AdaptedResumeSkills, ResumeAdaptationResult } from "./types.js";
 
 type ExperienceItem = ResumeAdaptationResult["adaptedResume"]["experience"][number];
 
+type SupportContext = {
+  sourceText: string;
+  sourceTextKey: string;
+  originalSkills: string[];
+};
+
 const stopWords = new Set([
   "и",
   "в",
@@ -20,6 +26,21 @@ const stopWords = new Set([
   "от",
   "до",
 ]);
+
+const protectedClaims = [
+  "After Effects",
+  "Premiere Pro",
+  "VN",
+  "Midjourney",
+  "Runway",
+  "Pika",
+  "Sora",
+  "Telegram",
+  "VK",
+  "ВКонтакте",
+  "Instagram",
+  "Инстаграм",
+];
 
 function clean(value?: string | null) {
   return value?.replace(/\s+/g, " ").trim() || "";
@@ -111,9 +132,46 @@ function findAdapted(items: ExperienceItem[], sourceIndex: number, fallbackIndex
   return items.find((item) => item.sourceIndex === sourceIndex) || items[fallbackIndex] || null;
 }
 
-function mergeBullets(original: string[], adapted: string[]) {
+function isSupportedClaim(value: string, context: SupportContext) {
+  const itemKey = key(value);
+
+  if (!itemKey) return false;
+  if (context.sourceTextKey.includes(itemKey)) return true;
+
+  return context.originalSkills.some((skill) => key(skill) === itemKey || isSimilar(skill, value));
+}
+
+function sanitizeUnsupportedClaims(value: string, context: SupportContext) {
+  let result = clean(value);
+
+  for (const claim of protectedClaims) {
+    if (isSupportedClaim(claim, context)) continue;
+
+    result = result.replace(new RegExp(`\\b${escapeRegExp(claim)}\\b`, "giu"), "");
+  }
+
+  return result
+    .replace(/\((?:\s*[,/;]?\s*)+\)/g, "")
+    .replace(/\(\s*\)/g, "")
+    .replace(/(?:,\s*){2,}/g, ", ")
+    .replace(/,\s*([).])/g, "$1")
+    .replace(/\s+,/g, ",")
+    .replace(/(?:включая|в том числе)\s*[,.]?\s*([.)])/giu, "$1")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\s+\./g, ".")
+    .trim();
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function mergeBullets(original: string[], adapted: string[], context: SupportContext) {
   const originalItems = unique(original).filter((item) => !isSalaryLine(item));
-  const adaptedItems = unique(adapted).filter((item) => !isSalaryLine(item));
+  const adaptedItems = unique(adapted)
+    .filter((item) => !isSalaryLine(item))
+    .map((item) => sanitizeUnsupportedClaims(item, context))
+    .filter(Boolean);
 
   if (!originalItems.length) return adaptedItems;
   if (!adaptedItems.length) return originalItems;
@@ -140,15 +198,19 @@ function mergeBullets(original: string[], adapted: string[]) {
   return result.length ? result.slice(0, targetCount) : originalItems;
 }
 
-function mergeFocus(originalFocus: string | null, adaptedFocus?: string | null) {
-  const adapted = clean(adaptedFocus);
+function mergeFocus(originalFocus: string | null, adaptedFocus: string | null | undefined, context: SupportContext) {
+  const adapted = sanitizeUnsupportedClaims(clean(adaptedFocus), context);
   if (adapted && !isSalaryLine(adapted)) return adapted;
   return unique(originalFocus?.split("\n") || [])
     .filter((item) => !isSalaryLine(item))
     .join("\n") || null;
 }
 
-function mergeExperienceItem(original: ExperienceItem, adapted: ExperienceItem | null): ExperienceItem {
+function mergeExperienceItem(
+  original: ExperienceItem,
+  adapted: ExperienceItem | null,
+  context: SupportContext
+): ExperienceItem {
   const adaptedBullets = adapted?.adaptedBullets || [];
   const preservedFacts = adapted?.preservedFacts?.length ? adapted.preservedFacts : original.preservedFacts;
   return {
@@ -157,8 +219,8 @@ function mergeExperienceItem(original: ExperienceItem, adapted: ExperienceItem |
     companyUrl: original.companyUrl,
     position: resolvePosition(original, adapted),
     dates: original.dates,
-    adaptedBullets: mergeBullets(original.adaptedBullets, adaptedBullets),
-    focus: mergeFocus(original.focus, adapted?.focus),
+    adaptedBullets: mergeBullets(original.adaptedBullets, adaptedBullets, context),
+    focus: mergeFocus(original.focus, adapted?.focus, context),
     preservedFacts: unique(preservedFacts).slice(0, 16),
     warnings: adapted?.warnings || [],
   };
@@ -189,6 +251,34 @@ function mergeSkills(original: AdaptedResumeSkills, adapted: AdaptedResumeSkills
   };
 }
 
+function collectText(value: unknown): string[] {
+  if (typeof value === "string") return [value];
+  if (Array.isArray(value)) return value.flatMap(collectText);
+  if (value && typeof value === "object") {
+    return Object.values(value as Record<string, unknown>).flatMap(collectText);
+  }
+
+  return [];
+}
+
+function createSupportContext(original: ResumeAdaptationResult): SupportContext {
+  const originalSkills = unique([
+    ...original.adaptedResume.skills.primary,
+    ...original.adaptedResume.skills.secondary,
+  ]);
+  const sourceText = collectText(original).join("\n");
+
+  return {
+    sourceText,
+    sourceTextKey: key(sourceText),
+    originalSkills,
+  };
+}
+
+function filterSupportedKeywords(items: string[], context: SupportContext) {
+  return unique(items).filter((item) => isSupportedClaim(item, context));
+}
+
 export function applySourceResumeStructure(params: {
   adaptation: ResumeAdaptationResult;
   sourceDocument: SourceResumeDocument;
@@ -196,9 +286,10 @@ export function applySourceResumeStructure(params: {
   const original = sourceDocumentToEditableResume(params.sourceDocument).resumeJson;
   const adapted = params.adaptation;
   const target = original.target;
+  const context = createSupportContext(original);
   const sourceSalary = collectExperienceSalary(original.adaptedResume.experience);
   const experience = original.adaptedResume.experience.map((item, index) =>
-    mergeExperienceItem(item, findAdapted(adapted.adaptedResume.experience, item.sourceIndex, index))
+    mergeExperienceItem(item, findAdapted(adapted.adaptedResume.experience, item.sourceIndex, index), context)
   );
   return {
     ...adapted,
@@ -212,10 +303,11 @@ export function applySourceResumeStructure(params: {
       schedule: target.schedule || null,
       workFormat: target.workFormat || null,
       commuteTime: target.commuteTime || null,
-      keywordsUsed: unique(adapted.target.keywordsUsed),
+      keywordsUsed: filterSupportedKeywords(adapted.target.keywordsUsed, context),
     },
     adaptedResume: {
       ...adapted.adaptedResume,
+      summary: sanitizeUnsupportedClaims(adapted.adaptedResume.summary, context),
       experience,
       skills: mergeSkills(original.adaptedResume.skills, adapted.adaptedResume.skills),
       education: original.adaptedResume.education,
