@@ -121,11 +121,18 @@ function targetDetailLines(doc: ClassicDocument) {
 function renderSalary(value: string) {
   if (!value) return "";
 
-  const currencyIndex = value.indexOf("₽");
-  const amount = currencyIndex >= 0 ? value.slice(0, currencyIndex + 1).trim() : value;
-  const note = currencyIndex >= 0 ? value.slice(currencyIndex + 1).trim() : "";
+  const currencyMatch = value.match(/^(.*?)(?:\s*)(₽|руб\.?|RUB)(.*)$/iu);
 
-  return `<div class="target-salary"><span class="target-salary-amount">${escapeHtml(amount)}</span>${note ? ` <span class="target-salary-note">${escapeHtml(note)}</span>` : ""}</div>`;
+  if (!currencyMatch?.[1] || !currencyMatch[2]) {
+    return `<div class="target-salary"><span class="target-salary-amount">${escapeHtml(value)}</span></div>`;
+  }
+
+  const amount = clean(currencyMatch[1]);
+  const currency = currencyMatch[2].toLowerCase().startsWith("руб") ? "₽" : currencyMatch[2];
+  const note = clean(currencyMatch[3]);
+  const noteText = [currency, note].filter(Boolean).join(" ");
+
+  return `<div class="target-salary"><span class="target-salary-amount">${escapeHtml(amount)}</span>${noteText ? ` <span class="target-salary-note">${escapeHtml(noteText)}</span>` : ""}</div>`;
 }
 
 function renderTarget(doc: ClassicDocument) {
