@@ -4,14 +4,13 @@ import type { AdaptedResumeSkills, ResumeAdaptationResult } from "./types.js";
 
 type ExperienceItem = ResumeAdaptationResult["adaptedResume"]["experience"][number];
 type CandidateGender = "female" | "male" | "unknown";
-type ResumeDomain = "smm" | "frontend" | "generic";
 
 type SupportContext = {
   sourceText: string;
   sourceTextKey: string;
   originalSkills: string[];
   gender: CandidateGender;
-  domain: ResumeDomain;
+  unsupportedClaims: string[];
 };
 
 const stopWords = new Set([
@@ -31,46 +30,21 @@ const stopWords = new Set([
   "до",
 ]);
 
-const protectedClaims = [
-  "After Effects",
-  "Premiere Pro",
-  "VN",
-  "Midjourney",
-  "Runway",
-  "Pika",
-  "Sora",
-  "Telegram",
-  "VK",
-  "ВКонтакте",
-  "Instagram",
-  "Инстаграм",
-  "Shorts",
-];
-
-const unsupportedSkillSpecifics: Array<{ pattern: RegExp; support: RegExp }> = [
-  { pattern: /коротк.*динамичн|динамичн.*коротк|динамичн.*видео/iu, support: /коротк|динамичн/iu },
-  { pattern: /цветокоррекц/iu, support: /цветокоррекц/iu },
-  { pattern: /субтитр/iu, support: /субтитр/iu },
-  {
-    pattern: /звуков|работа\s+со\s+звуком|работа\s+с\s+звуком/iu,
-    support: /звуков|работа\s+со\s+звуком|работа\s+с\s+звуком/iu,
-  },
-  { pattern: /динамичн.*переход|смен[аыой]+\s+кадр/iu, support: /динамичн.*переход|смен[аыой]+\s+кадр/iu },
-  { pattern: /блогер/iu, support: /блогер/iu },
-  { pattern: /telegram|vk|вконтакте|instagram|инстаграм/iu, support: /telegram|vk|вконтакте|instagram|инстаграм/iu },
-  { pattern: /shorts|средн.*видео/iu, support: /shorts|средн.*видео/iu },
-  { pattern: /телефон|камера|ракурс|стабилизац|свет/iu, support: /телефон|камера|ракурс|стабилизац|свет/iu },
-];
-
 const feminineVerbPairs: Array<[RegExp, string]> = [
   [/\bОсуществлял\b/giu, "Осуществляла"],
   [/\bосуществлял\b/giu, "осуществляла"],
   [/\bРазрабатывал\b/giu, "Разрабатывала"],
   [/\bразрабатывал\b/giu, "разрабатывала"],
+  [/\bРазработал\b/giu, "Разработала"],
+  [/\bразработал\b/giu, "разработала"],
+  [/\bВел\b/giu, "Вела"],
   [/\bвел\b/giu, "вела"],
+  [/\bВёл\b/giu, "Вела"],
   [/\bвёл\b/giu, "вела"],
   [/\bСоздавал\b/giu, "Создавала"],
   [/\bсоздавал\b/giu, "создавала"],
+  [/\bСоздал\b/giu, "Создала"],
+  [/\bсоздал\b/giu, "создала"],
   [/\bМонтировал\b/giu, "Монтировала"],
   [/\bмонтировал\b/giu, "монтировала"],
   [/\bГенерировал\b/giu, "Генерировала"],
@@ -117,12 +91,26 @@ const feminineVerbPairs: Array<[RegExp, string]> = [
   [/\bготовил\b/giu, "готовила"],
   [/\bПрорабатывал\b/giu, "Прорабатывала"],
   [/\bпрорабатывал\b/giu, "прорабатывала"],
-  [/\bПереупаковывал\b/giu, "Переупаковывала"],
-  [/\bпереупаковывал\b/giu, "переупаковывала"],
   [/\bОбрабатывал\b/giu, "Обрабатывала"],
   [/\bобрабатывал\b/giu, "обрабатывала"],
   [/\bОбеспечивал\b/giu, "Обеспечивала"],
   [/\bобеспечивал\b/giu, "обеспечивала"],
+  [/\bСпроектировал\b/giu, "Спроектировала"],
+  [/\bспроектировал\b/giu, "спроектировала"],
+  [/\bВнедрил\b/giu, "Внедрила"],
+  [/\bвнедрил\b/giu, "внедрила"],
+  [/\bОптимизировал\b/giu, "Оптимизировала"],
+  [/\bоптимизировал\b/giu, "оптимизировала"],
+  [/\bРеализовал\b/giu, "Реализовала"],
+  [/\bреализовал\b/giu, "реализовала"],
+  [/\bСократил\b/giu, "Сократила"],
+  [/\bсократил\b/giu, "сократила"],
+  [/\bНастроил\b/giu, "Настроила"],
+  [/\bнастроил\b/giu, "настроила"],
+  [/\bПодключал\b/giu, "Подключала"],
+  [/\bподключал\b/giu, "подключала"],
+  [/\bНагражден\b/giu, "Награждена"],
+  [/\bнагражден\b/giu, "награждена"],
 ];
 
 function clean(value?: string | null) {
@@ -178,44 +166,12 @@ function detectCandidateGender(sourceDocument: SourceResumeDocument): CandidateG
   return "unknown";
 }
 
-function detectResumeDomain(original: ResumeAdaptationResult, sourceText: string): ResumeDomain {
-  const rolesText = [
-    original.target.title,
-    ...original.target.specializations,
-    ...original.adaptedResume.experience.map((item) => item.position || ""),
-  ].join("\n");
-  const rolesKey = rolesText.toLowerCase();
-  const sourceKey = sourceText.toLowerCase();
-
-  if (/\b(?:smm|смм)\b|контент[-\s]?менедж|контент[-\s]?мейкер|дизайнер|соцсет|stories|сторис|reels|рилс/iu.test(rolesKey)) {
-    return "smm";
-  }
-
-  if (/frontend|front[-\s]?end|фронтенд|react|next\.js|typescript|javascript|redux|websocket|html|css/iu.test(rolesKey)) {
-    return "frontend";
-  }
-
-  if (/\b(?:smm|смм)\b|контент[-\s]?план|ведение\s+stories|ведение\s+сторис|reels|рилс|подписчик|актуальн(?:ых|ые)/iu.test(sourceKey)) {
-    return "smm";
-  }
-
-  if (/frontend|front[-\s]?end|react|next\.js|typescript|javascript|redux|websocket|html5?|css3?|rest\s+api/iu.test(sourceKey)) {
-    return "frontend";
-  }
-
-  return "generic";
-}
-
 function applyGenderInflection(value: string, gender: CandidateGender) {
   let result = value;
   if (gender === "female") {
     for (const [pattern, replacement] of feminineVerbPairs) {
       result = result.replace(pattern, replacement);
     }
-
-    result = result
-      .replace(/\bПрофессиональный\s+SMM-специалист\b/giu, "SMM-специалист")
-      .replace(/\bпрофессиональный\s+SMM-специалист\b/giu, "SMM-специалист");
   }
 
   return result;
@@ -250,23 +206,6 @@ function unique(values: string[]) {
     result.push(normalized);
   }
   return result;
-}
-
-function isAiRelated(value: string) {
-  return /нейросет|искусственн\s+интеллект|\b(?:ai|ии)\b|chatgpt|perplexity|krea|kling|google\s+ai/iu.test(value);
-}
-
-function extractSupportedAiTools(context: SupportContext) {
-  const sourceText = normalizeResumeText(context.sourceText);
-  const tools: Array<[string, RegExp]> = [
-    ["ChatGPT", /chatgpt/iu],
-    ["Perplexity", /perplexity/iu],
-    ["Krea", /krea/iu],
-    ["Kling AI", /kling\s*ai|\bkling\b/iu],
-    ["Google AI Studio", /google\s+ai\s+studio/iu],
-  ];
-
-  return tools.filter(([, pattern]) => pattern.test(sourceText)).map(([name]) => name);
 }
 
 function collectExperienceSalary(items: ExperienceItem[]) {
@@ -306,7 +245,6 @@ function isSupportedClaim(value: string, context: SupportContext) {
 
   if (!itemKey) return false;
   if (context.sourceTextKey.includes(itemKey)) return true;
-  if (isAiRelated(value) && isAiRelated(context.sourceText)) return true;
 
   const valueTokens = tokens(value);
   const supportedTokenCount = valueTokens.filter((token) => context.sourceTextKey.includes(token)).length;
@@ -345,13 +283,19 @@ function cleanupUnsupportedClaimText(value: string) {
     .trim();
 }
 
+function removeUnsupportedClaim(value: string, claim: string) {
+  const escaped = escapeRegExp(claim);
+  return value
+    .replace(new RegExp(`\\b${escaped}\\b`, "giu"), "")
+    .replace(new RegExp(`(?:,|;|/)\\s*${escaped}\\s*(?:,|;|/)`, "giu"), ", ");
+}
+
 function sanitizeUnsupportedClaims(value: string, context: SupportContext) {
   let result = clean(value);
 
-  for (const claim of protectedClaims) {
-    if (isSupportedClaim(claim, context)) continue;
-
-    result = result.replace(new RegExp(`\\b${escapeRegExp(claim)}\\b`, "giu"), "");
+  for (const claim of context.unsupportedClaims) {
+    if (!claim || isSupportedClaim(claim, context)) continue;
+    result = removeUnsupportedClaim(result, claim);
   }
 
   const cleaned = cleanupUnsupportedClaimText(result);
@@ -368,14 +312,6 @@ function escapeRegExp(value: string) {
 
 function normalizeResumeText(value: string) {
   return clean(value)
-    .replace(/^\*?\s*ПОРТФОЛИО\s*$/giu, "Портфолио")
-    .replace(/\bРИЛС\b/giu, "Reels")
-    .replace(/сьемк/giu, "съёмк")
-    .replace(/съемк/giu, "съёмк")
-    .replace(/Видеосъемка/giu, "Видеосъёмка")
-    .replace(/некнейм/giu, "никнейм")
-    .replace(/шапка профиля\+/giu, "шапка профиля +")
-    .replace(/,stories/giu, ", stories")
     .replace(/Abode Photoshop/giu, "Adobe Photoshop")
     .replace(/Google AI Stutio/giu, "Google AI Studio")
     .replace(/\s*\/\s*/g, " / ")
@@ -384,120 +320,17 @@ function normalizeResumeText(value: string) {
 }
 
 function normalizeSkillText(value: string, context: SupportContext) {
-  const text = normalizeResumeText(value);
-
-  if (context.domain === "smm") {
-    if (/создание\s+видеоконтента|монтаж\s+коротк|reels/i.test(text)) {
-      return "Reels-контент: сценарии, съёмка и монтаж";
-    }
-
-    if (/генерац.*нейросет|работа\s+с\s+(?:ии|ai)|нейросет/i.test(text)) {
-      const tools = extractSupportedAiTools(context);
-      return tools.length ? `ИИ-инструменты: ${tools.join(", ")}` : "Работа с ИИ-инструментами";
-    }
-
-    if (/разработка\s+сценар/i.test(text)) return "Сценарии для Reels и публикаций";
-    if (/разработка\s+дизайна|дизайн\s+постов|сторис/i.test(text)) return "Дизайн постов, stories, обложек и инфографики";
-    if (/взаимодействие\s+с\s+аудитор/i.test(text)) return "Коммуникация с подписчиками";
-  }
-
-  if (/photoshop|figma|canva/i.test(text)) {
-    const tools = ["Canva", "Figma", "Adobe Photoshop"].filter((tool) =>
-      new RegExp(escapeRegExp(tool.replace("Adobe ", "")), "iu").test(context.sourceText)
-    );
-    return tools.length ? tools.join(" / ") : text;
-  }
-
-  return text;
+  return sanitizeResumeText(normalizeResumeText(value), context);
 }
 
 function polishBullet(value: string, context?: SupportContext) {
   const text = normalizeResumeText(value);
-  const lower = text.toLowerCase();
-  const finish = (result: string) => applyGenderInflection(result, context?.gender || "unknown");
-
-  if (context?.domain === "smm") {
-    if (/^анализ(?:ировал)?\s+конкурент/u.test(lower)) {
-      return finish("Анализировал конкурентную среду и контент-подходы, чтобы уточнять рубрики, визуальный стиль и подачу бренда");
-    }
-
-    if (/формирован|формировал.*един.*стил/u.test(lower)) {
-      return finish("Формировал единый визуальный стиль аккаунта, передающий атмосферу бренда и поддерживающий цельную подачу в ленте");
-    }
-
-    if (/создан.*аккаунт.*с нуля|создавал.*аккаунт.*с нуля|запускал.*аккаунт/u.test(lower)) {
-      return finish("Запускал аккаунт с нуля: подбирал позиционирование, структуру профиля, визуальную подачу и первые рубрики");
-    }
-
-    if (/переупаков/u.test(lower)) {
-      return finish("Переупаковывал аккаунт: обновлял визуальную подачу, структуру профиля и оформление ключевых разделов");
-    }
-
-    if (/контент[- ]план/u.test(lower)) {
-      return finish("Разрабатывал контент-план на 14 дней / 1 месяц с учётом рубрик, визуальной логики, тем публикаций и регулярности выхода контента");
-    }
-
-    if (/reels|рилс/u.test(lower)) {
-      return finish("Создавал Reels-контент полного цикла: подбирал референсы, писал сценарии, организовывал съёмки и монтировал ролики под задачи бренда");
-    }
-
-    if (/написан.*пост|писал.*пост/u.test(lower)) {
-      return finish("Писал посты с учётом тональности бренда, задачи публикации и вовлечения аудитории");
-    }
-
-    if (/никнейм|шапк.*профил|аватар/u.test(lower)) {
-      return finish("Прорабатывал упаковку профиля: подбирал никнейм, оформлял шапку аккаунта и аватар под позиционирование бренда");
-    }
-
-    if (/stories|сторис/u.test(lower)) {
-      return finish("Вёл stories: готовил регулярные форматы, визуальные материалы и коммуникационные сценарии для поддержания активности аккаунта");
-    }
-
-    if (/обработ.*фото|инфограф/u.test(lower)) {
-      return finish("Обрабатывал фотографии и создавал инфографику для афиш, stories и постов в едином визуальном стиле");
-    }
-
-    if (/(?:работа|использован(?:ие)?|использовал[аи]?)\s+с\s+(?:ии|ai)\b|нейросет|chatgpt|perplexity|krea|kling/u.test(lower)) {
-      const tools = extractSupportedAiTools(context);
-      const toolsText = tools.length ? ` (${tools.join(", ")})` : "";
-      return finish(`Использовал ИИ-инструменты${toolsText} для подготовки визуальных идей, текстовых материалов и контентных гипотез`);
-    }
-
-    if (/актуальн/u.test(lower)) {
-      return finish("Оформлял актуальные разделы профиля: продумывал названия, обложки и визуальную структуру для быстрого доступа к ключевой информации");
-    }
-
-    if (/верстк.*меню|дизайн.*меню/u.test(lower)) {
-      return finish("Верстал меню и разрабатывал его дизайн, сохраняя единый визуальный стиль бренда");
-    }
-
-    if (/коммуникац|подписчик/u.test(lower)) {
-      return finish("Коммуницировал с подписчиками, поддерживал обратную связь и вовлечение аудитории в аккаунте");
-    }
-
-    if (/подготовк.*тем|рубрик|сценар/u.test(lower)) {
-      return finish("Готовил темы, рубрики и сценарии публикаций: искал идеи, формулировал тезисы и подбирал референсы");
-    }
-
-    if (/координац.*контент|планирован.*срок|контроль публикац/u.test(lower)) {
-      return finish("Координировал выпуск контента: планировал сроки, собирал материалы и контролировал публикации по графику");
-    }
-
-    if (/визуальн.*оформ|обложк|превью/u.test(lower)) {
-      return finish("Создавал визуальное оформление для постов: обложки, превью и единый стиль ленты");
-    }
-
-    if (/видеосъ[её]мк|видео.*съ[её]мк|монтаж видео|обработка видео/u.test(lower)) {
-      return finish("Снимал и монтировал видеоконтент для коротких форматов, адаптируя визуальную подачу под задачи публикации");
-    }
-  }
-
-  return finish(text);
+  return context ? sanitizeResumeText(text, context) : text;
 }
 
 function normalizeNotAddedValue(value: string) {
-  const normalized = normalizeResumeText(value)
-    .replace(/^Нет\s+подтвержд[ёе]нного\s+опыта:\s*/iu, "")
+  return normalizeResumeText(value)
+    .replace(/^Нет\s+подтвержд[ёе]нного\s+опыта:?\s*/iu, "")
     .replace(/^Нет\s+подтвержд[ёе]нного\s+опыта\s+работы\s+(?:с|со|в)\s+/iu, "")
     .replace(/^Нет\s+опыта\s+работы\s+(?:с|со|в)\s+/iu, "")
     .replace(/^Опыт\s+работы\s+(?:с|со|в)\s+/iu, "")
@@ -505,22 +338,6 @@ function normalizeNotAddedValue(value: string) {
     .replace(/^Выдумывание\s+опыта\s+работы\s+(?:с|со|в)\s+/iu, "")
     .replace(/^Умение\s+создавать\s+/iu, "")
     .replace(/[.,;:]+$/u, "");
-
-  if (/telegram|vk|вконтакте|instagram|инстаграм/i.test(normalized)) return "Telegram / VK / Instagram";
-  if (/after\s*effects|после\s*effects/i.test(normalized)) return "After Effects";
-  if (/premiere\s*pro/i.test(normalized)) return "Premiere Pro";
-  if (/^vn$/i.test(normalized)) return "VN";
-  if (/блогер/i.test(normalized)) return "Работа с блогерами";
-  if (/shorts|средн.*видео/i.test(normalized)) return "Shorts и средние видео";
-  if (/телефон|камера|ракурс|стабилизац|свет/i.test(normalized)) return "Съёмка на телефон или камеру с учётом света, ракурсов и стабилизации";
-  if (/коротк.*динамичн.*видео|динамичн.*коротк.*видео/i.test(normalized)) {
-    return "Короткие динамичные видео с субтитрами, музыкой, звуковыми эффектами и сменой кадров";
-  }
-  if (/цветокоррекц|звук|субтитр|динамичн.*переход|смен[аыой]+\s+кадр/i.test(normalized)) {
-    return "Цветокоррекция, звук, субтитры и динамичные переходы";
-  }
-
-  return normalized;
 }
 
 function normalizeNotAdded(items: string[]) {
@@ -541,12 +358,12 @@ function normalizeNotAdded(items: string[]) {
 function mergeBullets(original: string[], adapted: string[], context: SupportContext) {
   const originalItems = unique(original)
     .filter((item) => !isSalaryLine(item))
-    .map((item) => polishBullet(item, context));
+    .map((item) => polishBullet(item, context))
+    .filter(Boolean);
   const adaptedItems = unique(adapted)
     .filter((item) => !isSalaryLine(item))
-    .map((item) => sanitizeResumeText(item, context))
-    .filter(Boolean)
-    .map((item) => polishBullet(item, context));
+    .map((item) => polishBullet(item, context))
+    .filter(Boolean);
 
   if (!originalItems.length) return unique(adaptedItems);
   if (!adaptedItems.length) return unique(originalItems);
@@ -575,10 +392,11 @@ function mergeFocus(originalFocus: string | null, adaptedFocus: string | null | 
     .join("\n") || null;
 }
 
-function mergePreservedFacts(original: ExperienceItem, adapted: ExperienceItem | null) {
+function mergePreservedFacts(original: ExperienceItem, adapted: ExperienceItem | null, context: SupportContext) {
   return unique([...(adapted?.preservedFacts || []), ...original.adaptedBullets])
     .filter((item) => !isSalaryLine(item))
-    .map(normalizeResumeText)
+    .map((item) => polishBullet(item, context))
+    .filter(Boolean)
     .slice(0, 16);
 }
 
@@ -596,7 +414,7 @@ function mergeExperienceItem(
     dates: original.dates,
     adaptedBullets: mergeBullets(original.adaptedBullets, adaptedBullets, context),
     focus: mergeFocus(original.focus, adapted?.focus, context),
-    preservedFacts: mergePreservedFacts(original, adapted),
+    preservedFacts: mergePreservedFacts(original, adapted, context),
     warnings: adapted?.warnings || [],
   };
 }
@@ -613,16 +431,9 @@ function createOriginalSkillPhrases(original: AdaptedResumeSkills) {
   return unique([...original.primary, ...original.secondary].flatMap(splitSkillLine));
 }
 
-function hasUnsupportedSpecificSkill(value: string, context: SupportContext) {
-  return unsupportedSkillSpecifics.some(
-    ({ pattern, support }) => pattern.test(value) && !support.test(context.sourceText)
-  );
-}
-
 function findSupportedSkill(value: string, context: SupportContext) {
-  const normalized = normalizeSkillText(sanitizeResumeText(value, context), context);
+  const normalized = normalizeSkillText(value, context);
   if (!normalized || isDanglingClaimText(normalized)) return null;
-  if (hasUnsupportedSpecificSkill(value, context) || hasUnsupportedSpecificSkill(normalized, context)) return null;
 
   const valueKey = key(normalized);
   const exact = context.originalSkills.find((skill) => key(skill) === valueKey);
@@ -651,19 +462,9 @@ function mergeSkills(original: AdaptedResumeSkills, adapted: AdaptedResumeSkills
   };
 }
 
-function isUsefulAdditionalInfo(value: string) {
-  return (
-    /портфолио|https?:\/\//iu.test(value) ||
-    /canva|figma|photoshop|capcut|bazaart|pocket/iu.test(value) ||
-    /chatgpt|perplexity|krea|kling|google\s+ai|нейросет|\bai\b|\bии\b/iu.test(value)
-  );
-}
-
 function normalizeAdditionalInfoItem(value: string, context: SupportContext) {
-  const normalized = normalizeResumeText(value);
-  const sanitized = sanitizeResumeText(normalized, context);
-
-  if (!sanitized || isDanglingClaimText(sanitized) || !isUsefulAdditionalInfo(sanitized)) return null;
+  const sanitized = sanitizeResumeText(normalizeResumeText(value), context);
+  if (!sanitized || isDanglingClaimText(sanitized)) return null;
   return sanitized;
 }
 
@@ -671,12 +472,11 @@ function mergeAdditionalInfo(original: string[], adapted: string[], context: Sup
   const adaptedItems = adapted
     .map((item) => normalizeAdditionalInfoItem(item, context))
     .filter((item): item is string => Boolean(item));
-  const originalUsefulItems = original
-    .filter(isUsefulAdditionalInfo)
+  const originalItems = original
     .map((item) => normalizeAdditionalInfoItem(item, context))
     .filter((item): item is string => Boolean(item));
 
-  return unique([...adaptedItems, ...originalUsefulItems]).slice(0, 12);
+  return unique([...adaptedItems, ...originalItems]).slice(0, 12);
 }
 
 function collectText(value: unknown): string[] {
@@ -689,7 +489,28 @@ function collectText(value: unknown): string[] {
   return [];
 }
 
-function createSupportContext(original: ResumeAdaptationResult, sourceDocument: SourceResumeDocument): SupportContext {
+function extractAtomicUnsupportedClaims(value: string) {
+  return clean(value)
+    .split(/[,:;/()\[\]{}]+/g)
+    .map((item) => item.trim())
+    .filter((item) => item.length > 1 && /[a-zа-яё0-9]/iu.test(item));
+}
+
+function createUnsupportedClaims(adapted: ResumeAdaptationResult) {
+  const explicit = [
+    ...adapted.adaptedResume.skills.notAdded,
+    ...adapted.forbiddenClaims,
+    ...adapted.warnings,
+  ].flatMap((item) => [item, ...extractAtomicUnsupportedClaims(item)]);
+
+  return unique(explicit.map(normalizeNotAddedValue)).filter(Boolean).slice(0, 80);
+}
+
+function createSupportContext(
+  original: ResumeAdaptationResult,
+  adapted: ResumeAdaptationResult,
+  sourceDocument: SourceResumeDocument
+): SupportContext {
   const originalSkills = createOriginalSkillPhrases(original.adaptedResume.skills);
   const sourceText = collectText(original).join("\n");
 
@@ -698,14 +519,14 @@ function createSupportContext(original: ResumeAdaptationResult, sourceDocument: 
     sourceTextKey: key(sourceText),
     originalSkills,
     gender: detectCandidateGender(sourceDocument),
-    domain: detectResumeDomain(original, sourceText),
+    unsupportedClaims: createUnsupportedClaims(adapted),
   };
 }
 
 function filterSupportedKeywords(items: string[], context: SupportContext) {
   return unique(items)
     .map((item) => normalizeSkillText(item, context))
-    .filter((item) => isSupportedClaim(item, context) && !hasUnsupportedSpecificSkill(item, context));
+    .filter((item) => Boolean(item) && isSupportedClaim(item, context));
 }
 
 function isMarketingTitle(value: string) {
@@ -751,7 +572,7 @@ export function applySourceResumeStructure(params: {
   const original = sourceDocumentToEditableResume(params.sourceDocument).resumeJson;
   const adapted = params.adaptation;
   const target = original.target;
-  const context = createSupportContext(original, params.sourceDocument);
+  const context = createSupportContext(original, adapted, params.sourceDocument);
   const sourceSalary = collectExperienceSalary(original.adaptedResume.experience);
   const experience = original.adaptedResume.experience.map((item, index) =>
     mergeExperienceItem(item, findAdapted(adapted.adaptedResume.experience, item.sourceIndex, index), context)
