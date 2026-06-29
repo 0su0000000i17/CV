@@ -1,5 +1,6 @@
 import { getAiProvider } from "../ai/get-ai-provider.js";
 import type { AiMessage } from "../ai/types.js";
+import type { AiDebugArtifactWriter } from "../utils/ai-debug-artifacts.js";
 import type { NormalizedVacancy } from "../vacancy-ai/types.js";
 import { formatVacancyForAdaptation } from "../vacancy-ai/format-vacancy-for-adaptation.js";
 import type { ResumeVacancyFitResult } from "./types.js";
@@ -16,6 +17,7 @@ type CheckResumeVacancyFitParams = {
   resumeJson: string;
   vacancy: NormalizedVacancy;
   vacancyText?: string;
+  debugWriter?: AiDebugArtifactWriter | null;
 };
 
 type CheckResumeVacancyFitOutput = {
@@ -50,14 +52,34 @@ export async function checkResumeVacancyFit(
     },
   ];
 
+  await params.debugWriter?.writeJson("01-fit-input.json", {
+    resumeChars: resumeForPrompt.length,
+    vacancyChars: vacancyForPrompt.length,
+  });
+  await params.debugWriter?.writeJson("02-fit-prompts.json", { messages });
+
   const generationResult = await aiProvider.generateText({
     messages,
     temperature: 0,
     maxTokens: FIT_MAX_TOKENS,
   });
 
+  await params.debugWriter?.writeText("03-fit-model-output.txt", generationResult.text);
+  await params.debugWriter?.writeJson("04-fit-generation.json", {
+    provider: generationResult.provider,
+    model: generationResult.model,
+    temperature: 0,
+    maxTokens: FIT_MAX_TOKENS,
+  });
+
+  const parsedJson = parseJsonFromModelResponse(generationResult.text);
+  await params.debugWriter?.writeJson("05-fit-parsed.json", parsedJson);
+
+  const fit = normalizeFitResult(parsedJson);
+  await params.debugWriter?.writeJson("06-fit-normalized.json", fit);
+
   return {
-    fit: normalizeFitResult(parseJsonFromModelResponse(generationResult.text)),
+    fit,
     generation: {
       provider: generationResult.provider,
       model: generationResult.model,
