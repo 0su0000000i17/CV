@@ -32,7 +32,7 @@ export function WorkSection({
 
             return (
               <WorkItem
-                key={`${item.sourceIndex}-${item.company}-${item.position}-${index}`}
+                key={`${item.sourceIndex}-${index}`}
                 item={item}
                 index={index}
                 isExpanded={isExpanded}
