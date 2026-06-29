@@ -55,9 +55,9 @@ export function createClassicStyles() {
       margin-bottom: 6px;
     }
     .target-title { margin: 0; font-size: 16px; line-height: 1.3; font-weight: 700; color: #000; }
-    .target-salary { white-space: nowrap; text-align: right; color: #000; line-height: 1.2; }
-    .target-salary-amount { font-size: 22px; font-weight: 700; letter-spacing: -0.2px; }
-    .target-salary-note { font-size: 11px; font-weight: 400; color: #222; }
+    .target-salary { align-self: start; margin-top: -2px; white-space: nowrap; text-align: right; color: #000; line-height: 1.1; }
+    .target-salary-amount { font-size: 30px; font-weight: 700; letter-spacing: -0.4px; }
+    .target-salary-note { font-size: 12px; font-weight: 400; color: #222; }
     .plain-line { margin: 0; font-size: 13px; line-height: 1.36; }
     .plain-line + .plain-line { margin-top: 2px; }
     .plain-line--indent { padding-left: 20px; }
