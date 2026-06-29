@@ -106,6 +106,7 @@ export async function adaptResumeToVacancyController(req: Request, res: Response
         provider: result.generation.provider,
         model: result.generation.model,
         debugArtifactDir: debugWriter?.artifactDir || null,
+        debugReportPath: debugWriter?.reportPath || null,
       },
     });
   } catch (error) {
