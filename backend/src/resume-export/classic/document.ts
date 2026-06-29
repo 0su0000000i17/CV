@@ -77,8 +77,7 @@ function skillKey(value: string) {
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
+}\n
 function splitExplicitSkillValue(value: string) {
   return cleanText(value)
     .split(/[\n,;|•]+/u)
@@ -215,7 +214,7 @@ function removeKnownLanguageFragments(value: string, languageLines: string[]) {
     const escaped = escapeRegExp(cleanText(languageLine)).replace(/\s+/g, "\\s+");
     if (!escaped) continue;
 
-    result = result.replace(new RegExp(`\\s+${escaped}(?=\\s|$)`, "giu"), " ");
+    result = result.replace(new RegExp(`\s+${escaped}(?=\s|$)`, "giu"), " ");
   }
 
   return cleanText(result);
@@ -281,6 +280,37 @@ function resolvePhotoSize(sourceDocument: SourceResumeDocument | null) {
   return width && height ? { width, height } : null;
 }
 
+function isSalaryLine(value: string) {
+  return /\d[\d\s]*(?:₽|руб\.?|RUB)/i.test(cleanText(value));
+}
+
+function salaryDigits(value: string) {
+  return cleanText(value).replace(/\D/g, "");
+}
+
+function resolveTargetSalary(params: {
+  payload: ClassicExportPayload;
+  sourceDocument: SourceResumeDocument | null;
+  snapshot: SourceSnapshot;
+}) {
+  const explicitSalary = cleanText(params.payload.adaptation.target.salary);
+  if (explicitSalary) return explicitSalary;
+
+  const sourceSalary = cleanText(params.sourceDocument?.target.salary);
+  const snapshotSalary = params.snapshot.targetDetails.map(cleanText).find(isSalaryLine) || "";
+
+  if (snapshotSalary) {
+    const sourceDigits = salaryDigits(sourceSalary);
+    const snapshotDigits = salaryDigits(snapshotSalary);
+
+    if (!sourceDigits || snapshotDigits.includes(sourceDigits)) {
+      return snapshotSalary;
+    }
+  }
+
+  return sourceSalary;
+}
+
 export function getCompanyMeta(snapshot: SourceSnapshot, company: string | null) {
   const companyName = cleanText(company);
   if (!companyName) return null;
@@ -292,5 +322,7 @@ export function buildClassicDocument(params: { sourceTitle: string; sourceText: 
   const snapshot = createSnapshot({ sourceText: params.sourceText, payload: params.payload, sourceDocument });
   const sourceTitle = createBaseName(params.sourceTitle || params.payload.sourceTitle);
   const targetTitle = cleanText(params.payload.adaptation.adaptedResume.headline) || cleanText(params.payload.adaptation.target.title);
-  return { ...params.payload, photoUrl: resolvePhotoUrl(params.payload, sourceDocument), photoSize: resolvePhotoSize(sourceDocument), sourceText: params.sourceText, sourceTitle, snapshot, name: cleanText(params.payload.contacts.fullName) || snapshot.sourceName || sourceTitle, contactLines: resolveContactLines(params.payload.contacts, snapshot), targetTitle, skills: resolveSkills({ payload: params.payload, sourceDocument, snapshot }), educationLines: resolveEducationLines({ payload: params.payload, snapshot, sourceDocument }) };
+  const targetSalary = resolveTargetSalary({ payload: params.payload, sourceDocument, snapshot });
+  const payload = { ...params.payload, adaptation: { ...params.payload.adaptation, target: { ...params.payload.adaptation.target, salary: targetSalary } } };
+  return { ...payload, photoUrl: resolvePhotoUrl(payload, sourceDocument), photoSize: resolvePhotoSize(sourceDocument), sourceText: params.sourceText, sourceTitle, snapshot, name: cleanText(payload.contacts.fullName) || snapshot.sourceName || sourceTitle, contactLines: resolveContactLines(payload.contacts, snapshot), targetTitle, skills: resolveSkills({ payload, sourceDocument, snapshot }), educationLines: resolveEducationLines({ payload, snapshot, sourceDocument }) };
 }
