@@ -5,6 +5,7 @@ import { checkResumeVacancyFit } from "../resume-adaptation/check-resume-vacancy
 import { loadSourceResumeDocument } from "../resume-adaptation/load-source-resume-document.js";
 import { stringifyResumeAdaptationAiPayload } from "../resume-adaptation/resume-ai-payload.js";
 import { findResumeFileRecord } from "../resume-analysis/repositories/resumes-repository.js";
+import { createAiDebugArtifactWriter } from "../utils/ai-debug-artifacts.js";
 import { formatVacancyForAdaptation } from "../vacancy-ai/format-vacancy-for-adaptation.js";
 import type { NormalizedVacancy } from "../vacancy-ai/types.js";
 import { getStringParam, sendError, sendServerError } from "../utils/api-responses.js";
@@ -37,7 +38,21 @@ export async function checkResumeVacancyFitController(req: Request, res: Respons
 
     const source = await loadSourceResumeDocument(resume);
     const resumeJson = stringifyResumeAdaptationAiPayload(source.document);
-    const result = await checkResumeVacancyFit({ resumeJson, vacancy, vacancyText });
+    const debugWriter = await createAiDebugArtifactWriter({
+      kind: "vacancy-fit",
+      resumeId: resume.id,
+      extra: {
+        vacancyInputChars: vacancyText.length,
+        sourceMarkdownChars: source.markdown.length,
+        sourceMarkdownLimited: source.markdownLimited,
+      },
+    });
+    const result = await checkResumeVacancyFit({
+      resumeJson,
+      vacancy,
+      vacancyText,
+      debugWriter,
+    });
 
     await saveProductEvent({
       userId: user.id,
@@ -56,6 +71,7 @@ export async function checkResumeVacancyFitController(req: Request, res: Respons
         markdownLimited: source.markdownLimited,
         provider: result.generation.provider,
         model: result.generation.model,
+        debugArtifactDir: debugWriter?.artifactDir || null,
       },
     });
   } catch (error) {
