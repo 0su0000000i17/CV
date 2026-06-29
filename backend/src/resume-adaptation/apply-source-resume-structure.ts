@@ -108,6 +108,10 @@ function unique(values: string[]) {
   return result;
 }
 
+function isAiRelated(value: string) {
+  return /нейросет|искусственн\s+интеллект|\b(?:ai|ии)\b|chatgpt|perplexity|krea|kling|google\s+ai/iu.test(value);
+}
+
 function collectExperienceSalary(items: ExperienceItem[]) {
   for (const item of items) {
     const salary = extractSalary(item.position) || extractSalary(item.focus);
@@ -145,6 +149,7 @@ function isSupportedClaim(value: string, context: SupportContext) {
 
   if (!itemKey) return false;
   if (context.sourceTextKey.includes(itemKey)) return true;
+  if (isAiRelated(value) && isAiRelated(context.sourceText)) return true;
 
   const valueTokens = tokens(value);
   const supportedTokenCount = valueTokens.filter((token) => context.sourceTextKey.includes(token)).length;
@@ -191,6 +196,8 @@ function normalizeResumeText(value: string) {
   return clean(value)
     .replace(/\bРИЛС\b/giu, "Reels")
     .replace(/сьемк/giu, "съёмк")
+    .replace(/съемк/giu, "съёмк")
+    .replace(/Видеосъемка/giu, "Видеосъёмка")
     .replace(/некнейм/giu, "никнейм")
     .replace(/шапка профиля\+/giu, "шапка профиля +")
     .replace(/,stories/giu, ", stories")
@@ -273,11 +280,27 @@ function polishBullet(value: string) {
     return "Создавал визуальное оформление для постов: обложки, превью и единый стиль ленты";
   }
 
-  if (/видеосъемк|видео.*съемк|монтаж видео|обработка видео/u.test(lower)) {
+  if (/видеосъ[её]мк|видео.*съ[её]мк|монтаж видео|обработка видео/u.test(lower)) {
     return "Снимал и монтировал видеоконтент для коротких форматов, адаптируя визуальную подачу под задачи публикации";
   }
 
   return text;
+}
+
+function normalizeNotAddedValue(value: string) {
+  const normalized = clean(value)
+    .replace(/^Нет\s+подтвержд[ёе]нного\s+опыта:\s*/iu, "")
+    .replace(/^Нет\s+подтвержд[ёе]нного\s+опыта\s+работы\s+с\s+/iu, "")
+    .replace(/^Нет\s+опыта\s+работы\s+с\s+/iu, "")
+    .replace(/^Опыт\s+работы\s+с\s+/iu, "")
+    .replace(/^Выдумывание\s+опыта\s+работы\s+с\s+/iu, "");
+
+  if (/блогер/i.test(normalized)) return "Работа с блогерами";
+  if (/цветокоррекц|звук|субтитр|динамичн.*переход/i.test(normalized)) {
+    return "Цветокоррекция, звук, субтитры и динамичные переходы";
+  }
+
+  return normalized;
 }
 
 function normalizeNotAdded(items: string[]) {
@@ -285,11 +308,7 @@ function normalizeNotAdded(items: string[]) {
   const seen = new Set<string>();
 
   for (const item of items) {
-    const normalized = clean(item)
-      .replace(/^Нет\s+подтвержд[ёе]нного\s+опыта:\s*/iu, "")
-      .replace(/^Нет\s+опыта\s+работы\s+с\s+/iu, "")
-      .replace(/^Опыт\s+работы\s+с\s+/iu, "");
-
+    const normalized = normalizeNotAddedValue(item);
     const itemKey = key(normalized);
     if (!normalized || seen.has(itemKey)) continue;
     seen.add(itemKey);
@@ -433,6 +452,20 @@ function filterSupportedKeywords(items: string[], context: SupportContext) {
   return unique(items).filter((item) => isSupportedClaim(item, context));
 }
 
+function resolveTargetTitle(params: {
+  sourceTitle?: string | null;
+  adaptedTitle?: string | null;
+  headline?: string | null;
+}) {
+  const sourceTitle = clean(params.sourceTitle);
+  const adaptedTitle = clean(params.adaptedTitle);
+  const headline = clean(params.headline);
+
+  if (headline && headline !== sourceTitle) return headline;
+  if (adaptedTitle) return adaptedTitle;
+  return sourceTitle || null;
+}
+
 export function applySourceResumeStructure(params: {
   adaptation: ResumeAdaptationResult;
   sourceDocument: SourceResumeDocument;
@@ -448,7 +481,11 @@ export function applySourceResumeStructure(params: {
   return {
     ...adapted,
     target: {
-      title: adapted.target.title || adapted.adaptedResume.headline || target.title,
+      title: resolveTargetTitle({
+        sourceTitle: target.title,
+        adaptedTitle: adapted.target.title,
+        headline: adapted.adaptedResume.headline,
+      }),
       company: null,
       seniority: target.seniority || null,
       salary: target.salary || sourceSalary || null,
