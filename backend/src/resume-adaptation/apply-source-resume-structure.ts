@@ -370,32 +370,11 @@ function normalizeNotAdded(items: string[]) {
   return result;
 }
 
-function mergeBullets(original: string[], adapted: string[], context: SupportContext) {
-  const originalItems = unique(original)
+function mergeBullets(_original: string[], adapted: string[], context: SupportContext) {
+  return unique(adapted)
     .filter((item) => !isSalaryLine(item))
     .map((item) => polishBullet(item, context))
     .filter(Boolean);
-  const adaptedItems = unique(adapted)
-    .filter((item) => !isSalaryLine(item))
-    .map((item) => polishBullet(item, context))
-    .filter(Boolean);
-
-  if (!originalItems.length) return unique(adaptedItems);
-  if (!adaptedItems.length) return unique(originalItems);
-
-  const targetCount = Math.min(Math.max(originalItems.length, adaptedItems.length), 16);
-  const result = [...adaptedItems];
-  const seen = new Set(result.map(key));
-
-  for (const bullet of originalItems) {
-    if (result.length >= targetCount) break;
-    const bulletKey = key(bullet);
-    if (seen.has(bulletKey) || isCoveredByAny(result, bullet)) continue;
-    seen.add(bulletKey);
-    result.push(bullet);
-  }
-
-  return unique(result).slice(0, targetCount);
 }
 
 function mergeFocus(originalFocus: string | null, adaptedFocus: string | null | undefined, context: SupportContext) {
