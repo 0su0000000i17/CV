@@ -355,8 +355,8 @@ export default function DashboardPage() {
 
         <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground">
           Здесь видно состояние ваших резюме, последние оценки и следующие
-          действия перед откликом. Начните с загрузки файла, оценки резюме или
-          адаптации под конкретную вакансию.
+          действия перед откликом: начните с загрузки файла, оценки резюме или
+          адаптации под конкретную вакансию
         </p>
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -440,7 +440,7 @@ export default function DashboardPage() {
               </h2>
 
               <p className="mt-1 text-sm text-muted-foreground">
-                Быстрый доступ к файлам, оценкам и повторной проверке.
+                Быстрый доступ к файлам, оценкам и повторной проверке
               </p>
             </div>
 
@@ -461,7 +461,7 @@ export default function DashboardPage() {
                 </p>
 
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Обновите страницу или попробуйте позже.
+                  Обновите страницу или попробуйте позже
                 </p>
               </div>
             </div>
@@ -484,7 +484,7 @@ export default function DashboardPage() {
 
                 <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
                   Загрузите первое резюме, чтобы получить оценку, детализацию по
-                  метрикам и рекомендации по улучшению.
+                  метрикам и рекомендации по улучшению
                 </p>
 
                 <div className="mt-5 flex justify-center">
@@ -522,7 +522,7 @@ export default function DashboardPage() {
                   </h3>
 
                   <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                    Запустите анализ структуры, опыта, ATS и red flags.
+                    Запустите анализ структуры, опыта, ATS и проблемных мест
                   </p>
                 </div>
               </Link>
@@ -542,7 +542,7 @@ export default function DashboardPage() {
 
                   <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                     Выберите резюме, вставьте вакансию и подготовьте версию под
-                    требования работодателя.
+                    требования работодателя
                   </p>
                 </div>
               </Link>
@@ -561,7 +561,7 @@ export default function DashboardPage() {
                   </h3>
 
                   <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                    Откройте список файлов, скачайте или удалите лишнее.
+                    Откройте список файлов, скачайте или удалите лишнее
                   </p>
                 </div>
               </Link>
@@ -579,7 +579,7 @@ export default function DashboardPage() {
 
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
               Чем понятнее структура, роль и доказательства опыта, тем легче
-              потом адаптировать резюме под конкретные вакансии.
+              потом адаптировать резюме под конкретные вакансии
             </p>
           </div>
         </div>
