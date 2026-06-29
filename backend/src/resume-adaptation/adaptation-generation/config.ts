@@ -1,5 +1,5 @@
-const DEFAULT_ADAPT_MAX_TOKENS = 7_000;
-const MIN_ADAPT_MAX_TOKENS = 7_000;
+const DEFAULT_ADAPT_MAX_TOKENS = 9_000;
+const MIN_ADAPT_MAX_TOKENS = 9_000;
 
 function getNumberEnv(name: string, fallback: number) {
   const value = Number(process.env[name]);
