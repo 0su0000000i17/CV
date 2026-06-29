@@ -1,5 +1,6 @@
 import { getAiProvider } from "../ai/get-ai-provider.js";
 import type { AiMessage } from "../ai/types.js";
+import type { AiDebugArtifactWriter } from "../utils/ai-debug-artifacts.js";
 import { formatVacancyForAdaptation } from "../vacancy-ai/format-vacancy-for-adaptation.js";
 import type { NormalizedVacancy } from "../vacancy-ai/types.js";
 import type {
@@ -23,6 +24,7 @@ type GenerateResumeAdaptationParams = {
   vacancyText?: string;
   fit: ResumeVacancyFitResult;
   settings: AdaptationSettings;
+  debugWriter?: AiDebugArtifactWriter | null;
 };
 
 type GenerateResumeAdaptationOutput = {
