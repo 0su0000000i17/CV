@@ -145,7 +145,7 @@ def main() -> None:
         "usage": to_plain(getattr(result, "usage", None)),
         "modelVersion": to_plain(getattr(result, "model_version", None)),
     }
-    print(json.dumps(output, ensure_ascii=False))
+    print(json.dumps(output, ensure_ascii=True))
 
 
 if __name__ == "__main__":
