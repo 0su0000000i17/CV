@@ -57,15 +57,19 @@ def normalize_model_name(model: str) -> str:
     value = strip_model_uri(model)
     base = value.removesuffix("/latest").strip()
 
-    # The OpenAI-compatible endpoint accepts names like yandexgpt-5.1/latest,
-    # while the Python AI Studio SDK expects completion model aliases like yandexgpt.
     if base in {"yandexgpt-5.1", "yandexgpt-5", "yandexgpt-4", "yandexgpt-pro"}:
-        return "yandexgpt"
+        return "yandexgpt-pro"
 
     if base in {"yandexgpt-5-lite", "yandexgpt-lite"}:
         return "yandexgpt-lite"
 
     return value
+
+
+def fallback_model_name(model_name: str) -> str | None:
+    if model_name == "yandexgpt-pro":
+        return "yandexgpt"
+    return None
 
 
 def to_plain(value: Any) -> Any:
@@ -111,6 +115,13 @@ def configure_model(model: Any, temperature: float, max_tokens: int) -> Any:
         return model.configure(**kwargs)
 
 
+def run_completion(sdk: AIStudio, model_name: str, messages: list[dict[str, str]], temperature: float, max_tokens: int) -> Any:
+    completion_model = sdk.models.completions(model_name)
+    configured_model = configure_model(completion_model, temperature, max_tokens)
+    operation = configured_model.run_deferred(messages)
+    return operation.wait()
+
+
 def main() -> None:
     payload = json.load(sys.stdin)
 
@@ -121,7 +132,7 @@ def main() -> None:
     max_tokens = int(payload.get("maxTokens") or 0)
 
     raw_messages = payload.get("messages") or []
-    messages = []
+    messages: list[dict[str, str]] = []
     for item in raw_messages:
         role = sanitize_text(item.get("role") or "user")
         text = sanitize_text(item.get("text") or "")
@@ -132,15 +143,21 @@ def main() -> None:
         raise RuntimeError("messages are required")
 
     sdk = AIStudio(folder_id=folder_id, auth=api_key)
-    completion_model = sdk.models.completions(model_name)
-    configured_model = configure_model(completion_model, temperature, max_tokens)
-    operation = configured_model.run_deferred(messages)
-    result = operation.wait()
+    used_model = model_name
+    fallback_model = fallback_model_name(model_name)
+
+    try:
+        result = run_completion(sdk, used_model, messages, temperature, max_tokens)
+    except Exception:
+        if not fallback_model:
+            raise
+        used_model = fallback_model
+        result = run_completion(sdk, used_model, messages, temperature, max_tokens)
 
     output = {
         "text": extract_text(result),
         "provider": "yandex-async",
-        "model": model_name,
+        "model": used_model,
         "requestedModel": sanitize_text(payload.get("model") or ""),
         "usage": to_plain(getattr(result, "usage", None)),
         "modelVersion": to_plain(getattr(result, "model_version", None)),
