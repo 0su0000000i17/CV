@@ -81,8 +81,8 @@ export function CoverLetterPanel({
       description="Сгенерируйте письмо под эту же вакансию на основе адаптированного резюме."
     >
       <div className="mb-4 flex items-start gap-3">
-        <div className="rounded-xl bg-muted p-2.5">
-          <Mail className="h-5 w-5 text-foreground" />
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted">
+          <Mail className="h-4 w-4 text-foreground" aria-hidden="true" />
         </div>
 
         <div>
