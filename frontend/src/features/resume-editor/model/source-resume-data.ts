@@ -31,7 +31,7 @@ export function extractSourceResumeData(
   if (profileExtraction?.profile) {
     return {
       contacts: profileToContacts(profileExtraction),
-      photoUrl: profileExtraction.photo?.dataUrl || null,
+      photoUrl: null,
     };
   }
 
