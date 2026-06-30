@@ -2,10 +2,7 @@
 
 import { useCallback, useState } from 'react';
 
-import type {
-  AdaptationSettings,
-  ResumeAdaptationResponse,
-} from '@/src/shared/api/resume-adaptation';
+import type { ResumeAdaptationResponse } from '@/src/shared/api/resume-adaptation';
 import type { ResumeVacancyFitResponse } from '@/src/shared/api/resume-vacancy-fit';
 import type { NormalizedVacancy, PageExtractionStatus } from '@/src/shared/api/vacancies';
 
@@ -18,7 +15,6 @@ export type AdaptSessionState = {
   preparedVacancy: NormalizedVacancy | null;
   extractionStatus: PageExtractionStatus | null;
   extractionMessage: string;
-  adaptationSettings: AdaptationSettings;
   fitResponse?: ResumeVacancyFitResponse;
   adaptationResponse?: ResumeAdaptationResponse;
 };
