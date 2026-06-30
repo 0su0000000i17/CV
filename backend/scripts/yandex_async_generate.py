@@ -17,23 +17,28 @@ except Exception as import_error:  # pragma: no cover
                 "error": "Failed to import yandex_ai_studio_sdk. Install it with: pip install yandex-ai-studio-sdk",
                 "details": str(import_error),
             },
-            ensure_ascii=False,
+            ensure_ascii=True,
         ),
         file=sys.stderr,
     )
     sys.exit(1)
 
 
+def sanitize_text(value: Any) -> str:
+    """Remove invalid lone surrogate unicode chars before SDK UTF-8 encoding."""
+    return str(value).encode("utf-8", "replace").decode("utf-8")
+
+
 def get_required_env(*names: str) -> str:
     for name in names:
         value = os.environ.get(name, "").strip()
         if value:
-            return value
+            return sanitize_text(value)
     raise RuntimeError(f"One of these environment variables is required: {', '.join(names)}")
 
 
 def normalize_model_name(model: str) -> str:
-    value = model.strip()
+    value = sanitize_text(model).strip()
     if value.startswith("gpt://"):
         parts = value.split("/")
         return "/".join(parts[3:]) or value
@@ -41,17 +46,19 @@ def normalize_model_name(model: str) -> str:
 
 
 def to_plain(value: Any) -> Any:
-    if value is None or isinstance(value, (str, int, float, bool)):
+    if value is None or isinstance(value, (int, float, bool)):
         return value
+    if isinstance(value, str):
+        return sanitize_text(value)
     if is_dataclass(value):
         return asdict(value)
     if isinstance(value, dict):
-        return {str(key): to_plain(item) for key, item in value.items()}
+        return {sanitize_text(key): to_plain(item) for key, item in value.items()}
     if isinstance(value, (list, tuple)):
         return [to_plain(item) for item in value]
     if hasattr(value, "__dict__"):
         return {key: to_plain(item) for key, item in vars(value).items() if not key.startswith("_")}
-    return str(value)
+    return sanitize_text(value)
 
 
 def extract_text(result: Any) -> str:
@@ -60,11 +67,11 @@ def extract_text(result: Any) -> str:
         first = alternatives[0]
         text = getattr(first, "text", "")
         if isinstance(text, str) and text.strip():
-            return text.strip()
+            return sanitize_text(text.strip())
 
     text = getattr(result, "text", "")
     if isinstance(text, str) and text.strip():
-        return text.strip()
+        return sanitize_text(text.strip())
 
     raise RuntimeError("Yandex async result does not contain text")
 
@@ -93,8 +100,8 @@ def main() -> None:
     raw_messages = payload.get("messages") or []
     messages = []
     for item in raw_messages:
-        role = str(item.get("role") or "user")
-        text = str(item.get("text") or "")
+        role = sanitize_text(item.get("role") or "user")
+        text = sanitize_text(item.get("text") or "")
         if text.strip():
             messages.append({"role": role, "text": text})
 
@@ -124,10 +131,10 @@ if __name__ == "__main__":
         print(
             json.dumps(
                 {
-                    "error": str(error),
-                    "trace": traceback.format_exc(limit=8),
+                    "error": sanitize_text(error),
+                    "trace": sanitize_text(traceback.format_exc(limit=8)),
                 },
-                ensure_ascii=False,
+                ensure_ascii=True,
             ),
             file=sys.stderr,
         )
