@@ -61,8 +61,100 @@ function renderContactLine(item: string, index: number, lines: string[]) {
   return `<p class="${className}">${escapeHtml(item)}</p>`;
 }
 
+function parsePngSize(buffer: Buffer) {
+  if (buffer.length < 24) return null;
+  if (
+    buffer[0] !== 0x89 ||
+    buffer[1] !== 0x50 ||
+    buffer[2] !== 0x4e ||
+    buffer[3] !== 0x47
+  ) {
+    return null;
+  }
+
+  return {
+    width: buffer.readUInt32BE(16),
+    height: buffer.readUInt32BE(20),
+  };
+}
+
+function parseJpegSize(buffer: Buffer) {
+  if (buffer.length < 4 || buffer[0] !== 0xff || buffer[1] !== 0xd8) return null;
+
+  let offset = 2;
+  while (offset + 9 < buffer.length) {
+    if (buffer[offset] !== 0xff) {
+      offset += 1;
+      continue;
+    }
+
+    const marker = buffer[offset + 1];
+    const length = buffer.readUInt16BE(offset + 2);
+    if (length < 2) return null;
+
+    if (
+      marker === 0xc0 ||
+      marker === 0xc1 ||
+      marker === 0xc2 ||
+      marker === 0xc3 ||
+      marker === 0xc5 ||
+      marker === 0xc6 ||
+      marker === 0xc7 ||
+      marker === 0xc9 ||
+      marker === 0xca ||
+      marker === 0xcb ||
+      marker === 0xcd ||
+      marker === 0xce ||
+      marker === 0xcf
+    ) {
+      return {
+        height: buffer.readUInt16BE(offset + 5),
+        width: buffer.readUInt16BE(offset + 7),
+      };
+    }
+
+    offset += 2 + length;
+  }
+
+  return null;
+}
+
+function parseDataImage(value: string) {
+  const match = value.match(/^data:image\/(?:png|jpeg|jpg|webp);base64,([a-z0-9+/=\r\n]+)$/iu);
+  if (!match?.[1]) return null;
+
+  try {
+    const buffer = Buffer.from(match[1].replace(/\s+/g, ""), "base64");
+    const size = parsePngSize(buffer) || parseJpegSize(buffer);
+    return {
+      byteLength: buffer.length,
+      width: size?.width ?? null,
+      height: size?.height ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function isLikelyServiceLogoDataUrl(value: string) {
+  const image = parseDataImage(value);
+  if (!image?.width || !image.height) return false;
+
+  const isSmallSquare =
+    image.width <= 96 &&
+    image.height <= 96 &&
+    Math.abs(image.width - image.height) <= 6;
+  const isTinyPayload = image.byteLength <= 4_500;
+
+  return isSmallSquare && isTinyPayload;
+}
+
+function hasPhoto(doc: ClassicDocument) {
+  return Boolean(doc.photoUrl && !isLikelyServiceLogoDataUrl(doc.photoUrl));
+}
+
 function renderPhoto(doc: ClassicDocument) {
-  if (!doc.photoUrl) return "";
+  if (!hasPhoto(doc)) return "";
 
   const sizeStyle = doc.photoSize
     ? ` style="width: ${doc.photoSize.width}px; height: ${doc.photoSize.height}px;"`
@@ -74,7 +166,7 @@ function renderPhoto(doc: ClassicDocument) {
 function renderHeader(doc: ClassicDocument) {
   const photo = renderPhoto(doc);
   const contactLines = doc.contactLines.map((item, index) => renderContactLine(item, index, doc.contactLines)).join("");
-  return `<header class="header${doc.photoUrl ? "" : " header--no-photo"}">${photo}<div class="header-content"><h1 class="name">${escapeHtml(doc.name)}</h1><div class="contacts">${contactLines}</div></div></header>`;
+  return `<header class="header${hasPhoto(doc) ? "" : " header--no-photo"}">${photo}<div class="header-content"><h1 class="name">${escapeHtml(doc.name)}</h1><div class="contacts">${contactLines}</div></div></header>`;
 }
 
 function targetSalary(doc: ClassicDocument) {
