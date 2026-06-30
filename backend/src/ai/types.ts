@@ -9,6 +9,7 @@ export type AiGenerateTextParams = {
   messages: AiMessage[];
   temperature?: number;
   maxTokens?: number;
+  modelOverride?: string;
 };
 
 export type AiGenerateTextResult = {
