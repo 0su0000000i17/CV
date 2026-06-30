@@ -12,13 +12,26 @@ export type GenerateResumeImprovementOutput = {
 };
 
 type ResumePromptPayload = {
-  personal?: {
-    gender?: string | null;
+  personal?: { gender?: string | null };
+  experience?: {
+    items?: Array<{
+      sourceIndex?: number;
+      company?: { name?: string | null };
+      position?: string | null;
+      dates?: { start?: string | null; end?: string | null };
+      blocks?: Array<{ type?: string; text?: string | null }>;
+    }>;
   };
 };
 
 function getImprovementModelOverride() {
   return process.env.YANDEX_AI_ADAPTATION_MODEL?.trim() || undefined;
+}
+
+function getImprovementMaxTokens() {
+  const envValue = Number(process.env.AI_IMPROVE_MAX_TOKENS);
+  if (Number.isFinite(envValue) && envValue > 0) return envValue;
+  return Math.max(ADAPT_MAX_TOKENS, 4200);
 }
 
 export async function generateResumeImprovement(params: {
@@ -32,8 +45,8 @@ export async function generateResumeImprovement(params: {
   ];
   const generationResult = await aiProvider.generateText({
     messages,
-    temperature: 0.14,
-    maxTokens: ADAPT_MAX_TOKENS,
+    temperature: 0.12,
+    maxTokens: getImprovementMaxTokens(),
     modelOverride: getImprovementModelOverride(),
   });
   const parsedJson = parseJsonFromModelResponse(generationResult.text);
@@ -50,25 +63,66 @@ export async function generateResumeImprovement(params: {
 
 function createSystemPrompt() {
   return `
-Ты карьерный редактор и ATS-специалист. Улучши резюме без привязки к вакансии: сделай опыт конкретнее, сильнее и понятнее для HR и автоматического отбора.
+Ты сильный карьерный редактор и ATS-редактор. Улучши резюме без привязки к вакансии: сделай опыт конкретнее, сильнее и понятнее для HR, сохранив факты кандидата.
 
-Правила:
-- Определи профессию и уровень кандидата по исходному резюме.
-- Сохрани реальные компании, должности, даты, образование, контакты и порядок опыта.
-- Не добавляй компании, проекты, технологии, сертификаты, языки, должности и стаж, которых нет в источнике.
-- Не используй первое лицо и клише без доказательств.
-- Обязательно согласуй род формулировок с полом кандидата из поля personal.gender.
-- Если personal.gender = "Женщина", используй женский род в прошедшем времени: разработала, подготовила, создавала, проводила, координировала, анализировала, внедрила, вела. Не используй мужские формы: разработал, подготовил, создавал, проводил, координировал, анализировал, внедрил.
-- Если personal.gender = "Мужчина", используй мужской род.
-- Если пол не указан, используй нейтральные отглагольные формулировки: разработка, создание, ведение, координация, внедрение.
-- Каждый bullet опыта пиши по логике: глагол действия + задача / действие + измеримый результат.
-- Если метрик мало, добавляй осторожные inferred-метрики только при логической опоре в исходном опыте: проценты, сроки, объём, скорость, регулярность, снижение ручной работы, производительность, качество, SLA, Core Web Vitals, LCP, SQL, API, интеграции, контент-метрики — только если это подходит домену кандидата.
-- Не пиши фантастические показатели вроде выручки, бюджетов, миллионов пользователей, ROI, CAC, LTV без прямой опоры.
-- Навыки очисти от дублей, сохрани подтверждённые hard skills и аббревиатуры.
-- Верни все места работы и сопоставимый объём bullets.
-- Перед финальным ответом проверь, что род глаголов в summary, focus и adaptedBullets не противоречит personal.gender.
-- Верни строго JSON без markdown.
+ОСНОВНЫЕ ПРАВИЛА:
+- Не адаптируй под конкретную вакансию.
+- Не выдумывай компании, проекты, технологии, сертификаты, языки, должности, стаж и образование.
+- Сохрани все места работы, sourceIndex, порядок опыта, должности и даты.
+- Не объединяй разные места работы и не переноси bullets между ними.
+- Не используй первое лицо: я, мой, моя, мы, наш, имею, умею.
+- Summary пиши как профессиональное описание: "PHP Backend Developer с опытом...", а не "Имею опыт...".
+- Убери приветствия и клише без доказательств.
+
+РОД:
+- Согласуй род с personal.gender.
+- Женщина: разработала, подготовила, создавала, проводила, координировала, анализировала, внедрила, работала.
+- Мужчина: разработал, подготовил, создавал, проводил, координировал, анализировал, внедрил, работал.
+- Если пол не указан, используй нейтральные формулировки: разработка, создание, внедрение, координация, оптимизация.
+
+ОПЫТ И МЕТРИКИ:
+- Каждый bullet: действие + задача + результат.
+- В каждом значимом месте работы добавь минимум 2 измеримых результата, если есть логическая опора.
+- Если точной цифры нет, используй аккуратные диапазоны: 10-15%, 15-20%, 20-30%, до 2 раз, на 1-2 дня, 1-2 недели.
+- Для backend/dev ролей усиливай через API, БД, SQL, интеграции, кеширование, очереди, стабильность, скорость обработки, снижение ручной работы, наблюдаемость, тесты, отчёты.
+- Для frontend ролей усиливай через Core Web Vitals, LCP, рендер, загрузку, UX, SSR/CSR, состояние, графики.
+- Для SMM/content ролей усиливай через регулярность контента, скорость производства, охваты, вовлечённость, визуальный стандарт, Reels, Stories, контент-план.
+- Не добавляй бизнес-KPI без опоры.
+
+НАВЫКИ:
+- skills.primary и skills.secondary возвращай как массив отдельных навыков.
+- Нельзя возвращать склейки вроде "PHP MySQL JavaScript" одним элементом.
+- Убери дубли и варианты одного навыка: VueJS/Vue.js, PHPUnit/PhpUnit, PostgreSQL/Postgres.
+
+ФОРМАТ:
+- Верни строго валидный JSON без markdown и без текста вокруг.
+- adaptedBullets, preservedFacts, warnings, skills и keywordsUsed — массивы строк.
 `.trim();
+}
+
+function requiredMinBullets(sourceCount: number) {
+  if (sourceCount <= 0) return 0;
+  if (sourceCount <= 5) return sourceCount;
+  return Math.min(sourceCount, 10);
+}
+
+function createExperiencePlanPrompt(resumeMarkdown: string) {
+  try {
+    const parsed = JSON.parse(resumeMarkdown) as ResumePromptPayload;
+    const items = parsed.experience?.items || [];
+    const lines = items.map((item, index) => {
+      const sourceIndex = typeof item.sourceIndex === "number" ? item.sourceIndex : index;
+      const sourceCount = (item.blocks || []).filter((block) => block.type === "bullet" && block.text).length;
+      const company = item.company?.name || "компания не указана";
+      const position = item.position || "должность не указана";
+      const dates = [item.dates?.start, item.dates?.end].filter(Boolean).join(" — ") || "даты не указаны";
+      return `- sourceIndex ${sourceIndex}: ${company}; ${position}; ${dates}; исходно ${sourceCount} bullets; верни минимум ${requiredMinBullets(sourceCount) || sourceCount || 1} adaptedBullets`;
+    });
+
+    return lines.length ? `ОБЯЗАТЕЛЬНЫЙ ПЛАН ОПЫТА:\n${lines.join("\n")}` : "";
+  } catch {
+    return "";
+  }
 }
 
 function createGenderInstruction(resumeMarkdown: string) {
@@ -77,35 +131,38 @@ function createGenderInstruction(resumeMarkdown: string) {
     const gender = parsed.personal?.gender?.trim();
 
     if (/женщина/i.test(gender || "")) {
-      return `
-ПОЛ КАНДИДАТА: Женщина.
-Пиши опыт и summary в женском роде. Нельзя: разработал, подготовил, проводил, создавал, координировал, анализировал, внедрил. Нужно: разработала, подготовила, проводила, создавала, координировала, анализировала, внедрила.
-`.trim();
+      return "ПОЛ КАНДИДАТА: Женщина. Пиши опыт, summary и focus в женском роде. Нельзя использовать мужские формы.";
     }
 
     if (/мужчина/i.test(gender || "")) {
-      return `
-ПОЛ КАНДИДАТА: Мужчина.
-Пиши опыт и summary в мужском роде.
-`.trim();
+      return "ПОЛ КАНДИДАТА: Мужчина. Пиши опыт, summary и focus в мужском роде.";
     }
   } catch {
-    return "ПОЛ КАНДИДАТА: не указан. Используй нейтральные формулировки без мужского рода по умолчанию.";
+    return "ПОЛ КАНДИДАТА: не указан. Используй нейтральные формулировки.";
   }
 
-  return "ПОЛ КАНДИДАТА: не указан. Используй нейтральные формулировки без мужского рода по умолчанию.";
+  return "ПОЛ КАНДИДАТА: не указан. Используй нейтральные формулировки.";
 }
 
 function createUserPrompt(resumeMarkdown: string) {
   return `
 ${createGenderInstruction(resumeMarkdown)}
 
+${createExperiencePlanPrompt(resumeMarkdown)}
+
 ИСХОДНОЕ РЕЗЮМЕ:
 """
 ${resumeMarkdown}
 """
 
-Улучши резюме как готовый ATS-friendly черновик. Не адаптируй под конкретную вакансию.
+УЛУЧШИ РЕЗЮМЕ КАК ГОТОВЫЙ ATS-FRIENDLY ЧЕРНОВИК.
+
+САМОПРОВЕРКА ПЕРЕД ОТВЕТОМ:
+- Все sourceIndex из плана опыта присутствуют.
+- Нет первого лица: "Имею", "Умею", "Я", "мой", "мы".
+- Род соответствует personal.gender.
+- Нет skills-склеек вроде "PHP MySQL JavaScript".
+- В каждом значимом месте работы есть измеримые результаты, если это логически возможно.
 
 СХЕМА JSON:
 {
