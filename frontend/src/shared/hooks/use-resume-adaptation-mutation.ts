@@ -2,7 +2,6 @@ import { useMutation } from '@tanstack/react-query';
 
 import {
   adaptResumeToVacancy,
-  type AdaptationSettings,
   type ResumeAdaptationResponse,
 } from '@/src/shared/api/resume-adaptation';
 import type { ResumeVacancyFitResult } from '@/src/shared/api/resume-vacancy-fit';
@@ -13,7 +12,6 @@ type ResumeAdaptationVariables = {
   vacancy: NormalizedVacancy;
   vacancyText: string;
   fit: ResumeVacancyFitResult;
-  adaptationSettings: AdaptationSettings;
   accessToken: string;
 };
 
@@ -28,7 +26,6 @@ export function useResumeAdaptationMutation() {
       vacancy,
       vacancyText,
       fit,
-      adaptationSettings,
       accessToken,
     }) => {
       return adaptResumeToVacancy({
@@ -36,7 +33,6 @@ export function useResumeAdaptationMutation() {
         vacancy,
         vacancyText,
         fit,
-        adaptationSettings,
         accessToken,
       });
     },
