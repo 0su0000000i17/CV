@@ -7,6 +7,11 @@ import {
 } from "./normalize-blocks.js";
 import { isRecord, toNullableString, toStringArray } from "./normalize-helpers.js";
 
+function normalizeHeadline(value: unknown) {
+  const headline = toNullableString(value) || "";
+  return /^адаптированное\s+резюме$/iu.test(headline) ? "" : headline;
+}
+
 export function normalizeAdaptationResult(value: unknown): ResumeAdaptationResult {
   const source = isRecord(value) ? value : {};
   const adaptedResume = isRecord(source.adaptedResume)
@@ -16,9 +21,7 @@ export function normalizeAdaptationResult(value: unknown): ResumeAdaptationResul
   return {
     target: normalizeTarget(source.target),
     adaptedResume: {
-      headline:
-        toNullableString(adaptedResume.headline) ||
-        "Адаптированное резюме",
+      headline: normalizeHeadline(adaptedResume.headline),
       summary: toNullableString(adaptedResume.summary) || "",
       skills: normalizeSkills(adaptedResume.skills),
       experience: normalizeExperience(adaptedResume.experience),
