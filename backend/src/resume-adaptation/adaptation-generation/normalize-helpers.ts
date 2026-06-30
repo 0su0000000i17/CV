@@ -1,4 +1,4 @@
-export function toNullableString(value: unknown) {
+export function toNullableString(value: unknown): string | null {
   if (typeof value === "string") {
     const trimmed = value.trim();
     return trimmed ? trimmed : null;
@@ -14,7 +14,7 @@ export function toNullableString(value: unknown) {
   return null;
 }
 
-export function toStringArray(value: unknown, limit: number) {
+export function toStringArray(value: unknown, limit: number): string[] {
   if (!Array.isArray(value)) {
     return [];
   }
