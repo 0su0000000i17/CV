@@ -11,6 +11,12 @@ export type GenerateResumeImprovementOutput = {
   meta: { resumeChars: number };
 };
 
+type ResumePromptPayload = {
+  personal?: {
+    gender?: string | null;
+  };
+};
+
 function getImprovementModelOverride() {
   return process.env.YANDEX_AI_ADAPTATION_MODEL?.trim() || undefined;
 }
@@ -26,7 +32,7 @@ export async function generateResumeImprovement(params: {
   ];
   const generationResult = await aiProvider.generateText({
     messages,
-    temperature: 0.18,
+    temperature: 0.14,
     maxTokens: ADAPT_MAX_TOKENS,
     modelOverride: getImprovementModelOverride(),
   });
@@ -51,17 +57,49 @@ function createSystemPrompt() {
 - Сохрани реальные компании, должности, даты, образование, контакты и порядок опыта.
 - Не добавляй компании, проекты, технологии, сертификаты, языки, должности и стаж, которых нет в источнике.
 - Не используй первое лицо и клише без доказательств.
+- Обязательно согласуй род формулировок с полом кандидата из поля personal.gender.
+- Если personal.gender = "Женщина", используй женский род в прошедшем времени: разработала, подготовила, создавала, проводила, координировала, анализировала, внедрила, вела. Не используй мужские формы: разработал, подготовил, создавал, проводил, координировал, анализировал, внедрил.
+- Если personal.gender = "Мужчина", используй мужской род.
+- Если пол не указан, используй нейтральные отглагольные формулировки: разработка, создание, ведение, координация, внедрение.
 - Каждый bullet опыта пиши по логике: глагол действия + задача / действие + измеримый результат.
 - Если метрик мало, добавляй осторожные inferred-метрики только при логической опоре в исходном опыте: проценты, сроки, объём, скорость, регулярность, снижение ручной работы, производительность, качество, SLA, Core Web Vitals, LCP, SQL, API, интеграции, контент-метрики — только если это подходит домену кандидата.
 - Не пиши фантастические показатели вроде выручки, бюджетов, миллионов пользователей, ROI, CAC, LTV без прямой опоры.
 - Навыки очисти от дублей, сохрани подтверждённые hard skills и аббревиатуры.
 - Верни все места работы и сопоставимый объём bullets.
+- Перед финальным ответом проверь, что род глаголов в summary, focus и adaptedBullets не противоречит personal.gender.
 - Верни строго JSON без markdown.
 `.trim();
 }
 
+function createGenderInstruction(resumeMarkdown: string) {
+  try {
+    const parsed = JSON.parse(resumeMarkdown) as ResumePromptPayload;
+    const gender = parsed.personal?.gender?.trim();
+
+    if (/женщина/i.test(gender || "")) {
+      return `
+ПОЛ КАНДИДАТА: Женщина.
+Пиши опыт и summary в женском роде. Нельзя: разработал, подготовил, проводил, создавал, координировал, анализировал, внедрил. Нужно: разработала, подготовила, проводила, создавала, координировала, анализировала, внедрила.
+`.trim();
+    }
+
+    if (/мужчина/i.test(gender || "")) {
+      return `
+ПОЛ КАНДИДАТА: Мужчина.
+Пиши опыт и summary в мужском роде.
+`.trim();
+    }
+  } catch {
+    return "ПОЛ КАНДИДАТА: не указан. Используй нейтральные формулировки без мужского рода по умолчанию.";
+  }
+
+  return "ПОЛ КАНДИДАТА: не указан. Используй нейтральные формулировки без мужского рода по умолчанию.";
+}
+
 function createUserPrompt(resumeMarkdown: string) {
   return `
+${createGenderInstruction(resumeMarkdown)}
+
 ИСХОДНОЕ РЕЗЮМЕ:
 """
 ${resumeMarkdown}
