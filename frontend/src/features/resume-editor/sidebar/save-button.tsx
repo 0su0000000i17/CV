@@ -10,7 +10,7 @@ import {
 import type { ResumeAdaptationResult } from '@/src/shared/api/resume-adaptation';
 import type { UploadedResume } from '@/src/shared/api/resumes';
 
- type Props = {
+type Props = {
   draft: ResumeAdaptationResult;
   contacts: AdaptedResumeExportContacts;
   photoUrl: string | null;
