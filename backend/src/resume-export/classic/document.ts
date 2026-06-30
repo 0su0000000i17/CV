@@ -323,6 +323,25 @@ function rawSkillsFromSourceDocument(document: SourceResumeDocument | null) {
   return document ? document.skills.items.map(cleanText).filter(Boolean) : [];
 }
 
+function shouldDropPackedSkill(value: string, allSkills: string[]) {
+  const parts = cleanText(value).split(/\s+/u).filter(Boolean);
+  if (parts.length < 2) return false;
+
+  const valueKey = skillKey(value);
+  const otherKeys = new Set(
+    allSkills
+      .filter((item) => skillKey(item) !== valueKey)
+      .map(skillKey)
+      .filter(Boolean)
+  );
+
+  return parts.every((part) => otherKeys.has(skillKey(part)));
+}
+
+function removeRedundantPackedSkills(values: string[]) {
+  return values.filter((item) => !shouldDropPackedSkill(item, values));
+}
+
 function resolveSkills(params: {
   payload: ClassicExportPayload;
   sourceDocument: SourceResumeDocument | null;
@@ -369,7 +388,7 @@ function resolveSkills(params: {
     result.push(value);
   }
 
-  return result;
+  return removeRedundantPackedSkills(result);
 }
 
 function resolvePhotoUrl(payload: ClassicExportPayload) {
