@@ -295,7 +295,7 @@ function removeKnownLanguageFragments(value: string, languageLines: string[]) {
     const escaped = escapeRegExp(cleanText(languageLine)).replace(/\s+/g, "\\s+");
     if (!escaped) continue;
 
-    result = result.replace(new RegExp(`\\s+${escaped}(?=\\s|$)`, "giu"), " ");
+    result = result.replace(new RegExp(`\s+${escaped}(?=\s|$)`, "giu"), " ");
   }
 
   return cleanText(result);
@@ -372,11 +372,8 @@ function resolveSkills(params: {
   return result;
 }
 
-function resolvePhotoUrl(
-  payload: ClassicExportPayload,
-  sourceDocument: SourceResumeDocument | null
-) {
-  return cleanText(payload.photoUrl) || sourceDocument?.photo?.dataUrl || null;
+function resolvePhotoUrl(payload: ClassicExportPayload) {
+  return cleanText(payload.photoUrl) || null;
 }
 
 function normalizePhotoSize(value: unknown) {
@@ -385,7 +382,12 @@ function normalizePhotoSize(value: unknown) {
     : null;
 }
 
-function resolvePhotoSize(sourceDocument: SourceResumeDocument | null) {
+function resolvePhotoSize(
+  payload: ClassicExportPayload,
+  sourceDocument: SourceResumeDocument | null
+) {
+  if (!cleanText(payload.photoUrl)) return null;
+
   const width = normalizePhotoSize(sourceDocument?.photo?.displayWidth);
   const height = normalizePhotoSize(sourceDocument?.photo?.displayHeight);
 
@@ -549,8 +551,8 @@ export function buildClassicDocument(params: {
 
   return {
     ...payload,
-    photoUrl: resolvePhotoUrl(payload, sourceDocument),
-    photoSize: resolvePhotoSize(sourceDocument),
+    photoUrl: resolvePhotoUrl(payload),
+    photoSize: resolvePhotoSize(payload, sourceDocument),
     sourceText: params.sourceText,
     sourceTitle,
     snapshot,
