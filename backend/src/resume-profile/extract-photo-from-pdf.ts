@@ -171,6 +171,10 @@ def extract_from_unpositioned_xrefs(doc):
 
         for image_index, image in enumerate(page.get_images(full=True)):
             xref = image[0]
+            rects = page.get_image_rects(xref)
+            if rects:
+                continue
+
             pix = normalize_pixmap(doc, xref)
 
             if not is_reasonable_photo_size(pix.width, pix.height):
