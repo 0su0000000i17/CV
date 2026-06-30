@@ -18,6 +18,8 @@ import { parseJsonFromModelResponse } from "./adaptation-generation/json-respons
 import { normalizeAdaptationResult } from "./adaptation-generation/normalize-adaptation-result.js";
 import { createUserPrompt, SYSTEM_PROMPT } from "./adaptation-generation/prompts.js";
 
+const ADAPTATION_MODEL_ENV = "YANDEX_AI_ADAPTATION_MODEL";
+
 type GenerateResumeAdaptationParams = {
   resumeMarkdown: string;
   vacancy: NormalizedVacancy;
@@ -38,6 +40,10 @@ type GenerateResumeAdaptationOutput = {
     vacancyChars: number;
   };
 };
+
+function getAdaptationModelOverride() {
+  return process.env[ADAPTATION_MODEL_ENV]?.trim() || undefined;
+}
 
 export async function generateResumeAdaptation(
   params: GenerateResumeAdaptationParams
@@ -75,10 +81,12 @@ export async function generateResumeAdaptation(
   });
   await params.debugWriter?.writeJson("02-prompts.json", { messages });
 
+  const modelOverride = getAdaptationModelOverride();
   const generationResult = await aiProvider.generateText({
     messages,
     temperature: 0.18,
     maxTokens: ADAPT_MAX_TOKENS,
+    modelOverride,
   });
 
   await params.debugWriter?.writeText("03-model-output.txt", generationResult.text);
