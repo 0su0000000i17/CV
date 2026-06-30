@@ -29,19 +29,42 @@ def sanitize_text(value: Any) -> str:
     return str(value).encode("utf-8", "replace").decode("utf-8")
 
 
+def get_optional_env(name: str) -> str:
+    return sanitize_text(os.environ.get(name, "").strip())
+
+
 def get_required_env(*names: str) -> str:
     for name in names:
-        value = os.environ.get(name, "").strip()
+        value = get_optional_env(name)
         if value:
-            return sanitize_text(value)
+            return value
     raise RuntimeError(f"One of these environment variables is required: {', '.join(names)}")
 
 
-def normalize_model_name(model: str) -> str:
+def strip_model_uri(model: str) -> str:
     value = sanitize_text(model).strip()
     if value.startswith("gpt://"):
         parts = value.split("/")
         return "/".join(parts[3:]) or value
+    return value
+
+
+def normalize_model_name(model: str) -> str:
+    override = get_optional_env("YANDEX_AI_ADAPTATION_ASYNC_MODEL")
+    if override:
+        return strip_model_uri(override)
+
+    value = strip_model_uri(model)
+    base = value.removesuffix("/latest").strip()
+
+    # The OpenAI-compatible endpoint accepts names like yandexgpt-5.1/latest,
+    # while the Python AI Studio SDK expects completion model aliases like yandexgpt.
+    if base in {"yandexgpt-5.1", "yandexgpt-5", "yandexgpt-4", "yandexgpt-pro"}:
+        return "yandexgpt"
+
+    if base in {"yandexgpt-5-lite", "yandexgpt-lite"}:
+        return "yandexgpt-lite"
+
     return value
 
 
@@ -118,6 +141,7 @@ def main() -> None:
         "text": extract_text(result),
         "provider": "yandex-async",
         "model": model_name,
+        "requestedModel": sanitize_text(payload.get("model") or ""),
         "usage": to_plain(getattr(result, "usage", None)),
         "modelVersion": to_plain(getattr(result, "model_version", None)),
     }
