@@ -1,7 +1,4 @@
-import type {
-  AdaptationSettings,
-  ResumeAdaptationResponse,
-} from '@/src/shared/api/resume-adaptation';
+import type { ResumeAdaptationResponse } from '@/src/shared/api/resume-adaptation';
 import type { NormalizedVacancy } from '@/src/shared/api/vacancies';
 import type { ResumeVacancyFitResult } from '@/src/shared/api/resume-vacancy-fit';
 
@@ -12,7 +9,6 @@ export type AdaptationMutation = {
     vacancy: NormalizedVacancy;
     vacancyText: string;
     fit: ResumeVacancyFitResult;
-    adaptationSettings: AdaptationSettings;
     accessToken: string;
   }) => void;
   data?: ResumeAdaptationResponse;
@@ -29,7 +25,6 @@ export function createAdaptationFromFit(params: {
   preparedVacancyText: string;
   fitMutation: FitResultSource;
   adaptationMutation: AdaptationMutation;
-  adaptationSettings: AdaptationSettings;
 }) {
   const fit = params.fitMutation.data?.fit;
 
@@ -48,7 +43,6 @@ export function createAdaptationFromFit(params: {
     vacancy: params.preparedVacancy,
     vacancyText: params.preparedVacancyText,
     fit,
-    adaptationSettings: params.adaptationSettings,
     accessToken: params.accessToken,
   });
 }
