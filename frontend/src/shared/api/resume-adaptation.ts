@@ -76,6 +76,71 @@ export type ResumeAdaptationResponse = {
   };
 };
 
+type ResumeAdaptationTaskResponse = {
+  status: 'queued' | 'running' | 'failed';
+  taskId: string;
+  resumeId: string;
+  attempts?: number;
+  error?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+type ResumeAdaptationApiResponse = ResumeAdaptationResponse | ResumeAdaptationTaskResponse;
+
+const ADAPTATION_POLL_INTERVAL_MS = Number(
+  process.env.NEXT_PUBLIC_ADAPTATION_POLL_INTERVAL_MS
+) || 2_500;
+const ADAPTATION_MAX_POLLS = Number(process.env.NEXT_PUBLIC_ADAPTATION_MAX_POLLS) || 240;
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isAdaptedResponse(value: ResumeAdaptationApiResponse): value is ResumeAdaptationResponse {
+  return value.status === 'adapted';
+}
+
+async function fetchAdaptationStatus(params: {
+  resumeId: string;
+  taskId: string;
+  accessToken: string;
+}) {
+  const response = await fetch(
+    `${getApiUrl()}/api/resumes/${params.resumeId}/adapt/status/${params.taskId}`,
+    {
+      method: 'GET',
+      headers: createAuthHeaders(params.accessToken),
+    }
+  );
+
+  return parseApiResponse<ResumeAdaptationApiResponse>(
+    response,
+    'Failed to get resume adaptation status'
+  );
+}
+
+async function waitForAdaptationResult(params: {
+  resumeId: string;
+  taskId: string;
+  accessToken: string;
+}) {
+  for (let attempt = 0; attempt < ADAPTATION_MAX_POLLS; attempt += 1) {
+    await sleep(ADAPTATION_POLL_INTERVAL_MS);
+    const result = await fetchAdaptationStatus(params);
+
+    if (isAdaptedResponse(result)) {
+      return result;
+    }
+
+    if (result.status === 'failed') {
+      throw new Error(result.error || 'Failed to adapt resume to vacancy');
+    }
+  }
+
+  throw new Error('Resume adaptation is taking too long. Try again later.');
+}
+
 export async function adaptResumeToVacancy(params: {
   resumeId: string;
   vacancy: NormalizedVacancy;
@@ -98,8 +163,22 @@ export async function adaptResumeToVacancy(params: {
     }),
   });
 
-  return parseApiResponse<ResumeAdaptationResponse>(
+  const result = await parseApiResponse<ResumeAdaptationApiResponse>(
     response,
     'Failed to adapt resume to vacancy'
   );
+
+  if (isAdaptedResponse(result)) {
+    return result;
+  }
+
+  if (result.status === 'failed') {
+    throw new Error(result.error || 'Failed to adapt resume to vacancy');
+  }
+
+  return waitForAdaptationResult({
+    resumeId: params.resumeId,
+    taskId: result.taskId,
+    accessToken: params.accessToken,
+  });
 }

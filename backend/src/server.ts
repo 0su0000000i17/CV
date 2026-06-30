@@ -10,6 +10,7 @@ import { coverLettersRouter } from "./routes/cover-letters.js";
 import { profileRouter } from "./routes/profile.js";
 import { resumesRouter } from "./routes/resumes.js";
 import { vacanciesRouter } from "./routes/vacancies.js";
+import { startAdaptationWorker } from "./controllers/resume-adaptation.js";
 
 const app = express();
 
@@ -92,4 +93,5 @@ app.use(
 
 app.listen(PORT, () => {
   console.log(`🚀 Backend started on http://localhost:${PORT}`);
+  startAdaptationWorker();
 });
