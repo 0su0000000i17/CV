@@ -104,7 +104,7 @@ export function CoverLetterPanel({
         type="button"
         onClick={handleGenerateCoverLetter}
         disabled={!canGenerate || coverLetterMutation.isPending}
-        className="mt-5 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3 text-sm font-medium text-background transition-colors hover:bg-foreground/80 disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
+        className="mt-5 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3 text-sm font-medium text-background transition-colors hover:bg-foreground/80 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {coverLetterMutation.isPending ? (
           <Loader2 className="h-4 w-4 animate-spin" />
