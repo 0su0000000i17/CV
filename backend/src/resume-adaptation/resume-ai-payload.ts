@@ -7,6 +7,9 @@ export type ResumeAdaptationAiPayload = ReturnType<typeof buildResumeAdaptationA
 
 export function buildResumeAdaptationAiPayload(document: SourceResumeDocument) {
   return {
+    personal: {
+      gender: document.personal.gender,
+    },
     target: {
       title: document.target.title,
       salary: document.target.salary,
