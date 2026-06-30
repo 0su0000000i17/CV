@@ -67,9 +67,12 @@ export const SYSTEM_PROMPT = `
 
 РОД И СТИЛЬ:
 - Не используй мужской род по умолчанию.
-- Если пол кандидата явно указан — согласуй формулировки с полом.
+- Если personal.gender = "Женщина", используй женский род: разработала, подготовила, создавала, проводила, координировала, анализировала, внедрила, вела.
+- Если personal.gender = "Женщина", нельзя использовать мужские формы: разработал, подготовил, создавал, проводил, координировал, анализировал, внедрил.
+- Если personal.gender = "Мужчина", используй мужской род.
 - Если пол не указан — используй нейтральные профессиональные формулировки.
 - Не используй первое лицо: я, мой, моя, имею, умею.
+- Перед финальным JSON проверь, что род в summary, focus и adaptedBullets соответствует personal.gender.
 
 ФОРМАТ:
 - Верни строго валидный JSON без markdown и без текста вокруг.
@@ -94,6 +97,7 @@ function createSettingsPrompt(settings: AdaptationSettings) {
 }
 
 type SourceResumeForCounts = {
+  personal?: { gender?: string | null };
   experience?: {
     items?: Array<{
       sourceIndex?: number;
@@ -135,6 +139,28 @@ ${lines.join("\n")}
   }
 }
 
+function createGenderPrompt(resumeMarkdown: string) {
+  try {
+    const parsed = JSON.parse(resumeMarkdown) as SourceResumeForCounts;
+    const gender = parsed.personal?.gender || "";
+
+    if (/женщина/iu.test(gender)) {
+      return `
+ПОЛ КАНДИДАТА: Женщина.
+Пиши опыт, summary и focus в женском роде. Нельзя: разработал, подготовил, проводил, создавал, координировал, анализировал, внедрил. Нужно: разработала, подготовила, проводила, создавала, координировала, анализировала, внедрила.
+`.trim();
+    }
+
+    if (/мужчина/iu.test(gender)) {
+      return "ПОЛ КАНДИДАТА: Мужчина. Пиши опыт, summary и focus в мужском роде.";
+    }
+  } catch {
+    return "ПОЛ КАНДИДАТА: не указан. Используй нейтральные формулировки без мужского рода по умолчанию.";
+  }
+
+  return "ПОЛ КАНДИДАТА: не указан. Используй нейтральные формулировки без мужского рода по умолчанию.";
+}
+
 function isGenericForbiddenChange(value: string) {
   return (
     /личные\s+данные|контакты/iu.test(value) ||
@@ -164,6 +190,8 @@ export function createUserPrompt(params: {
   settings: AdaptationSettings;
 }) {
   return `
+${createGenderPrompt(params.resumeMarkdown)}
+
 РЕЗЮМЕ КАНДИДАТА:
 """
 ${params.resumeMarkdown}
@@ -217,6 +245,7 @@ ${createBulletCountPrompt(params.resumeMarkdown)}
 - В релевантных местах работы должны быть метрики / сроки / диапазоны / измеримые эффекты, если их можно логически вывести.
 - adaptedBullets не должны быть копией исходных bullets.
 - Summary пиши без первого лица: не "Имею / Умею / Способна", а "SMM-специалист с опытом...".
+- Род всех глаголов должен соответствовать блоку ПОЛ КАНДИДАТА выше.
 
 Верни только JSON.
 `.trim();
