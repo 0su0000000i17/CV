@@ -1,16 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { Loader2, Mail, Wand2 } from 'lucide-react';
 
 import type { CoverLetterTone } from '@/src/shared/api/cover-letters';
 import type { ResumeAdaptationResult } from '@/src/shared/api/resume-adaptation';
 import type { UploadedResume } from '@/src/shared/api/resumes';
 import { useCoverLetterMutation } from '@/src/shared/hooks/use-cover-letter-mutation';
-import { EditorSection } from '@/src/features/resume-editor/ui/editor-section';
+import { CoverLetterGeneratorCard } from '@/src/features/cover-letter/ui/cover-letter-generator-card';
+import { CoverLetterResultCard } from '@/src/features/cover-letter/ui/cover-letter-result-card';
 
-import { CoverLetterResult } from './result';
-import { CoverLetterToneSelector } from './tone-selector';
 
 type Props = {
   draft: ResumeAdaptationResult;
@@ -76,65 +74,34 @@ export function CoverLetterPanel({
   }
 
   return (
-    <EditorSection
-      title="Сопроводительное письмо"
-      description="Сгенерируйте письмо под эту же вакансию на основе адаптированного резюме."
-    >
-      <div className="mb-4 flex items-start gap-3">
-        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-muted">
-          <Mail
-            className="block h-[18px] w-[18px] text-foreground"
-            strokeWidth={1.8}
-            aria-hidden="true"
-          />
-        </div>
-
-        <div>
-          <h3 className="font-medium text-foreground">Тон письма</h3>
-
-          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-            Контакты не отправляются в AI. Backend добавит способы связи после
-            генерации.
-          </p>
-        </div>
-      </div>
-
-      <CoverLetterToneSelector
+    <div className="space-y-4">
+      <CoverLetterGeneratorCard
         selectedTone={selectedTone}
+        isGenerating={coverLetterMutation.isPending}
+        canGenerate={canGenerate}
         onSelectTone={handleSelectTone}
+        onGenerate={handleGenerateCoverLetter}
+        title="Сопроводительное письмо"
+        description="Под эту же вакансию и на основе адаптированного резюме."
+        compact
       />
 
-      <button
-        type="button"
-        onClick={handleGenerateCoverLetter}
-        disabled={!canGenerate || coverLetterMutation.isPending}
-        className="mt-5 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3 text-sm font-medium text-background transition-colors hover:bg-foreground/80 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {coverLetterMutation.isPending ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Wand2 className="h-4 w-4" />
-        )}
-        {coverLetterMutation.isPending
-          ? 'Генерируем письмо...'
-          : 'Сгенерировать сопроводительное'}
-      </button>
-
       {coverLetterMutation.isError ? (
-        <p className="mt-3 text-sm text-red-500">
+        <p className="rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-500">
           {coverLetterMutation.error instanceof Error
             ? coverLetterMutation.error.message
             : 'Не удалось сгенерировать письмо'}
         </p>
       ) : null}
 
-      <CoverLetterResult
+      <CoverLetterResultCard
         value={coverLetterDraft}
         warnings={coverLetterMutation.data?.warnings ?? []}
         copyStatus={copyStatus}
         onChange={setCoverLetterDraft}
         onCopy={handleCopyCoverLetter}
+        compact
       />
-    </EditorSection>
+    </div>
   );
 }
