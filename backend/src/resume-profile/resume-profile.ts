@@ -28,13 +28,28 @@ function buildStoredStats(document: SourceResumeDocument, chars: number, photoFo
   };
 }
 
+function isLikelyHhLogoPhoto(photo: NonNullable<ExtractedPhotoResponse>) {
+  const width = Number(photo.displayWidth) || 0;
+  const height = Number(photo.displayHeight) || 0;
+  const isSmall = width > 0 && height > 0 && width <= 120 && height <= 120;
+  const isSquare = width > 0 && height > 0 && Math.abs(width - height) <= 10;
+  const isTinyImagePayload = photo.dataUrl.length < 18_000;
+
+  return isSmall && isSquare && isTinyImagePayload;
+}
+
+function normalizeExtractedPhoto(photo: ExtractedPhotoResponse): ExtractedPhotoResponse {
+  if (!photo) return null;
+  return isLikelyHhLogoPhoto(photo) ? null : photo;
+}
+
 async function tryExtractStoredFilePhoto(resume: { file_path: string | null; file_type: string | null }): Promise<ExtractedPhotoResponse> {
   if (!resume.file_path) return null;
 
   try {
     const fileBuffer = await downloadResumeFileBuffer(resume.file_path);
     const photo = await extractPhotoFromPdf({ fileBuffer, mimeType: resume.file_type });
-    return photo
+    const response = photo
       ? {
           contentType: photo.contentType,
           dataUrl: createPhotoDataUrl(photo.buffer, photo.contentType),
@@ -42,6 +57,8 @@ async function tryExtractStoredFilePhoto(resume: { file_path: string | null; fil
           displayHeight: photo.displayHeight,
         }
       : null;
+
+    return normalizeExtractedPhoto(response);
   } catch {
     return null;
   }
@@ -59,14 +76,16 @@ export async function extractResumeProfileController(req: Request, res: Response
 
     if (resume.source_resume_document && resume.extracted_text) {
       const document = resume.source_resume_document as SourceResumeDocument;
-      const storedPhoto = document.photo?.dataUrl
-        ? {
-            contentType: document.photo.contentType,
-            dataUrl: document.photo.dataUrl,
-            displayWidth: document.photo.displayWidth ?? null,
-            displayHeight: document.photo.displayHeight ?? null,
-          }
-        : null;
+      const storedPhoto = normalizeExtractedPhoto(
+        document.photo?.dataUrl
+          ? {
+              contentType: document.photo.contentType,
+              dataUrl: document.photo.dataUrl,
+              displayWidth: document.photo.displayWidth ?? null,
+              displayHeight: document.photo.displayHeight ?? null,
+            }
+          : null
+      );
       const filePhoto = storedPhoto ? null : await tryExtractStoredFilePhoto(resume);
       const photo = storedPhoto || filePhoto;
 
@@ -93,7 +112,17 @@ export async function extractResumeProfileController(req: Request, res: Response
       mimeType: resume.file_type,
     });
     const document = parseSourceResumeDocument(extraction.normalizedMarkdown);
-    const photo = await extractPhotoFromPdf({ fileBuffer, mimeType: resume.file_type });
+    const rawPhoto = await extractPhotoFromPdf({ fileBuffer, mimeType: resume.file_type });
+    const photo = normalizeExtractedPhoto(
+      rawPhoto
+        ? {
+            contentType: rawPhoto.contentType,
+            dataUrl: createPhotoDataUrl(rawPhoto.buffer, rawPhoto.contentType),
+            displayWidth: rawPhoto.displayWidth,
+            displayHeight: rawPhoto.displayHeight,
+          }
+        : null
+    );
 
     return res.json({
       status: "completed",
@@ -101,14 +130,7 @@ export async function extractResumeProfileController(req: Request, res: Response
       source: document.source,
       profile: buildProfileFromSourceResumeDocument(document),
       document,
-      photo: photo
-        ? {
-            contentType: photo.contentType,
-            dataUrl: createPhotoDataUrl(photo.buffer, photo.contentType),
-            displayWidth: photo.displayWidth,
-            displayHeight: photo.displayHeight,
-          }
-        : null,
+      photo,
       stats: {
         rawChars: extraction.stats.rawChars,
         normalizedChars: extraction.stats.normalizedChars,
