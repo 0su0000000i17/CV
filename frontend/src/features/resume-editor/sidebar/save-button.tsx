@@ -10,7 +10,7 @@ import {
 import type { ResumeAdaptationResult } from '@/src/shared/api/resume-adaptation';
 import type { UploadedResume } from '@/src/shared/api/resumes';
 
-type Props = {
+ type Props = {
   draft: ResumeAdaptationResult;
   contacts: AdaptedResumeExportContacts;
   photoUrl: string | null;
@@ -19,11 +19,21 @@ type Props = {
   vacancyText: string;
 };
 
-function createFileName(sourceResume?: UploadedResume) {
-  const sourceName = sourceResume?.file_name || sourceResume?.title || 'resume';
+function sanitizeFileName(value: string) {
+  return value
+    .replace(/[\\/:*?"<>|]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function createFileName(contacts: AdaptedResumeExportContacts, sourceResume?: UploadedResume) {
+  const candidateName = sanitizeFileName(contacts.fullName || '');
+  if (candidateName) return `${candidateName}.pdf`;
+
+  const sourceName = sanitizeFileName(sourceResume?.title || sourceResume?.file_name || 'resume');
   const baseName = sourceName.replace(/\.pdf$/i, '').trim() || 'resume';
 
-  return `${baseName}.cvpro.pdf`;
+  return `${baseName}.pdf`;
 }
 
 function downloadBlob(blob: Blob, fileName: string) {
@@ -68,7 +78,7 @@ export function SaveAdaptedResumeButton({
         },
       });
 
-      downloadBlob(blob, createFileName(sourceResume));
+      downloadBlob(blob, createFileName(contacts, sourceResume));
       setStatus('idle');
     } catch {
       setStatus('error');
