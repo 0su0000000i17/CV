@@ -1,5 +1,8 @@
+import { spawn } from "node:child_process";
+import path from "node:path";
+
 import { getAiProvider } from "../ai/get-ai-provider.js";
-import type { AiMessage } from "../ai/types.js";
+import type { AiGenerateTextResult, AiMessage } from "../ai/types.js";
 import type { AiDebugArtifactWriter } from "../utils/ai-debug-artifacts.js";
 import { formatVacancyForAdaptation } from "../vacancy-ai/format-vacancy-for-adaptation.js";
 import type { NormalizedVacancy } from "../vacancy-ai/types.js";
@@ -19,6 +22,9 @@ import { normalizeAdaptationResult } from "./adaptation-generation/normalize-ada
 import { createUserPrompt, SYSTEM_PROMPT } from "./adaptation-generation/prompts.js";
 
 const ADAPTATION_MODEL_ENV = "YANDEX_AI_ADAPTATION_MODEL";
+const ADAPTATION_EXECUTION_MODE_ENV = "YANDEX_AI_ADAPTATION_EXECUTION_MODE";
+const DEFAULT_ASYNC_TIMEOUT_MS = 10 * 60 * 1000;
+const ASYNC_STDERR_LIMIT = 3_000;
 
 type GenerateResumeAdaptationParams = {
   resumeMarkdown: string;
@@ -41,8 +47,166 @@ type GenerateResumeAdaptationOutput = {
   };
 };
 
+type AsyncRunnerPayload = {
+  model: string;
+  messages: Array<{
+    role: AiMessage["role"];
+    text: string;
+  }>;
+  temperature: number;
+  maxTokens: number;
+};
+
+type AsyncRunnerResult = {
+  text?: unknown;
+  provider?: unknown;
+  model?: unknown;
+  usage?: unknown;
+  modelVersion?: unknown;
+};
+
 function getAdaptationModelOverride() {
   return process.env[ADAPTATION_MODEL_ENV]?.trim() || undefined;
+}
+
+function isYandexAsyncAdaptationEnabled() {
+  return process.env[ADAPTATION_EXECUTION_MODE_ENV]?.trim().toLowerCase() === "async";
+}
+
+function getAsyncPythonPath() {
+  return (
+    process.env.YANDEX_AI_ASYNC_PYTHON_PATH?.trim() ||
+    process.env.MARKITDOWN_PYTHON_PATH?.trim() ||
+    (process.platform === "win32" ? "python" : "python3")
+  );
+}
+
+function getAsyncScriptPath() {
+  return (
+    process.env.YANDEX_AI_ASYNC_SCRIPT_PATH?.trim() ||
+    path.resolve(process.cwd(), "scripts", "yandex_async_generate.py")
+  );
+}
+
+function getAsyncTimeoutMs() {
+  return (
+    Number(process.env.YANDEX_AI_ASYNC_TIMEOUT_MS) ||
+    Number(process.env.YANDEX_AI_TIMEOUT_MS) ||
+    DEFAULT_ASYNC_TIMEOUT_MS
+  );
+}
+
+function getAsyncRunnerErrorMessage(stderr: string, stdout: string, code: number | null) {
+  const details = (stderr || stdout || "Yandex async runner failed")
+    .trim()
+    .slice(0, ASYNC_STDERR_LIMIT);
+  return `Yandex async adaptation failed with code ${code ?? "unknown"}: ${details}`;
+}
+
+function parseAsyncRunnerResult(stdout: string, model: string): AiGenerateTextResult {
+  const output = stdout.trim();
+  if (!output) {
+    throw new Error("Yandex async runner returned empty output");
+  }
+
+  const parsed = JSON.parse(output) as AsyncRunnerResult;
+  const text = typeof parsed.text === "string" ? parsed.text.trim() : "";
+
+  if (!text) {
+    throw new Error("Yandex async runner returned empty text");
+  }
+
+  return {
+    text,
+    provider: typeof parsed.provider === "string" ? parsed.provider : "yandex-async",
+    model: typeof parsed.model === "string" && parsed.model.trim() ? parsed.model : model,
+  };
+}
+
+async function generateTextWithYandexAsync(params: {
+  messages: AiMessage[];
+  temperature: number;
+  maxTokens: number;
+  modelOverride?: string;
+}): Promise<AiGenerateTextResult> {
+  const model = params.modelOverride?.trim() || process.env.YANDEX_AI_MODEL?.trim();
+
+  if (!model) {
+    throw new Error("YANDEX_AI_MODEL or YANDEX_AI_ADAPTATION_MODEL is required");
+  }
+
+  const payload: AsyncRunnerPayload = {
+    model,
+    messages: params.messages.map((message) => ({
+      role: message.role,
+      text: message.content,
+    })),
+    temperature: params.temperature,
+    maxTokens: params.maxTokens,
+  };
+
+  return await new Promise((resolve, reject) => {
+    const child = spawn(getAsyncPythonPath(), [getAsyncScriptPath()], {
+      cwd: process.cwd(),
+      env: process.env,
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+
+    const stdoutChunks: Buffer[] = [];
+    const stderrChunks: Buffer[] = [];
+    let settled = false;
+
+    const timeout = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      child.kill("SIGKILL");
+      reject(new Error("Yandex async adaptation timed out"));
+    }, getAsyncTimeoutMs());
+
+    child.stdout.on("data", (chunk: Buffer) => stdoutChunks.push(chunk));
+    child.stderr.on("data", (chunk: Buffer) => stderrChunks.push(chunk));
+    child.on("error", (error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      reject(error);
+    });
+    child.on("close", (code) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+
+      const stdout = Buffer.concat(stdoutChunks).toString("utf8");
+      const stderr = Buffer.concat(stderrChunks).toString("utf8");
+
+      if (code !== 0) {
+        reject(new Error(getAsyncRunnerErrorMessage(stderr, stdout, code)));
+        return;
+      }
+
+      try {
+        resolve(parseAsyncRunnerResult(stdout, model));
+      } catch (error) {
+        reject(error);
+      }
+    });
+
+    child.stdin.end(JSON.stringify(payload));
+  });
+}
+
+async function generateAdaptationText(params: {
+  messages: AiMessage[];
+  temperature: number;
+  maxTokens: number;
+  modelOverride?: string;
+}) {
+  if (isYandexAsyncAdaptationEnabled()) {
+    return generateTextWithYandexAsync(params);
+  }
+
+  const aiProvider = getAiProvider();
+  return aiProvider.generateText(params);
 }
 
 export async function generateResumeAdaptation(
@@ -58,7 +222,6 @@ export async function generateResumeAdaptation(
     .trim()
     .slice(0, ADAPT_RESUME_MAX_CHARS);
   const vacancyForPrompt = vacancyText.trim().slice(0, ADAPT_VACANCY_MAX_CHARS);
-  const aiProvider = getAiProvider();
 
   const messages: AiMessage[] = [
     { role: "system", content: SYSTEM_PROMPT },
@@ -78,11 +241,12 @@ export async function generateResumeAdaptation(
     fit: params.fit,
     resumeChars: resumeForPrompt.length,
     vacancyChars: vacancyForPrompt.length,
+    executionMode: isYandexAsyncAdaptationEnabled() ? "async" : "sync",
   });
   await params.debugWriter?.writeJson("02-prompts.json", { messages });
 
   const modelOverride = getAdaptationModelOverride();
-  const generationResult = await aiProvider.generateText({
+  const generationResult = await generateAdaptationText({
     messages,
     temperature: 0.18,
     maxTokens: ADAPT_MAX_TOKENS,
@@ -95,6 +259,7 @@ export async function generateResumeAdaptation(
     model: generationResult.model,
     temperature: 0.18,
     maxTokens: ADAPT_MAX_TOKENS,
+    executionMode: isYandexAsyncAdaptationEnabled() ? "async" : "sync",
   });
 
   const parsedJson = parseJsonFromModelResponse(generationResult.text);
