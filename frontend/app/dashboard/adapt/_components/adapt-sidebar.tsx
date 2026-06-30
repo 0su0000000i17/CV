@@ -1,10 +1,6 @@
-import type {
-  AdaptationSettings,
-  ResumeAdaptationResponse,
-} from '@/src/shared/api/resume-adaptation';
+import type { ResumeAdaptationResponse } from '@/src/shared/api/resume-adaptation';
 import type { ResumeVacancyFitResponse } from '@/src/shared/api/resume-vacancy-fit';
 
-import { AdaptSettings } from './adapt-settings';
 import { SidebarActionButton } from './adapt-sidebar/sidebar-action-button';
 import { SidebarHeader } from './adapt-sidebar/sidebar-header';
 import { SidebarResultList } from './adapt-sidebar/sidebar-result-list';
@@ -13,22 +9,18 @@ import { SidebarStatusMessages } from './adapt-sidebar/sidebar-status-messages';
 type Props = {
   fitResponse?: ResumeVacancyFitResponse;
   adaptationResponse?: ResumeAdaptationResponse;
-  adaptationSettings: AdaptationSettings;
   isAdapting: boolean;
   isCheckingFit: boolean;
   onCreateAdaptation: () => void;
-  onAdaptationSettingsChange: (settings: AdaptationSettings) => void;
 };
 
 export function AdaptSidebar(props: Props) {
   const {
     fitResponse,
     adaptationResponse,
-    adaptationSettings,
     isAdapting,
     isCheckingFit,
     onCreateAdaptation,
-    onAdaptationSettingsChange,
   } = props;
 
   const canContinue = fitResponse?.fit.canAdapt === true;
@@ -36,7 +28,7 @@ export function AdaptSidebar(props: Props) {
   const hasFitResult = Boolean(fitResponse);
 
   return (
-    <aside className="space-y-4">
+    <aside>
       <div className="rounded-2xl border border-border bg-card/60 p-4">
         <SidebarHeader canContinue={canContinue} isCheckingFit={isCheckingFit} />
         <SidebarResultList />
@@ -52,11 +44,6 @@ export function AdaptSidebar(props: Props) {
           onCreateAdaptation={onCreateAdaptation}
         />
       </div>
-
-      <AdaptSettings
-        settings={adaptationSettings}
-        onSettingsChange={onAdaptationSettingsChange}
-      />
     </aside>
   );
 }
