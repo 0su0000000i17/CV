@@ -1,6 +1,5 @@
 'use client';
 
-import { CoverLetterPanel } from '@/src/features/resume-editor/cover-letter/panel';
 import { ResumeEditorContent } from '@/src/features/resume-editor/editor/resume-editor-content';
 import { useEditorState } from '@/src/features/resume-editor/model/use-editor-state';
 import type { AdaptationResultCardProps } from '@/src/features/resume-editor/model/types';
@@ -43,13 +42,6 @@ export function AdaptationResultCard({
         <ResumeEditorContent
           editor={editor}
           isProfileLoading={isProfileLoading}
-        />
-
-        <CoverLetterPanel
-          draft={editor.draft}
-          sourceResume={sourceResume}
-          accessToken={accessToken}
-          vacancyText={vacancyText}
         />
       </div>
 
