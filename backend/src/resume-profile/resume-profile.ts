@@ -28,19 +28,19 @@ function buildStoredStats(document: SourceResumeDocument, chars: number, photoFo
   };
 }
 
-function isLikelyHhLogoPhoto(photo: NonNullable<ExtractedPhotoResponse>) {
+function isLikelyServiceIcon(photo: NonNullable<ExtractedPhotoResponse>) {
   const width = Number(photo.displayWidth) || 0;
   const height = Number(photo.displayHeight) || 0;
   const isSmall = width > 0 && height > 0 && width <= 120 && height <= 120;
   const isSquare = width > 0 && height > 0 && Math.abs(width - height) <= 10;
-  const isTinyImagePayload = photo.dataUrl.length < 18_000;
+  const isTinyImagePayload = photo.dataUrl.length < 6_000;
 
   return isSmall && isSquare && isTinyImagePayload;
 }
 
 function normalizeExtractedPhoto(photo: ExtractedPhotoResponse): ExtractedPhotoResponse {
   if (!photo) return null;
-  return isLikelyHhLogoPhoto(photo) ? null : photo;
+  return isLikelyServiceIcon(photo) ? null : photo;
 }
 
 async function tryExtractStoredFilePhoto(resume: { file_path: string | null; file_type: string | null }): Promise<ExtractedPhotoResponse> {
