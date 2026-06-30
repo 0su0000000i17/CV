@@ -1,6 +1,8 @@
 import type { ResumeAdaptationResponse } from './resume-adaptation';
 import { createAuthHeaders, getApiUrl, parseApiResponse } from './http';
 
+export type { ResumeAdaptationResponse };
+
 export async function improveResume(params: {
   resumeId: string;
   accessToken: string;
