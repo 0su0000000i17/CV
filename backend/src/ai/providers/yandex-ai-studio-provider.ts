@@ -13,7 +13,6 @@ type YandexAiConfig = {
   baseUrl: string;
   folderId: string;
   model: string;
-  modelUri: string;
   timeoutMs: number;
   enableServerDataLogging: boolean;
 };
@@ -53,6 +52,10 @@ function getFolderId() {
   );
 }
 
+function createModelUri(folderId: string, model: string) {
+  return model.startsWith("gpt://") ? model : `gpt://${folderId}/${model}`;
+}
+
 function getYandexAiConfig(): YandexAiConfig {
   const folderId = getFolderId();
 
@@ -82,7 +85,6 @@ function getYandexAiConfig(): YandexAiConfig {
     ),
     folderId,
     model,
-    modelUri: model.startsWith("gpt://") ? model : `gpt://${folderId}/${model}`,
     timeoutMs: Number(process.env.YANDEX_AI_TIMEOUT_MS) || DEFAULT_TIMEOUT_MS,
     enableServerDataLogging,
   };
@@ -202,10 +204,11 @@ export function createYandexAiStudioProvider(): AiProvider {
       const config = getYandexAiConfig();
       const client = createClient(config);
       const { instructions, input } = splitMessages(params.messages);
+      const model = params.modelOverride?.trim() || config.model;
 
       try {
         const response = await client.responses.create({
-          model: config.modelUri,
+          model: createModelUri(config.folderId, model),
           instructions,
           input,
           temperature: params.temperature ?? 0,
@@ -225,7 +228,7 @@ export function createYandexAiStudioProvider(): AiProvider {
         return {
           text,
           provider: "yandex",
-          model: config.model,
+          model,
         };
       } catch (error) {
         if (error instanceof AiProviderError) {
