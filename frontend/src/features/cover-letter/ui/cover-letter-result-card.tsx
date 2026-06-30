@@ -21,9 +21,16 @@ export function CoverLetterResultCard({
     return null;
   }
 
+  const copyLabel =
+    copyStatus === 'copied'
+      ? 'Скопировано'
+      : copyStatus === 'error'
+        ? 'Ошибка'
+        : 'Скопировать';
+
   return (
     <section className={compact ? 'mt-5 space-y-4' : 'rounded-2xl border border-border bg-card/60 p-5'}>
-      <div className="mb-4 flex items-start justify-between gap-4">
+      <div className={compact ? 'mb-4 space-y-3' : 'mb-4 flex items-start justify-between gap-4'}>
         <div>
           <h2 className={compact ? 'font-medium text-foreground' : 'text-xl font-medium text-foreground'}>
             Готовое сопроводительное
@@ -37,14 +44,10 @@ export function CoverLetterResultCard({
         <button
           type="button"
           onClick={onCopy}
-          className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-border px-4 py-2 text-sm text-foreground transition-colors hover:bg-muted"
+          className={`${compact ? 'w-full justify-center' : ''} inline-flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-xl border border-border px-4 py-2 text-sm text-foreground transition-colors hover:bg-muted`}
         >
-          <Clipboard className="h-4 w-4" />
-          {copyStatus === 'copied'
-            ? 'Скопировано'
-            : copyStatus === 'error'
-              ? 'Ошибка'
-              : 'Скопировать'}
+          <Clipboard className="h-4 w-4 shrink-0" />
+          <span>{copyLabel}</span>
         </button>
       </div>
 
