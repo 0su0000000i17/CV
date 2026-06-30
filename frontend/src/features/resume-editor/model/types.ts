@@ -19,6 +19,10 @@ export type AdaptationResultCardProps = {
   isError: boolean;
   isProfileLoading: boolean;
   errorMessage?: string;
+  sidebarTitle?: string;
+  sidebarDescription?: string;
+  resetButtonLabel?: string;
+  coverLetterEnabled?: boolean;
   onResetAdaptation: () => void;
 };
 
