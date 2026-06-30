@@ -7,6 +7,23 @@ import {
 } from "./normalize-blocks.js";
 import { isRecord, toNullableString, toStringArray } from "./normalize-helpers.js";
 
+function normalizeSummaryVoice(value: string) {
+  return value
+    .replace(/^Имею опыт\s+/iu, "Опыт ")
+    .replace(/^Умею\s+/iu, "Навык ")
+    .replace(/^Способен\s+/iu, "Способность ")
+    .replace(/^Способна\s+/iu, "Способность ")
+    .replace(/\.\s*Имею опыт\s+/giu, ". Опыт ")
+    .replace(/\.\s*Умею\s+/giu, ". Навык ")
+    .replace(/\.\s*Способен\s+/giu, ". Способность ")
+    .replace(/\.\s*Способна\s+/giu, ". Способность ")
+    .replace(/\bмои\b/giu, "профессиональные")
+    .replace(/\bмоя\b/giu, "профессиональная")
+    .replace(/\bмой\b/giu, "профессиональный")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 export function normalizeAdaptationResult(value: unknown): ResumeAdaptationResult {
   const source = isRecord(value) ? value : {};
   const adaptedResume = isRecord(source.adaptedResume)
@@ -19,7 +36,7 @@ export function normalizeAdaptationResult(value: unknown): ResumeAdaptationResul
       headline:
         toNullableString(adaptedResume.headline) ||
         "Адаптированное резюме",
-      summary: toNullableString(adaptedResume.summary) || "",
+      summary: normalizeSummaryVoice(toNullableString(adaptedResume.summary) || ""),
       skills: normalizeSkills(adaptedResume.skills),
       experience: normalizeExperience(adaptedResume.experience),
       education: normalizeEducation(adaptedResume.education),
