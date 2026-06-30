@@ -1,6 +1,3 @@
-import { spawn } from "node:child_process";
-import path from "node:path";
-
 import { getAiProvider } from "../ai/get-ai-provider.js";
 import type { AiGenerateTextResult, AiMessage } from "../ai/types.js";
 import type { AiDebugArtifactWriter } from "../utils/ai-debug-artifacts.js";
@@ -24,7 +21,11 @@ import { createUserPrompt, SYSTEM_PROMPT } from "./adaptation-generation/prompts
 const ADAPTATION_MODEL_ENV = "YANDEX_AI_ADAPTATION_MODEL";
 const ADAPTATION_EXECUTION_MODE_ENV = "YANDEX_AI_ADAPTATION_EXECUTION_MODE";
 const DEFAULT_ASYNC_TIMEOUT_MS = 10 * 60 * 1000;
-const ASYNC_STDERR_LIMIT = 3_000;
+const DEFAULT_ASYNC_POLL_INTERVAL_MS = 5_000;
+const DEFAULT_ASYNC_COMPLETION_URL =
+  "https://ai.api.cloud.yandex.net/foundationModels/v1/completionAsync";
+const DEFAULT_OPERATION_BASE_URL = "https://operation.api.cloud.yandex.net/operations";
+const ASYNC_ERROR_LIMIT = 3_000;
 
 type GenerateResumeAdaptationParams = {
   resumeMarkdown: string;
@@ -47,22 +48,11 @@ type GenerateResumeAdaptationOutput = {
   };
 };
 
-type AsyncRunnerPayload = {
-  model: string;
-  messages: Array<{
-    role: AiMessage["role"];
-    text: string;
-  }>;
-  temperature: number;
-  maxTokens: number;
-};
-
-type AsyncRunnerResult = {
-  text?: unknown;
-  provider?: unknown;
-  model?: unknown;
-  usage?: unknown;
-  modelVersion?: unknown;
+type YandexOperation = {
+  id?: string;
+  done?: boolean;
+  response?: unknown;
+  error?: unknown;
 };
 
 function getAdaptationModelOverride() {
@@ -73,18 +63,15 @@ function isYandexAsyncAdaptationEnabled() {
   return process.env[ADAPTATION_EXECUTION_MODE_ENV]?.trim().toLowerCase() === "async";
 }
 
-function getAsyncPythonPath() {
-  return (
-    process.env.YANDEX_AI_ASYNC_PYTHON_PATH?.trim() ||
-    process.env.MARKITDOWN_PYTHON_PATH?.trim() ||
-    (process.platform === "win32" ? "python" : "python3")
-  );
+function getOptionalEnv(name: string, fallback: string) {
+  return process.env[name]?.trim() || fallback;
 }
 
-function getAsyncScriptPath() {
+function getFolderId() {
   return (
-    process.env.YANDEX_AI_ASYNC_SCRIPT_PATH?.trim() ||
-    path.resolve(process.cwd(), "scripts", "yandex_async_generate.py")
+    process.env.YANDEX_CLOUD_FOLDER_ID?.trim() ||
+    process.env.YANDEX_AI_FOLDER_ID?.trim() ||
+    ""
   );
 }
 
@@ -96,31 +83,208 @@ function getAsyncTimeoutMs() {
   );
 }
 
-function getAsyncRunnerErrorMessage(stderr: string, stdout: string, code: number | null) {
-  const details = (stderr || stdout || "Yandex async runner failed")
-    .trim()
-    .slice(0, ASYNC_STDERR_LIMIT);
-  return `Yandex async adaptation failed with code ${code ?? "unknown"}: ${details}`;
+function getAsyncPollIntervalMs() {
+  return Number(process.env.YANDEX_AI_ASYNC_POLL_INTERVAL_MS) || DEFAULT_ASYNC_POLL_INTERVAL_MS;
 }
 
-function parseAsyncRunnerResult(stdout: string, model: string): AiGenerateTextResult {
-  const output = stdout.trim();
-  if (!output) {
-    throw new Error("Yandex async runner returned empty output");
+function getAsyncCompletionUrl() {
+  return getOptionalEnv("YANDEX_AI_ASYNC_COMPLETION_URL", DEFAULT_ASYNC_COMPLETION_URL);
+}
+
+function getOperationBaseUrl() {
+  return getOptionalEnv("YANDEX_AI_OPERATION_BASE_URL", DEFAULT_OPERATION_BASE_URL).replace(/\/$/u, "");
+}
+
+function createModelUri(folderId: string, model: string) {
+  return model.startsWith("gpt://") ? model : `gpt://${folderId}/${model}`;
+}
+
+function getAsyncAuthorizationHeader() {
+  const iamToken =
+    process.env.YANDEX_AI_IAM_TOKEN?.trim() ||
+    process.env.YC_IAM_TOKEN?.trim() ||
+    process.env.IAM_TOKEN?.trim();
+
+  if (iamToken) {
+    return `Bearer ${iamToken}`;
   }
 
-  const parsed = JSON.parse(output) as AsyncRunnerResult;
-  const text = typeof parsed.text === "string" ? parsed.text.trim() : "";
+  const apiKey = process.env.YANDEX_AI_API_KEY?.trim();
+  if (apiKey) {
+    return `Api-Key ${apiKey}`;
+  }
 
-  if (!text) {
-    throw new Error("Yandex async runner returned empty text");
+  throw new Error("YANDEX_AI_API_KEY or YANDEX_AI_IAM_TOKEN is required");
+}
+
+function createAsyncHeaders(folderId: string) {
+  return {
+    "Content-Type": "application/json",
+    Authorization: getAsyncAuthorizationHeader(),
+    "x-folder-id": folderId,
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function stringifyErrorDetails(value: unknown) {
+  if (!value) return "";
+  if (typeof value === "string") return value;
+  if (isRecord(value)) {
+    const message = typeof value.message === "string" ? value.message : "";
+    const code = typeof value.code === "number" || typeof value.code === "string" ? `code=${value.code}` : "";
+    const details = typeof value.details === "string" ? value.details : "";
+    const compact = [message, code, details].filter(Boolean).join(" ");
+    return compact || JSON.stringify(value).slice(0, ASYNC_ERROR_LIMIT);
+  }
+  return String(value);
+}
+
+async function fetchJson(
+  url: string,
+  init: Parameters<typeof fetch>[1],
+  errorPrefix: string
+): Promise<unknown> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), Math.min(getAsyncTimeoutMs(), 120_000));
+
+  try {
+    const response = await fetch(url, {
+      ...init,
+      signal: controller.signal,
+    });
+    const body = await response.text();
+    const parsed = body ? JSON.parse(body) : null;
+
+    if (!response.ok) {
+      throw new Error(
+        `${errorPrefix}: HTTP ${response.status} ${JSON.stringify(parsed || body).slice(0, ASYNC_ERROR_LIMIT)}`
+      );
+    }
+
+    return parsed;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function parseOperation(value: unknown): YandexOperation {
+  if (!isRecord(value)) {
+    throw new Error("Yandex async API returned invalid operation response");
   }
 
   return {
-    text,
-    provider: typeof parsed.provider === "string" ? parsed.provider : "yandex-async",
-    model: typeof parsed.model === "string" && parsed.model.trim() ? parsed.model : model,
+    id: typeof value.id === "string" ? value.id : undefined,
+    done: typeof value.done === "boolean" ? value.done : undefined,
+    response: value.response,
+    error: value.error,
   };
+}
+
+function extractAsyncResponseText(response: unknown) {
+  if (!isRecord(response)) return "";
+  const alternatives = response.alternatives;
+  if (!Array.isArray(alternatives)) return "";
+
+  const first = alternatives[0];
+  if (!isRecord(first)) return "";
+
+  const message = first.message;
+  if (isRecord(message) && typeof message.text === "string" && message.text.trim()) {
+    return message.text.trim();
+  }
+
+  if (typeof first.text === "string" && first.text.trim()) {
+    return first.text.trim();
+  }
+
+  return "";
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function submitAsyncCompletion(params: {
+  messages: AiMessage[];
+  temperature: number;
+  maxTokens: number;
+  modelUri: string;
+  folderId: string;
+}) {
+  const payload = {
+    modelUri: params.modelUri,
+    completionOptions: {
+      stream: false,
+      temperature: params.temperature,
+      maxTokens: String(params.maxTokens),
+      reasoningOptions: {
+        mode: "DISABLED",
+      },
+    },
+    messages: params.messages.map((message) => ({
+      role: message.role,
+      text: message.content,
+    })),
+  };
+
+  const operation = parseOperation(
+    await fetchJson(
+      getAsyncCompletionUrl(),
+      {
+        method: "POST",
+        headers: createAsyncHeaders(params.folderId),
+        body: JSON.stringify(payload),
+      },
+      "Yandex async completion request failed"
+    )
+  );
+
+  if (!operation.id) {
+    throw new Error("Yandex async completion did not return operation id");
+  }
+
+  return operation.id;
+}
+
+async function waitForAsyncCompletion(params: {
+  operationId: string;
+  folderId: string;
+}) {
+  const startedAt = Date.now();
+  const timeoutMs = getAsyncTimeoutMs();
+  const pollIntervalMs = getAsyncPollIntervalMs();
+  const operationUrl = `${getOperationBaseUrl()}/${params.operationId}`;
+
+  while (Date.now() - startedAt < timeoutMs) {
+    await sleep(pollIntervalMs);
+    const operation = parseOperation(
+      await fetchJson(
+        operationUrl,
+        {
+          method: "GET",
+          headers: createAsyncHeaders(params.folderId),
+        },
+        "Yandex async operation status request failed"
+      )
+    );
+
+    if (operation.error) {
+      throw new Error(`Yandex async operation failed: ${stringifyErrorDetails(operation.error)}`);
+    }
+
+    if (operation.done) {
+      const text = extractAsyncResponseText(operation.response);
+      if (!text) {
+        throw new Error("Yandex async operation returned empty completion text");
+      }
+      return text;
+    }
+  }
+
+  throw new Error("Yandex async adaptation timed out");
 }
 
 async function generateTextWithYandexAsync(params: {
@@ -129,70 +293,31 @@ async function generateTextWithYandexAsync(params: {
   maxTokens: number;
   modelOverride?: string;
 }): Promise<AiGenerateTextResult> {
-  const model = params.modelOverride?.trim() || process.env.YANDEX_AI_MODEL?.trim();
+  const folderId = getFolderId();
+  if (!folderId) {
+    throw new Error("YANDEX_CLOUD_FOLDER_ID or YANDEX_AI_FOLDER_ID is required");
+  }
 
+  const model = params.modelOverride?.trim() || process.env.YANDEX_AI_MODEL?.trim();
   if (!model) {
     throw new Error("YANDEX_AI_MODEL or YANDEX_AI_ADAPTATION_MODEL is required");
   }
 
-  const payload: AsyncRunnerPayload = {
-    model,
-    messages: params.messages.map((message) => ({
-      role: message.role,
-      text: message.content,
-    })),
+  const modelUri = createModelUri(folderId, model);
+  const operationId = await submitAsyncCompletion({
+    messages: params.messages,
     temperature: params.temperature,
     maxTokens: params.maxTokens,
-  };
-
-  return await new Promise((resolve, reject) => {
-    const child = spawn(getAsyncPythonPath(), [getAsyncScriptPath()], {
-      cwd: process.cwd(),
-      env: process.env,
-      stdio: ["pipe", "pipe", "pipe"],
-    });
-
-    const stdoutChunks: Buffer[] = [];
-    const stderrChunks: Buffer[] = [];
-    let settled = false;
-
-    const timeout = setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      child.kill("SIGKILL");
-      reject(new Error("Yandex async adaptation timed out"));
-    }, getAsyncTimeoutMs());
-
-    child.stdout.on("data", (chunk: Buffer) => stdoutChunks.push(chunk));
-    child.stderr.on("data", (chunk: Buffer) => stderrChunks.push(chunk));
-    child.on("error", (error) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timeout);
-      reject(error);
-    });
-    child.on("close", (code) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timeout);
-
-      const stdout = Buffer.concat(stdoutChunks).toString("utf8");
-      const stderr = Buffer.concat(stderrChunks).toString("utf8");
-
-      if (code !== 0) {
-        reject(new Error(getAsyncRunnerErrorMessage(stderr, stdout, code)));
-        return;
-      }
-
-      try {
-        resolve(parseAsyncRunnerResult(stdout, model));
-      } catch (error) {
-        reject(error);
-      }
-    });
-
-    child.stdin.end(JSON.stringify(payload));
+    modelUri,
+    folderId,
   });
+  const text = await waitForAsyncCompletion({ operationId, folderId });
+
+  return {
+    text,
+    provider: "yandex-async-rest",
+    model: modelUri,
+  };
 }
 
 async function generateAdaptationText(params: {
