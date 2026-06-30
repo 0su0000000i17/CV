@@ -23,6 +23,10 @@ type Props = {
   accessToken?: string | null;
   vacancyText: string;
   copyStatus: 'idle' | 'copied' | 'error';
+  sidebarTitle?: string;
+  sidebarDescription?: string;
+  resetButtonLabel?: string;
+  coverLetterEnabled?: boolean;
   onCopyResumeText: () => void;
   onResetAdaptation: () => void;
 };
@@ -35,6 +39,10 @@ export function EditorSidebar({
   accessToken,
   vacancyText,
   copyStatus,
+  sidebarTitle = 'Редактор адаптированного резюме',
+  sidebarDescription = 'Проверьте черновик и сохраните готовый PDF.',
+  resetButtonLabel = 'Сбросить адаптацию',
+  coverLetterEnabled = true,
   onCopyResumeText,
   onResetAdaptation,
 }: Props) {
@@ -48,11 +56,11 @@ export function EditorSidebar({
 
           <div>
             <h2 className="font-medium text-foreground">
-              Редактор адаптированного резюме
+              {sidebarTitle}
             </h2>
 
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-              Проверьте черновик и сохраните готовый PDF.
+              {sidebarDescription}
             </p>
           </div>
         </div>
@@ -86,17 +94,19 @@ export function EditorSidebar({
             className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-orange-500/20 bg-orange-500/10 px-4 py-3 text-sm text-orange-300 transition-colors hover:bg-orange-500/15"
           >
             <RotateCcw className="h-4 w-4" />
-            Сбросить адаптацию
+            {resetButtonLabel}
           </button>
         </div>
       </div>
 
-      <CoverLetterPanel
-        draft={draft}
-        sourceResume={sourceResume}
-        accessToken={accessToken}
-        vacancyText={vacancyText}
-      />
+      {coverLetterEnabled ? (
+        <CoverLetterPanel
+          draft={draft}
+          sourceResume={sourceResume}
+          accessToken={accessToken}
+          vacancyText={vacancyText}
+        />
+      ) : null}
 
       <SideBlock title="Что изменено" icon={Sparkles} items={draft.changes} tone="green" />
       <SideBlock title="Предупреждения" icon={TriangleAlert} items={draft.warnings} tone="orange" />
