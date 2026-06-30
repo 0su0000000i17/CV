@@ -26,11 +26,19 @@ function documentToContacts(document: SourceResumeDocument): EditableResumeConta
   };
 }
 
+function resolveOriginalTitle(document: SourceResumeDocument) {
+  return (
+    text(document.target.title) ||
+    document.experience.items.map((item) => text(item.position)).find(Boolean) ||
+    "Резюме"
+  );
+}
+
 function documentToResumeJson(document: SourceResumeDocument): EditableResumeJson {
-  const headline = text(document.target.title) || "Резюме";
+  const headline = resolveOriginalTitle(document);
   return {
     target: {
-      title: text(document.target.title) || null,
+      title: headline === "Резюме" ? null : headline,
       company: null,
       seniority: null,
       salary: text(document.target.salary) || null,
