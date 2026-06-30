@@ -7,6 +7,7 @@ import {
   TriangleAlert,
 } from 'lucide-react';
 
+import { CoverLetterPanel } from '@/src/features/resume-editor/cover-letter/panel';
 import type { ResumeAdaptationResult } from '@/src/shared/api/resume-adaptation';
 import type { UploadedResume } from '@/src/shared/api/resumes';
 import type { ContactDraft } from '@/src/features/resume-editor/model/types';
@@ -89,6 +90,13 @@ export function EditorSidebar({
           </button>
         </div>
       </div>
+
+      <CoverLetterPanel
+        draft={draft}
+        sourceResume={sourceResume}
+        accessToken={accessToken}
+        vacancyText={vacancyText}
+      />
 
       <SideBlock title="Что изменено" icon={Sparkles} items={draft.changes} tone="green" />
       <SideBlock title="Предупреждения" icon={TriangleAlert} items={draft.warnings} tone="orange" />
