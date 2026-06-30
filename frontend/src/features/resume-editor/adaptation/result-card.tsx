@@ -16,6 +16,10 @@ export function AdaptationResultCard({
   isError,
   isProfileLoading,
   errorMessage,
+  sidebarTitle,
+  sidebarDescription,
+  resetButtonLabel,
+  coverLetterEnabled = true,
   onResetAdaptation,
 }: AdaptationResultCardProps) {
   const editor = useEditorState({
@@ -53,6 +57,10 @@ export function AdaptationResultCard({
         accessToken={accessToken}
         vacancyText={vacancyText}
         copyStatus={editor.copyStatus}
+        sidebarTitle={sidebarTitle}
+        sidebarDescription={sidebarDescription}
+        resetButtonLabel={resetButtonLabel}
+        coverLetterEnabled={coverLetterEnabled}
         onCopyResumeText={editor.copyResumeText}
         onResetAdaptation={onResetAdaptation}
       />
