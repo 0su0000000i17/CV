@@ -27,8 +27,12 @@ export function getExpectedAiSignature(): AiSignature {
     provider === "yandex-ai-studio"
   ) {
     return {
-      provider: "yandex",
-      model: process.env.YANDEX_AI_MODEL?.trim() || "unknown",
+      provider: "yandex-async-rest",
+      model:
+        process.env.YANDEX_AI_MODEL_PRO?.trim() ||
+        process.env.YANDEX_AI_ADAPTATION_MODEL?.trim() ||
+        process.env.YANDEX_AI_MODEL?.trim() ||
+        "unknown",
     };
   }
 
