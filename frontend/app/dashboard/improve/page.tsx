@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Sparkles, Wand2 } from 'lucide-react';
 
 import { useDashboardResumeSelection } from '../_components/dashboard-resume-selection-provider';
+import { useImproveSessionState } from './_hooks/use-improve-session-state';
 
 import { AdaptationResultCard } from '@/src/features/resume-editor/adaptation/result-card';
 import { ResumeSelectorCard } from '@/src/shared/ui/resume-selector-card';
@@ -26,28 +27,42 @@ export default function ImproveResumePage() {
   const resumeId = searchParams.get('resumeId');
   const { selectedResumeId, setSelectedResumeId } = useDashboardResumeSelection();
   const { accessToken } = useAuth();
+  const { state: savedImproveState, saveState, clearState } = useImproveSessionState();
   const resumesQuery = useResumesQuery(accessToken);
   const improvementMutation = useResumeImprovementMutation();
   const profileMutation = useResumeProfileExtractionMutation();
-  const [activeImprovementResumeId, setActiveImprovementResumeId] = useState<string | null>(null);
+  const [activeImprovementResumeId, setActiveImprovementResumeId] = useState<string | null>(
+    () => savedImproveState?.activeImprovementResumeId ?? null
+  );
   const resumes = resumesQuery.data?.resumes ?? [];
 
   const selectedResume = useMemo(() => {
     if (!resumes.length) return undefined;
-    const ids = [resumeId, selectedResumeId].filter(
+    const ids = [resumeId, selectedResumeId, savedImproveState?.selectedResumeId].filter(
       (value): value is string => Boolean(value)
     );
     return ids.map((id) => resumes.find((resume) => resume.id === id)).find(Boolean) || resumes[0];
-  }, [resumeId, resumes, selectedResumeId]);
+  }, [resumeId, resumes, savedImproveState?.selectedResumeId, selectedResumeId]);
 
+  const restoredImprovementResponse =
+    savedImproveState?.improvementResponse?.resumeId === selectedResume?.id
+      ? savedImproveState.improvementResponse
+      : undefined;
+  const improvementResponse = improvementMutation.data ?? restoredImprovementResponse;
   const isCurrentImprovement =
     Boolean(selectedResume?.id) && activeImprovementResumeId === selectedResume?.id;
   const adaptationResponse =
-    isCurrentImprovement && improvementMutation.data?.resumeId === selectedResume?.id
-      ? improvementMutation.data
+    isCurrentImprovement && improvementResponse?.resumeId === selectedResume?.id
+      ? improvementResponse
+      : undefined;
+  const restoredProfileExtraction =
+    savedImproveState?.profileExtraction?.resumeId === selectedResume?.id
+      ? savedImproveState.profileExtraction
       : undefined;
   const currentProfileExtraction =
-    profileMutation.data?.resumeId === selectedResume?.id ? profileMutation.data : undefined;
+    profileMutation.data?.resumeId === selectedResume?.id
+      ? profileMutation.data
+      : restoredProfileExtraction;
   const isProfileLoading =
     Boolean(adaptationResponse) && Boolean(selectedResume?.id) && profileMutation.isPending && !currentProfileExtraction;
   const hasWorkspace =
@@ -66,6 +81,16 @@ export default function ImproveResumePage() {
   }, [resumeId, router, searchParamsString, selectedResume?.id]);
 
   useEffect(() => {
+    if (!selectedResume?.id || !adaptationResponse) return;
+    saveState({
+      selectedResumeId: selectedResume.id,
+      activeImprovementResumeId: selectedResume.id,
+      improvementResponse: adaptationResponse,
+      profileExtraction: currentProfileExtraction,
+    });
+  }, [adaptationResponse, currentProfileExtraction, saveState, selectedResume?.id]);
+
+  useEffect(() => {
     if (!accessToken || !selectedResume?.id || !adaptationResponse) return;
     if (profileMutation.isPending || currentProfileExtraction) return;
     profileMutation.mutate({ resumeId: selectedResume.id, accessToken });
@@ -75,6 +100,7 @@ export default function ImproveResumePage() {
     setActiveImprovementResumeId(null);
     improvementMutation.reset();
     profileMutation.reset();
+    clearState();
   }
 
   function handleSelectResume(nextResumeId: string) {
@@ -87,6 +113,7 @@ export default function ImproveResumePage() {
     if (!accessToken || !selectedResume?.id || improvementMutation.isPending) return;
     improvementMutation.reset();
     profileMutation.reset();
+    clearState();
     setActiveImprovementResumeId(selectedResume.id);
     improvementMutation.mutate({ resumeId: selectedResume.id, accessToken });
   }
