@@ -2,76 +2,67 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { useDashboardResumeSelection } from '../../_components/dashboard-resume-selection-provider';
-import { useAuth } from '@/src/shared/hooks/use-auth';
+import type { UploadedResume } from '@/src/shared/api/resumes';
 import { useAnalyzeResumeMutation } from '@/src/shared/hooks/use-analyze-resume-mutation';
+import { useAuth } from '@/src/shared/hooks/use-auth';
 import { useResumeAnalysisQuery } from '@/src/shared/hooks/use-resume-analysis-query';
 import { useResumesQuery } from '@/src/shared/hooks/use-resumes-query';
-import type { UploadedResume } from '@/src/shared/api/resumes';
 
 import {
   createResumeRoute,
   removeAutoRunFromAnalyzeRoute,
 } from './analyze-route-helpers';
+import { getSelectedResume } from './selected-resume';
 import {
   getAnalyzeMinLoadingMs,
   useSyntheticAnalyzeLoading,
 } from './use-synthetic-analyze-loading';
 
-function getSelectedResume(params: {
-  resumes: UploadedResume[];
-  resumeId: string | null;
-  selectedResumeId: string | null;
-}) {
-  if (!params.resumes.length) return undefined;
-
-  const candidateResumeIds = [params.resumeId, params.selectedResumeId].filter(
-    (candidateResumeId): candidateResumeId is string => Boolean(candidateResumeId)
-  );
-
-  for (const candidateResumeId of candidateResumeIds) {
-    const foundResume = params.resumes.find(
-      (resume) => resume.id === candidateResumeId
-    );
-
-    if (foundResume) return foundResume;
-  }
-
-  return params.resumes[0];
-}
-
 export function useAnalyzePageState() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const searchParamsString = searchParams.toString();
-  const { selectedResumeId, setSelectedResumeId } = useDashboardResumeSelection();
   const autoRun = searchParams.get('autoRun') === '1';
   const resumeId = searchParams.get('resumeId');
   const autoRunStartedRef = useRef<string | null>(null);
-  const syntheticLoading = useSyntheticAnalyzeLoading();
+  const { selectedResumeId, setSelectedResumeId } = useDashboardResumeSelection();
   const { accessToken } = useAuth();
   const resumesQuery = useResumesQuery(accessToken);
   const analyzeResumeMutation = useAnalyzeResumeMutation();
+  const syntheticLoading = useSyntheticAnalyzeLoading();
   const resumes = resumesQuery.data?.resumes ?? [];
 
   const selectedResume = useMemo(
     () => getSelectedResume({ resumes, resumeId, selectedResumeId }),
     [resumeId, resumes, selectedResumeId]
   );
-
-  const latestAnalysisQuery = useResumeAnalysisQuery(
-    selectedResume?.id,
-    accessToken
-  );
+  const latestAnalysisQuery = useResumeAnalysisQuery(selectedResume?.id, accessToken);
   const isAnalyzeUiLoading =
     analyzeResumeMutation.isPending || syntheticLoading.isSyntheticAnalyzing;
-  const latestAvailableAnalysis =
+  const latestAnalysis =
     analyzeResumeMutation.data?.analysis ?? latestAnalysisQuery.data?.analysis;
   const analysis =
     isAnalyzeUiLoading || analyzeResumeMutation.isError
       ? undefined
-      : latestAvailableAnalysis ?? undefined;
+      : latestAnalysis ?? undefined;
   const shouldShowResultCard =
     Boolean(analysis) || isAnalyzeUiLoading || analyzeResumeMutation.isError;
+
+  function runAnalyze(resume: UploadedResume, removeAutoRun = false) {
+    if (!accessToken) return;
+    syntheticLoading.startSyntheticAnalyzeLoading(getAnalyzeMinLoadingMs(resume));
+    analyzeResumeMutation.mutate(
+      { resumeId: resume.id, accessToken },
+      {
+        onSettled: () => {
+          syntheticLoading.finishSyntheticAnalyzeLoading();
+          if (removeAutoRun) {
+            router.replace(removeAutoRunFromAnalyzeRoute(searchParamsString, resume.id));
+          }
+        },
+      }
+    );
+  }
 
   useEffect(() => {
     if (!selectedResume?.id || selectedResumeId === selectedResume.id) return;
@@ -80,7 +71,6 @@ export function useAnalyzePageState() {
 
   useEffect(() => {
     if (!selectedResume?.id || resumeId === selectedResume.id) return;
-
     router.replace(
       createResumeRoute('/dashboard/analyze', searchParamsString, selectedResume.id, {
         autoRun,
@@ -89,45 +79,15 @@ export function useAnalyzePageState() {
   }, [autoRun, resumeId, router, searchParamsString, selectedResume?.id]);
 
   useEffect(() => {
-    if (
-      !autoRun ||
-      !selectedResume?.id ||
-      !accessToken ||
-      analyzeResumeMutation.isPending ||
-      syntheticLoading.isSyntheticAnalyzing
-    ) {
-      return;
-    }
+    if (!autoRun || !selectedResume?.id || !accessToken) return;
+    if (analyzeResumeMutation.isPending || syntheticLoading.isSyntheticAnalyzing) return;
 
     const autoRunKey = `${selectedResume.id}:${searchParamsString}`;
     if (autoRunStartedRef.current === autoRunKey) return;
 
     autoRunStartedRef.current = autoRunKey;
-    runAnalyze(selectedResume);
-  }, [
-    accessToken,
-    analyzeResumeMutation,
-    autoRun,
-    searchParamsString,
-    selectedResume,
-    selectedResume?.id,
-    syntheticLoading,
-  ]);
-
-  function runAnalyze(resume: UploadedResume) {
-    if (!accessToken) return;
-
-    syntheticLoading.startSyntheticAnalyzeLoading(getAnalyzeMinLoadingMs(resume));
-    analyzeResumeMutation.mutate(
-      { resumeId: resume.id, accessToken },
-      {
-        onSettled: () => {
-          syntheticLoading.finishSyntheticAnalyzeLoading();
-          router.replace(removeAutoRunFromAnalyzeRoute(searchParamsString, resume.id));
-        },
-      }
-    );
-  }
+    runAnalyze(selectedResume, true);
+  }, [accessToken, autoRun, searchParamsString, selectedResume?.id]);
 
   function handleSelectResume(nextResumeId: string) {
     setSelectedResumeId(nextResumeId);
@@ -138,7 +98,6 @@ export function useAnalyzePageState() {
 
   function handleRunAnalyze() {
     if (!selectedResume || !accessToken || isAnalyzeUiLoading) return;
-
     analyzeResumeMutation.reset();
     runAnalyze(selectedResume);
   }
