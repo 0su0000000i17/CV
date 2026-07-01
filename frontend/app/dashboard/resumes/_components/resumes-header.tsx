@@ -1,6 +1,10 @@
 import { UploadResumeButton } from './upload-resume-button';
 
-export function ResumesHeader() {
+type ResumesHeaderProps = {
+  resumeCount: number;
+};
+
+export function ResumesHeader({ resumeCount }: ResumesHeaderProps) {
   return (
     <div className="mb-10">
       <p className="mb-3 text-xs font-medium uppercase tracking-widest text-muted-foreground">
@@ -19,7 +23,7 @@ export function ResumesHeader() {
           </p>
         </div>
 
-        <UploadResumeButton />
+        <UploadResumeButton currentResumeCount={resumeCount} />
       </div>
     </div>
   );
