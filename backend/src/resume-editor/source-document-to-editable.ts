@@ -80,11 +80,12 @@ function toExperienceItem(item: ExperienceItem, index: number) {
   const blockedLines = [position, ...constants.metaLines];
   const filteredFocus = removeExactLines(split.focus, blockedLines);
   const filteredBullets = removeExactLines(split.bullets, blockedLines);
+  const metadataText = constants.metaLines.join("\n");
 
   return {
     sourceIndex: Number.isFinite(item.sourceIndex) ? item.sourceIndex : index,
     company: constants.company || text(item.company.name) || null,
-    companyUrl: text(item.company.url) || null,
+    companyUrl: metadataText || text(item.company.url) || null,
     position: position || null,
     dates: formatDates(item.dates),
     adaptedBullets: filteredBullets,
