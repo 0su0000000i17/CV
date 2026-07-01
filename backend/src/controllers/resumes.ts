@@ -11,12 +11,32 @@ import { getStringParam, sendError, sendServerError } from "../utils/api-respons
 import { saveProductEvent } from "../utils/product-events.js";
 import { allowedResumeMimeTypes, decodeFileName } from "../utils/resume-files.js";
 
+const MAX_RESUMES_PER_USER = 10;
+
 function createSourceFileHash(fileBuffer: Buffer) {
   return createHash("sha256").update(fileBuffer).digest("hex");
 }
 
 function createPhotoDataUrl(buffer: Buffer, contentType: string) {
   return `data:${contentType};base64,${buffer.toString("base64")}`;
+}
+
+async function countUserResumes(userId: string) {
+  const { count, error } = await supabaseAdmin
+    .from("resumes")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId);
+
+  if (error) throw error;
+  return count ?? 0;
+}
+
+function sendResumeLimitError(res: Response) {
+  return res.status(409).json({
+    message: `Можно загрузить максимум ${MAX_RESUMES_PER_USER} резюме. Удалите одно из старых резюме, чтобы добавить новое.`,
+    code: "RESUME_LIMIT_REACHED",
+    limit: MAX_RESUMES_PER_USER,
+  });
 }
 
 async function findDuplicateResume(params: { userId: string; sourceFileHash: string }) {
@@ -81,6 +101,9 @@ export async function uploadResume(req: Request, res: Response) {
     const sourceFileHash = createSourceFileHash(file.buffer);
     const duplicateResume = await findDuplicateResume({ userId: user.id, sourceFileHash });
     if (duplicateResume) return sendDuplicateResumeError(res, duplicateResume);
+
+    const existingResumeCount = await countUserResumes(user.id);
+    if (existingResumeCount >= MAX_RESUMES_PER_USER) return sendResumeLimitError(res);
 
     const decodedFileName = decodeFileName(file.originalname);
     const extraction = await extractResumeMarkdown({
