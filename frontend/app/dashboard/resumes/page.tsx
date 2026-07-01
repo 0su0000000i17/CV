@@ -24,7 +24,7 @@ export default function ResumesPage() {
 
   return (
     <div>
-      <ResumesHeader />
+      <ResumesHeader resumeCount={resumes.length} />
       <ResumesStats resumes={resumes} />
       <ResumesList resumes={resumes} isLoading={resumesQuery.isLoading} />
     </div>
