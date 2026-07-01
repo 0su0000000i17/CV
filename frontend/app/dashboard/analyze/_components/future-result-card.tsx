@@ -1,3 +1,5 @@
+'use client';
+
 import { CheckCircle2, FileSearch, ShieldAlert, Target } from 'lucide-react';
 
 import type { ResumeAnalysisResult } from '@/src/shared/api/analyze';
