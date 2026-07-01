@@ -18,7 +18,8 @@ import { parseJsonFromModelResponse } from "./adaptation-generation/json-respons
 import { normalizeAdaptationResult } from "./adaptation-generation/normalize-adaptation-result.js";
 import { createUserPrompt, SYSTEM_PROMPT } from "./adaptation-generation/prompts.js";
 
-const ADAPTATION_MODEL_ENV = "YANDEX_AI_ADAPTATION_MODEL";
+const ADAPTATION_MODEL_ENV = "YANDEX_AI_MODEL_PRO";
+const LEGACY_ADAPTATION_MODEL_ENV = "YANDEX_AI_ADAPTATION_MODEL";
 const ADAPTATION_EXECUTION_MODE_ENV = "YANDEX_AI_ADAPTATION_EXECUTION_MODE";
 const DEFAULT_ASYNC_TIMEOUT_MS = 10 * 60 * 1000;
 const DEFAULT_ASYNC_POLL_INTERVAL_MS = 5_000;
@@ -56,7 +57,11 @@ type YandexOperation = {
 };
 
 function getAdaptationModelOverride() {
-  return process.env[ADAPTATION_MODEL_ENV]?.trim() || undefined;
+  return (
+    process.env[ADAPTATION_MODEL_ENV]?.trim() ||
+    process.env[LEGACY_ADAPTATION_MODEL_ENV]?.trim() ||
+    undefined
+  );
 }
 
 function isYandexAsyncAdaptationEnabled() {
@@ -298,9 +303,13 @@ async function generateTextWithYandexAsync(params: {
     throw new Error("YANDEX_CLOUD_FOLDER_ID or YANDEX_AI_FOLDER_ID is required");
   }
 
-  const model = params.modelOverride?.trim() || process.env.YANDEX_AI_MODEL?.trim();
+  const model =
+    params.modelOverride?.trim() ||
+    process.env.YANDEX_AI_MODEL_PRO?.trim() ||
+    process.env.YANDEX_AI_ADAPTATION_MODEL?.trim() ||
+    process.env.YANDEX_AI_MODEL?.trim();
   if (!model) {
-    throw new Error("YANDEX_AI_MODEL or YANDEX_AI_ADAPTATION_MODEL is required");
+    throw new Error("YANDEX_AI_MODEL_PRO or YANDEX_AI_MODEL_LITE is required");
   }
 
   const modelUri = createModelUri(folderId, model);
