@@ -73,6 +73,9 @@ function createSystemPrompt() {
 - Не объединяй разные места работы и не переноси bullets между ними.
 - Не используй первое лицо: я, мой, моя, мы, наш, имею, умею, работаю, специализируюсь.
 - Summary пиши как профессиональное описание: "PHP Backend Developer с опытом...", а не "Имею опыт...".
+- Если в исходном опыте есть строка "Стек:", сохрани её в focus этого же места работы отдельным коротким предложением.
+- Стек не должен быть только в skills. Он должен быть виден прямо в описании соответствующего опыта.
+- Не смешивай стек разных мест работы.
 - Убери приветствия и клише без доказательств.
 
 РОД:
@@ -127,6 +130,10 @@ function createExperiencePlanPrompt(resumeMarkdown: string) {
       const bulletTexts = (item.blocks || [])
         .filter((block) => block.type === "bullet" && block.text)
         .map((block) => block.text || "");
+      const stackTexts = (item.blocks || [])
+        .map((block) => block.text || "")
+        .filter((text) => /^стек\s*:/iu.test(text.trim()))
+        .map((text) => text.trim().replace(/\s+/g, " "));
       const sourceCount = bulletTexts.length;
       const metricsCount = countMetrics(bulletTexts.join("\n"));
       const metricPoor = sourceCount >= 3 && metricsCount < Math.ceil(sourceCount * 0.35);
@@ -136,7 +143,10 @@ function createExperiencePlanPrompt(resumeMarkdown: string) {
       const company = item.company?.name || "компания не указана";
       const position = item.position || "должность не указана";
       const dates = [item.dates?.start, item.dates?.end].filter(Boolean).join(" — ") || "даты не указаны";
-      return `- sourceIndex ${sourceIndex}: ${company}; ${position}; ${dates}; исходно ${sourceCount} bullets; найдено метрик: ${metricsCount}; ${metricPoor ? "МАЛО МЕТРИК — добавь inferred-метрики" : "метрики частично есть"}; верни минимум ${requiredMinBullets(sourceCount) || sourceCount || 1} adaptedBullets, из них минимум ${minMetricBullets} bullets с числами/диапазонами/сроками/объёмом`;
+      const stackNote = stackTexts.length
+        ? `; стек: ${stackTexts.join(" / ")} — обязательно сохрани в focus`
+        : "";
+      return `- sourceIndex ${sourceIndex}: ${company}; ${position}; ${dates}; исходно ${sourceCount} bullets; найдено метрик: ${metricsCount}; ${metricPoor ? "МАЛО МЕТРИК — добавь inferred-метрики" : "метрики частично есть"}; верни минимум ${requiredMinBullets(sourceCount) || sourceCount || 1} adaptedBullets, из них минимум ${minMetricBullets} bullets с числами/диапазонами/сроками/объёмом${stackNote}`;
     });
 
     return lines.length ? `ОБЯЗАТЕЛЬНЫЙ ПЛАН ОПЫТА И МЕТРИК:\n${lines.join("\n")}` : "";
@@ -183,9 +193,15 @@ ${resumeMarkdown}
 - Для backend/dev опыта добавь логические метрики прямо в bullets: проценты, сроки, объёмы, частоту, диапазоны.
 - Это не фантазия, а аккуратное inferred evidence из подтверждённой задачи.
 
+КРИТИЧЕСКОЕ ТРЕБОВАНИЕ ПО СТЕКУ:
+- Если в плане опыта указан стек, он должен быть сохранён в focus этого же sourceIndex.
+- Не прячь стек только в skills.
+- Не смешивай стек разных мест работы.
+
 САМОПРОВЕРКА ПЕРЕД ОТВЕТОМ:
 - Все sourceIndex из плана опыта присутствуют.
 - Выполнен минимум bullets и минимум bullets с метриками из плана опыта.
+- Если в плане опыта указан стек, он есть в focus нужного sourceIndex.
 - Нет первого лица: "Имею", "Умею", "Я", "мой", "мы", "Работаю", "Специализируюсь".
 - Род соответствует personal.gender.
 - Нет skills-склеек вроде "PHP MySQL JavaScript".
