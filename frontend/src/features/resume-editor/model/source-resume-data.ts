@@ -31,7 +31,7 @@ export function extractSourceResumeData(
   if (profileExtraction?.profile) {
     return {
       contacts: profileToContacts(profileExtraction),
-      photoUrl: profileExtraction.photo?.dataUrl || null,
+      photoUrl: normalizeProfilePhotoUrl(profileExtraction.photo?.dataUrl),
     };
   }
 
@@ -86,6 +86,66 @@ function extractSourceResumeDataFromText(
 
 function toStringValue(value: string | null | undefined) {
   return value?.trim() || '';
+}
+
+function estimateBase64ByteLength(value: string) {
+  const normalized = value.replace(/\s+/g, '');
+  const padding = normalized.endsWith('==') ? 2 : normalized.endsWith('=') ? 1 : 0;
+
+  return Math.max(0, Math.floor((normalized.length * 3) / 4) - padding);
+}
+
+function readPngDimension(binary: string, offset: number) {
+  return (
+    (binary.charCodeAt(offset) << 24) |
+    (binary.charCodeAt(offset + 1) << 16) |
+    (binary.charCodeAt(offset + 2) << 8) |
+    binary.charCodeAt(offset + 3)
+  ) >>> 0;
+}
+
+function parsePngSizeFromBase64(value: string) {
+  try {
+    const binary = atob(value.slice(0, 64));
+    if (
+      binary.length < 24 ||
+      binary.charCodeAt(0) !== 0x89 ||
+      binary.charAt(1) !== 'P' ||
+      binary.charAt(2) !== 'N' ||
+      binary.charAt(3) !== 'G'
+    ) {
+      return null;
+    }
+
+    return {
+      width: readPngDimension(binary, 16),
+      height: readPngDimension(binary, 20),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function isLikelyServiceLogoDataUrl(value: string) {
+  const match = value.match(/^data:image\/(?:png|jpeg|jpg|webp);base64,([a-z0-9+/=\r\n]+)$/i);
+  if (!match?.[1]) return false;
+
+  const byteLength = estimateBase64ByteLength(match[1]);
+  const pngSize = parsePngSizeFromBase64(match[1]);
+  const isSmallSquare = pngSize
+    ? pngSize.width <= 96 &&
+      pngSize.height <= 96 &&
+      Math.abs(pngSize.width - pngSize.height) <= 6
+    : false;
+
+  return isSmallSquare && byteLength <= 4_500;
+}
+
+function normalizeProfilePhotoUrl(value?: string | null) {
+  const photoUrl = value?.trim() || '';
+  if (!photoUrl) return null;
+
+  return isLikelyServiceLogoDataUrl(photoUrl) ? null : photoUrl;
 }
 
 function normalizeResumeText(value: string) {
