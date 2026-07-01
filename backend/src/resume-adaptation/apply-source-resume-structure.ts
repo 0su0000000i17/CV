@@ -264,8 +264,16 @@ function resolvePosition(original: ExperienceItem, adapted: ExperienceItem | nul
   return originalPosition || (adaptedPosition && !isSalaryLine(adaptedPosition) ? adaptedPosition : null);
 }
 
+function hasExplicitSourceIndexes(items: ExperienceItem[]) {
+  return items.some((item) => typeof item.sourceIndex === "number");
+}
+
 function findAdapted(items: ExperienceItem[], sourceIndex: number, fallbackIndex: number) {
-  return items.find((item) => item.sourceIndex === sourceIndex) || items[fallbackIndex] || null;
+  const exact = items.find((item) => item.sourceIndex === sourceIndex);
+  if (exact) return exact;
+
+  if (hasExplicitSourceIndexes(items)) return null;
+  return items[fallbackIndex] || null;
 }
 
 function isSupportedClaim(value: string, context: SupportContext) {
@@ -370,8 +378,10 @@ function normalizeNotAdded(items: string[]) {
   return result;
 }
 
-function mergeBullets(_original: string[], adapted: string[], context: SupportContext) {
-  return unique(adapted)
+function mergeBullets(original: string[], adapted: string[], context: SupportContext) {
+  const source = adapted.length ? adapted : original;
+
+  return unique(source)
     .filter((item) => !isSalaryLine(item))
     .map((item) => polishBullet(item, context))
     .filter(Boolean);
