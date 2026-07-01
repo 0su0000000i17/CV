@@ -29,7 +29,9 @@ function documentToContacts(document: SourceResumeDocument): EditableResumeConta
 function resolveOriginalTitle(document: SourceResumeDocument) {
   return (
     text(document.target.title) ||
-    document.experience.items.map((item) => text(item.position)).find(Boolean) ||
+    document.experience.items
+      .map((item) => resolveRawPosition(item) || text(item.position))
+      .find(Boolean) ||
     "Резюме"
   );
 }
@@ -73,15 +75,19 @@ function documentToResumeJson(document: SourceResumeDocument): EditableResumeJso
 
 function toExperienceItem(item: ExperienceItem, index: number) {
   const split = splitExperienceBlocks(item.blocks);
+  const position = resolveRawPosition(item) || text(item.position);
+  const filteredFocus = removeExactLines(split.focus, [position]);
+  const filteredBullets = removeExactLines(split.bullets, [position]);
+
   return {
     sourceIndex: Number.isFinite(item.sourceIndex) ? item.sourceIndex : index,
     company: resolveRawCompanyName(item) || text(item.company.name) || null,
     companyUrl: text(item.company.url) || null,
-    position: text(item.position) || null,
+    position: position || null,
     dates: formatDates(item.dates),
-    adaptedBullets: split.bullets,
-    focus: createFocus(split.focus),
-    preservedFacts: split.bullets.slice(0, 16),
+    adaptedBullets: filteredBullets,
+    focus: createFocus(filteredFocus),
+    preservedFacts: filteredBullets.slice(0, 16),
     warnings: [],
   };
 }
@@ -145,6 +151,38 @@ function formatDates(item: ExperienceItem["dates"]) {
 function resolveRawCompanyName(item: ExperienceItem) {
   const dateLineCount = item.dates.raw.length;
   return item.raw.slice(dateLineCount).map(text).find(Boolean) || null;
+}
+
+function rawExperienceLines(item: ExperienceItem) {
+  const dateLineCount = item.dates.raw.length;
+  return item.raw.slice(dateLineCount).map(text).filter(Boolean);
+}
+
+function isLikelyPositionLine(value: string) {
+  const line = text(value);
+  if (!line) return false;
+  if (/^(?:Компания|Команда|Стек|Технологии|Работал[аи]?\s+над|Примеры задач)\b/i.test(line)) return false;
+  if (/^https?:\/\//i.test(line) || /\.[a-zа-яё]{2,}\//i.test(line)) return false;
+  if (/^[-—–•*]/u.test(line)) return false;
+
+  return /(?:developer|разработчик|программист|инженер|designer|дизайнер|manager|менеджер|аналитик|qa|тестировщик|backend|frontend|fullstack|devops|smm|маркетолог)/iu.test(line);
+}
+
+function resolveRawPosition(item: ExperienceItem) {
+  const rawPosition = rawExperienceLines(item).find(isLikelyPositionLine);
+  const parsedPosition = text(item.position);
+  if (rawPosition) return rawPosition;
+  return isLikelyPositionLine(parsedPosition) ? parsedPosition : "";
+}
+
+function removeExactLines(items: string[], blocked: string[]) {
+  const blockedKeys = new Set(blocked.map(textKey).filter(Boolean));
+  if (!blockedKeys.size) return items;
+  return items.filter((item) => !blockedKeys.has(textKey(item)));
+}
+
+function textKey(value: string) {
+  return text(value).toLowerCase().replace(/[^a-zа-яё0-9+#]+/giu, "");
 }
 
 function formatLanguage(item: SourceResumeDocument["skills"]["languages"][number]) {
