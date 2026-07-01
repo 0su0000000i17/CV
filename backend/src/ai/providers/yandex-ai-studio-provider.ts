@@ -11,7 +11,6 @@ const DEFAULT_OPERATION_BASE_URL = "https://operation.api.cloud.yandex.net/opera
 const DEFAULT_TIMEOUT_MS = 10 * 60 * 1000;
 const DEFAULT_POLL_INTERVAL_MS = 5_000;
 const ERROR_LIMIT = 3_000;
-const PRO_MODEL_MIN_TOKENS = 3_000;
 
 type Config = {
   apiKey: string;
@@ -100,11 +99,6 @@ function getConfig(): Config {
 
 function createModelUri(folderId: string, model: string) {
   return model.startsWith("gpt://") ? model : `gpt://${folderId}/${model}`;
-}
-
-function selectModel(config: Config, params: AiGenerateTextParams) {
-  if (params.modelOverride?.trim()) return params.modelOverride.trim();
-  return (params.maxTokens || 0) >= PRO_MODEL_MIN_TOKENS ? config.proModel : config.liteModel;
 }
 
 function headers(config: Config) {
@@ -251,11 +245,15 @@ function toProviderError(error: unknown) {
   return new AiProviderError("AI provider request failed");
 }
 
+function getDefaultModel(config: Config, params: AiGenerateTextParams) {
+  return (params.maxTokens || 0) >= 3_000 ? config.proModel : config.liteModel;
+}
+
 export function createYandexAiStudioProvider(): AiProvider {
   return {
     async generateText(params: AiGenerateTextParams): Promise<AiGenerateTextResult> {
       const config = getConfig();
-      const model = selectModel(config, params);
+      const model = params.modelOverride?.trim() || getDefaultModel(config, params);
 
       try {
         const operationId = await submitCompletion(config, params, model);
