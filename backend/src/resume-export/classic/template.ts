@@ -246,8 +246,9 @@ function looksLikeUrl(value: string) {
 function renderCompanyMeta(doc: ClassicDocument, item: ClassicExperienceItem) {
   const salary = targetSalary(doc);
   const metaLines = getCompanyMeta(doc.snapshot, item.company)?.lines ?? [];
-  const lines = item.companyUrl && !metaLines.includes(item.companyUrl)
-    ? [item.companyUrl, ...metaLines]
+  const directLines = toTextLines(item.companyUrl).filter(Boolean);
+  const lines = directLines.length
+    ? [...directLines, ...metaLines.filter((line) => !directLines.includes(line))]
     : metaLines;
   return lines
     .filter((text) => !isKnownSalaryLine(text, salary))
