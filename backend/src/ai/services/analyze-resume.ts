@@ -260,7 +260,9 @@ export async function analyzeResume(params: AnalyzeResumeParams) {
     params.resumeMarkdown
   );
 
-  const scoringResult = scoreResumeAnalysis(heuristicResult.analysis);
+  const scoringResult = scoreResumeAnalysis(heuristicResult.analysis, {
+    resumeMarkdown: params.resumeMarkdown,
+  });
 
   return {
     analysis: scoringResult.analysis,
