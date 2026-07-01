@@ -26,7 +26,11 @@ type ResumePromptPayload = {
 };
 
 function getImprovementModelOverride() {
-  return process.env.YANDEX_AI_ADAPTATION_MODEL?.trim() || undefined;
+  return (
+    process.env.YANDEX_AI_MODEL_PRO?.trim() ||
+    process.env.YANDEX_AI_ADAPTATION_MODEL?.trim() ||
+    undefined
+  );
 }
 
 function getImprovementMaxTokens() {
@@ -193,38 +197,25 @@ ${resumeMarkdown}
 - Для backend/dev опыта добавь логические метрики прямо в bullets: проценты, сроки, объёмы, частоту, диапазоны.
 - Это не фантазия, а аккуратное inferred evidence из подтверждённой задачи.
 
-КРИТИЧЕСКОЕ ТРЕБОВАНИЕ ПО СТЕКУ:
-- Если в плане опыта указан стек, он должен быть сохранён в focus этого же sourceIndex.
-- Не прячь стек только в skills.
-- Не смешивай стек разных мест работы.
-
-САМОПРОВЕРКА ПЕРЕД ОТВЕТОМ:
-- Все sourceIndex из плана опыта присутствуют.
-- Выполнен минимум bullets и минимум bullets с метриками из плана опыта.
-- Если в плане опыта указан стек, он есть в focus нужного sourceIndex.
-- Нет первого лица: "Имею", "Умею", "Я", "мой", "мы", "Работаю", "Специализируюсь".
-- Род соответствует personal.gender.
-- Нет skills-склеек вроде "PHP MySQL JavaScript".
-
-СХЕМА JSON:
+Верни JSON строго по той же schema, что адаптация резюме:
 {
-  "target": { "title": null, "company": null, "seniority": null, "salary": null, "specializations": [], "employment": null, "schedule": null, "workFormat": null, "commuteTime": null, "keywordsUsed": [] },
-  "adaptedResume": { "headline": "", "summary": "", "skills": { "primary": [], "secondary": [], "deprioritized": [], "notAdded": [] }, "experience": [], "education": { "policy": "unchanged", "notes": [] }, "additionalInfo": [] },
-  "changes": [], "warnings": [], "forbiddenClaims": []
+  "summary": "string|null",
+  "headline": "string|null",
+  "skills": {
+    "primary": ["string"],
+    "secondary": ["string"]
+  },
+  "experience": [
+    {
+      "sourceIndex": 0,
+      "focus": "string|null",
+      "adaptedBullets": ["string"],
+      "preservedFacts": ["string"],
+      "warnings": ["string"]
+    }
+  ],
+  "keywordsUsed": ["string"],
+  "warnings": ["string"]
 }
-
-ФОРМАТ EXPERIENCE:
-{
-  "sourceIndex": 0,
-  "company": "строка или null",
-  "position": "строка или null",
-  "dates": "строка или null",
-  "adaptedBullets": ["строка"],
-  "focus": "строка или null",
-  "preservedFacts": ["строка"],
-  "warnings": ["строка"]
-}
-
-Верни только JSON.
 `.trim();
 }
