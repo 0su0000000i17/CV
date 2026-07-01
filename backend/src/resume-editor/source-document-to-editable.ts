@@ -80,7 +80,7 @@ function toExperienceItem(item: ExperienceItem, index: number) {
     position: text(item.position) || null,
     dates: formatDates(item.dates),
     adaptedBullets: split.bullets,
-    focus: createFocus(item, split.focus),
+    focus: createFocus(split.focus),
     preservedFacts: split.bullets.slice(0, 16),
     warnings: [],
   };
@@ -134,9 +134,8 @@ function formatBlock(block: ResumeTextBlock) {
   return block.text;
 }
 
-function createFocus(item: ExperienceItem, focus: string[]) {
-  const industries = item.company.industries.join(", ");
-  return cleanList([...focus, industries]).join("\n") || null;
+function createFocus(focus: string[]) {
+  return cleanList(focus).join("\n") || null;
 }
 
 function formatDates(item: ExperienceItem["dates"]) {
