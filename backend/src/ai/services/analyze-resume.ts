@@ -178,8 +178,7 @@ ${previousError}
 - Если внутри строки нужны кавычки, экранируй их.
 - Не используй trailing comma.
 - Не ставь финальный score.
-- Не раскрывай персональные данные кандидата.
-- Не повторяй имя, телефон, email, telegram, ссылки и другие контакты.
+- Не используй контактные данные кандидата в ответе.
 - Строго соблюдай schema из system prompt.
 
 РЕЗЮМЕ:
@@ -187,6 +186,10 @@ ${previousError}
 ${resumeMarkdown}
 """
 `.trim();
+}
+
+function getAnalysisModelOverride() {
+  return process.env.YANDEX_AI_MODEL_PRO?.trim() || undefined;
 }
 
 async function generateAndParseAnalysis(
@@ -199,6 +202,7 @@ async function generateAndParseAnalysis(
     messages,
     temperature: 0,
     maxTokens,
+    modelOverride: getAnalysisModelOverride(),
   });
 
   const rawAiAnalysis = parseAiResumeAnalysis(generationResult.text);
