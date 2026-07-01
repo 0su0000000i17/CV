@@ -44,9 +44,10 @@ export default function ImproveResumePage() {
     return ids.map((id) => resumes.find((resume) => resume.id === id)).find(Boolean) || resumes[0];
   }, [resumeId, resumes, savedImproveState?.selectedResumeId, selectedResumeId]);
 
+  const savedImprovementResponse = savedImproveState?.improvementResponse;
   const restoredImprovementResponse =
-    savedImproveState?.improvementResponse?.resumeId === selectedResume?.id
-      ? savedImproveState.improvementResponse
+    savedImprovementResponse?.resumeId === selectedResume?.id
+      ? savedImprovementResponse
       : undefined;
   const improvementResponse = improvementMutation.data ?? restoredImprovementResponse;
   const isCurrentImprovement =
@@ -55,9 +56,10 @@ export default function ImproveResumePage() {
     isCurrentImprovement && improvementResponse?.resumeId === selectedResume?.id
       ? improvementResponse
       : undefined;
+  const savedProfileExtraction = savedImproveState?.profileExtraction;
   const restoredProfileExtraction =
-    savedImproveState?.profileExtraction?.resumeId === selectedResume?.id
-      ? savedImproveState.profileExtraction
+    savedProfileExtraction?.resumeId === selectedResume?.id
+      ? savedProfileExtraction
       : undefined;
   const currentProfileExtraction =
     profileMutation.data?.resumeId === selectedResume?.id
