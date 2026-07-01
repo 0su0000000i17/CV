@@ -20,6 +20,7 @@ import { createUserPrompt, SYSTEM_PROMPT } from "./adaptation-generation/prompts
 
 const ADAPTATION_MODEL_ENV = "YANDEX_AI_MODEL_PRO";
 const LEGACY_ADAPTATION_MODEL_ENV = "YANDEX_AI_ADAPTATION_MODEL";
+const ADAPTATION_EXECUTION_MODE_ENV = "YANDEX_AI_ADAPTATION_EXECUTION_MODE";
 const DEFAULT_ASYNC_TIMEOUT_MS = 10 * 60 * 1000;
 const DEFAULT_ASYNC_POLL_INTERVAL_MS = 5_000;
 const DEFAULT_ASYNC_COMPLETION_URL =
@@ -61,6 +62,10 @@ function getAdaptationModelOverride() {
     process.env[LEGACY_ADAPTATION_MODEL_ENV]?.trim() ||
     undefined
   );
+}
+
+function isYandexAsyncAdaptationEnabled() {
+  return process.env[ADAPTATION_EXECUTION_MODE_ENV]?.trim().toLowerCase() === "async";
 }
 
 function getOptionalEnv(name: string, fallback: string) {
@@ -330,10 +335,12 @@ async function generateAdaptationText(params: {
   maxTokens: number;
   modelOverride?: string;
 }) {
+  if (isYandexAsyncAdaptationEnabled()) {
+    return generateTextWithYandexAsync(params);
+  }
+
   const aiProvider = getAiProvider();
-  return params.modelOverride
-    ? generateTextWithYandexAsync(params)
-    : aiProvider.generateText(params);
+  return aiProvider.generateText(params);
 }
 
 export async function generateResumeAdaptation(
@@ -368,7 +375,7 @@ export async function generateResumeAdaptation(
     fit: params.fit,
     resumeChars: resumeForPrompt.length,
     vacancyChars: vacancyForPrompt.length,
-    executionMode: "async",
+    executionMode: isYandexAsyncAdaptationEnabled() ? "async" : "async-provider",
   });
   await params.debugWriter?.writeJson("02-prompts.json", { messages });
 
@@ -386,7 +393,7 @@ export async function generateResumeAdaptation(
     model: generationResult.model,
     temperature: 0.18,
     maxTokens: ADAPT_MAX_TOKENS,
-    executionMode: "async",
+    executionMode: isYandexAsyncAdaptationEnabled() ? "async" : "async-provider",
   });
 
   const parsedJson = parseJsonFromModelResponse(generationResult.text);
