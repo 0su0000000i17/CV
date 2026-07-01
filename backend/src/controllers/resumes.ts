@@ -39,6 +39,14 @@ function sendResumeLimitError(res: Response) {
   });
 }
 
+function isResumeLimitError(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const value = error as { message?: unknown; details?: unknown; code?: unknown };
+  return [value.message, value.details, value.code]
+    .map((item) => String(item || ""))
+    .some((item) => item.includes("RESUME_LIMIT_REACHED"));
+}
+
 async function findDuplicateResume(params: { userId: string; sourceFileHash: string }) {
   const { data, error } = await supabaseAdmin
     .from("resumes")
@@ -146,7 +154,10 @@ export async function uploadResume(req: Request, res: Response) {
       .select()
       .single();
 
-    if (error) return sendServerError(res, "Failed to save parsed resume", error);
+    if (error) {
+      if (isResumeLimitError(error)) return sendResumeLimitError(res);
+      return sendServerError(res, "Failed to save parsed resume", error);
+    }
 
     await saveProductEvent({
       userId: user.id,
