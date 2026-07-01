@@ -75,7 +75,7 @@ function toExperienceItem(item: ExperienceItem, index: number) {
   const split = splitExperienceBlocks(item.blocks);
   return {
     sourceIndex: Number.isFinite(item.sourceIndex) ? item.sourceIndex : index,
-    company: text(item.company.name) || null,
+    company: resolveRawCompanyName(item) || text(item.company.name) || null,
     companyUrl: text(item.company.url) || null,
     position: text(item.position) || null,
     dates: formatDates(item.dates),
@@ -141,6 +141,11 @@ function createFocus(item: ExperienceItem, focus: string[]) {
 
 function formatDates(item: ExperienceItem["dates"]) {
   return [item.start, item.end].map(text).filter(Boolean).join(" — ") || null;
+}
+
+function resolveRawCompanyName(item: ExperienceItem) {
+  const dateLineCount = item.dates.raw.length;
+  return item.raw.slice(dateLineCount).map(text).find(Boolean) || null;
 }
 
 function formatLanguage(item: SourceResumeDocument["skills"]["languages"][number]) {
