@@ -31,6 +31,7 @@ export function getExpectedAiSignature(): AiSignature {
       model:
         process.env.YANDEX_AI_MODEL_PRO?.trim() ||
         process.env.YANDEX_AI_ADAPTATION_MODEL?.trim() ||
+        process.env.YANDEX_AI_MODEL_LITE?.trim() ||
         process.env.YANDEX_AI_MODEL?.trim() ||
         "unknown",
     };
