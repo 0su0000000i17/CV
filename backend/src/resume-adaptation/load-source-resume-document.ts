@@ -22,18 +22,18 @@ export async function loadSourceResumeDocument(
 ): Promise<LoadedSourceResumeDocument> {
   const savedMarkdown = resume.extracted_text?.trim();
 
-  if (resume.source_resume_document && savedMarkdown) {
+  if (savedMarkdown) {
     return {
-      document: resume.source_resume_document as SourceResumeDocument,
+      document: parseSourceResumeDocument(savedMarkdown),
       markdown: savedMarkdown,
       markdownLimited: false,
     };
   }
 
-  if (savedMarkdown) {
+  if (resume.source_resume_document) {
     return {
-      document: parseSourceResumeDocument(savedMarkdown),
-      markdown: savedMarkdown,
+      document: resume.source_resume_document as SourceResumeDocument,
+      markdown: "",
       markdownLimited: false,
     };
   }
