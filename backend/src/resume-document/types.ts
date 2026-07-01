@@ -116,7 +116,7 @@ export type SourceResumeDocument = {
   skills: {
     languages: Array<{
       name: string;
-      level: string | null;
+      level: string;
       description: string | null;
       raw: string;
     }>;
