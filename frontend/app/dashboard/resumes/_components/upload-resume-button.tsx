@@ -8,6 +8,7 @@ import { supabase } from '@/src/shared/lib/supabase/client';
 import { useUploadResumeMutation } from '@/src/shared/hooks/use-upload-resume-mutation';
 
 const ERROR_MESSAGE_VISIBLE_MS = 15_000;
+const MAX_RESUMES_PER_USER = 10;
 
 type UploadResumeButtonVariant = 'primary' | 'secondary';
 
@@ -18,6 +19,8 @@ type UploadResumeButtonProps = {
   variant?: UploadResumeButtonVariant;
   className?: string;
   errorAlign?: 'left' | 'right';
+  currentResumeCount?: number;
+  maxResumeCount?: number;
   onUploaded?: (resume: UploadedResume) => void;
 };
 
@@ -40,6 +43,8 @@ export function UploadResumeButton({
   variant = 'primary',
   className,
   errorAlign = 'right',
+  currentResumeCount = 0,
+  maxResumeCount = MAX_RESUMES_PER_USER,
   onUploaded,
 }: UploadResumeButtonProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -47,6 +52,8 @@ export function UploadResumeButton({
   const [errorMessage, setErrorMessage] = useState('');
 
   const uploadResumeMutation = useUploadResumeMutation();
+  const hasReachedLimit = currentResumeCount >= maxResumeCount;
+  const limitMessage = `Можно загрузить максимум ${maxResumeCount} резюме. Удалите одно из старых резюме, чтобы добавить новое.`;
 
   const clearErrorTimer = () => {
     if (errorTimerRef.current) {
@@ -68,6 +75,12 @@ export function UploadResumeButton({
   const handleSelectFile = () => {
     clearErrorTimer();
     setErrorMessage('');
+
+    if (hasReachedLimit) {
+      showTemporaryError(limitMessage);
+      return;
+    }
+
     inputRef.current?.click();
   };
 
@@ -77,6 +90,12 @@ export function UploadResumeButton({
     const file = event.target.files?.[0];
 
     if (!file) return;
+
+    if (hasReachedLimit) {
+      showTemporaryError(limitMessage);
+      event.target.value = '';
+      return;
+    }
 
     const {
       data: { session },
