@@ -1,5 +1,13 @@
 import type { ResumePromptPayload } from "./types.js";
 
+type ExperienceItem = {
+  sourceIndex?: number;
+  company?: { name?: string | null };
+  position?: string | null;
+  dates?: { start?: string | null; end?: string | null };
+  blocks?: Array<{ type?: string; text?: string | null }>;
+};
+
 function requiredMinBullets(sourceCount: number) {
   if (sourceCount <= 0) return 0;
   if (sourceCount <= 5) return sourceCount;
@@ -8,40 +16,26 @@ function requiredMinBullets(sourceCount: number) {
 
 function countMetrics(text: string) {
   const matches = text.match(
-    /\d+(?:[.,]\d+)?\s*(?:%|сек|с\b|мин|час|дн|нед|мес|год|раз|x|тыс|млн|\+)?/giu
+    /\d+(?:[.,]\d+)?\s*(?:%|сек|мин|час|дн|нед|мес|год|раз|x|тыс|млн|\+)?/giu
   );
 
   return matches?.length || 0;
 }
 
-function getBlockTexts(
-  item: NonNullable<ResumePromptPayload["experience"]>["items"] extends Array<infer T>
-    ? T
-    : never,
-  type: string
-) {
+function getBlockTexts(item: ExperienceItem, type: string) {
   return (item.blocks || [])
     .filter((block) => block.type === type && block.text)
     .map((block) => block.text || "");
 }
 
-function getStackTexts(
-  item: NonNullable<ResumePromptPayload["experience"]>["items"] extends Array<infer T>
-    ? T
-    : never
-) {
+function getStackTexts(item: ExperienceItem) {
   return (item.blocks || [])
     .map((block) => block.text || "")
     .filter((text) => /^стек\s*:/iu.test(text.trim()))
     .map((text) => text.trim().replace(/\s+/g, " "));
 }
 
-function createExperienceLine(
-  item: NonNullable<ResumePromptPayload["experience"]>["items"] extends Array<infer T>
-    ? T
-    : never,
-  index: number
-) {
+function createExperienceLine(item: ExperienceItem, index: number) {
   const sourceIndex = typeof item.sourceIndex === "number" ? item.sourceIndex : index;
   const bulletTexts = getBlockTexts(item, "bullet");
   const stackTexts = getStackTexts(item);
