@@ -5,6 +5,7 @@ type ProductEventName =
   | "resume_analyzed"
   | "vacancy_fit_checked"
   | "resume_adapted"
+  | "resume_improved"
   | "cover_letter_generated";
 
 export async function saveProductEvent(params: {
