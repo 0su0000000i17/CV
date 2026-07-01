@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Sparkles, Wand2 } from 'lucide-react';
 
@@ -29,6 +29,7 @@ export default function ImproveResumePage() {
   const resumesQuery = useResumesQuery(accessToken);
   const improvementMutation = useResumeImprovementMutation();
   const profileMutation = useResumeProfileExtractionMutation();
+  const [activeImprovementResumeId, setActiveImprovementResumeId] = useState<string | null>(null);
   const resumes = resumesQuery.data?.resumes ?? [];
 
   const selectedResume = useMemo(() => {
@@ -39,12 +40,20 @@ export default function ImproveResumePage() {
     return ids.map((id) => resumes.find((resume) => resume.id === id)).find(Boolean) || resumes[0];
   }, [resumeId, resumes, selectedResumeId]);
 
-  const adaptationResponse = improvementMutation.data;
+  const isCurrentImprovement =
+    Boolean(selectedResume?.id) && activeImprovementResumeId === selectedResume?.id;
+  const adaptationResponse =
+    isCurrentImprovement && improvementMutation.data?.resumeId === selectedResume?.id
+      ? improvementMutation.data
+      : undefined;
   const currentProfileExtraction =
     profileMutation.data?.resumeId === selectedResume?.id ? profileMutation.data : undefined;
   const isProfileLoading =
     Boolean(adaptationResponse) && Boolean(selectedResume?.id) && profileMutation.isPending && !currentProfileExtraction;
-  const hasWorkspace = Boolean(adaptationResponse) || improvementMutation.isPending || improvementMutation.isError;
+  const hasWorkspace =
+    Boolean(adaptationResponse) ||
+    (isCurrentImprovement && improvementMutation.isPending) ||
+    (isCurrentImprovement && improvementMutation.isError);
 
   useEffect(() => {
     if (!selectedResume?.id || selectedResumeId === selectedResume.id) return;
@@ -63,6 +72,7 @@ export default function ImproveResumePage() {
   }, [accessToken, adaptationResponse, currentProfileExtraction, profileMutation, selectedResume?.id]);
 
   function resetResult() {
+    setActiveImprovementResumeId(null);
     improvementMutation.reset();
     profileMutation.reset();
   }
@@ -75,7 +85,9 @@ export default function ImproveResumePage() {
 
   function handleImproveResume() {
     if (!accessToken || !selectedResume?.id || improvementMutation.isPending) return;
-    resetResult();
+    improvementMutation.reset();
+    profileMutation.reset();
+    setActiveImprovementResumeId(selectedResume.id);
     improvementMutation.mutate({ resumeId: selectedResume.id, accessToken });
   }
 
@@ -98,8 +110,8 @@ export default function ImproveResumePage() {
           sourceResume={selectedResume}
           accessToken={accessToken}
           vacancyText=""
-          isAdapting={improvementMutation.isPending}
-          isError={improvementMutation.isError}
+          isAdapting={isCurrentImprovement && improvementMutation.isPending}
+          isError={isCurrentImprovement && improvementMutation.isError}
           isProfileLoading={isProfileLoading}
           errorMessage={improvementMutation.error instanceof Error ? improvementMutation.error.message : undefined}
           sidebarTitle="Редактор улучшенного резюме"
