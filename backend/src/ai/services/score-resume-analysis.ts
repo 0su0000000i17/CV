@@ -13,7 +13,24 @@ type ScoreResumeAnalysisResult = {
     baseScore: number;
     finalScore: number;
     appliedCaps: string[];
+    profile?: ExperienceProfileDiagnostics | null;
   };
+};
+
+type ScoreResumeAnalysisParams = {
+  resumeMarkdown?: string;
+};
+
+type ExperienceProfileDiagnostics = {
+  totalExperienceMonths: number | null;
+  experienceWords: number;
+  bulletCount: number;
+  expectedMinWords: number;
+  expectedMaxWords: number;
+  expectedMinBullets: number;
+  expectedMaxBullets: number;
+  disclosure: "too_short" | "balanced" | "too_long" | "unknown";
+  score: number;
 };
 
 const qualityScores = {
@@ -34,6 +51,33 @@ const severityPenalty: Record<RedFlagSeverity, number> = {
   minor: 10,
   major: 22,
   critical: 38,
+};
+
+const monthNames: Record<string, number> = {
+  январ: 0,
+  феврал: 1,
+  март: 2,
+  апрел: 3,
+  ма: 4,
+  июн: 5,
+  июл: 6,
+  август: 7,
+  сентябр: 8,
+  октябр: 9,
+  ноябр: 10,
+  декабр: 11,
+  jan: 0,
+  feb: 1,
+  mar: 2,
+  apr: 3,
+  may: 4,
+  jun: 5,
+  jul: 6,
+  aug: 7,
+  sep: 8,
+  oct: 9,
+  nov: 10,
+  dec: 11,
 };
 
 function clampScore(value: number) {
@@ -73,7 +117,242 @@ function calculateCredibility(redFlags: ResumeRedFlag[]) {
   return clampScore(88 - penalty);
 }
 
-function calculateSections(analysis: AiResumeAnalysis): ResumeAnalysis["sections"] {
+function countWords(value: string) {
+  const matches = value.match(/[\p{L}\p{N}][\p{L}\p{N}_+.#-]*/gu);
+  return matches?.length || 0;
+}
+
+function countBullets(value: string) {
+  const matches = value.match(/^\s*(?:[-–—•*]|\d+[.)])\s+\S/gm);
+  return matches?.length || 0;
+}
+
+function normalizeText(value: string) {
+  return value.replace(/\r/g, "").replace(/[\t ]+/g, " ").trim();
+}
+
+function extractExperienceText(resumeMarkdown?: string) {
+  const text = normalizeText(resumeMarkdown || "");
+  if (!text) return "";
+
+  const startMatch = text.search(/опыт\s+работы|work\s+experience|experience/iu);
+  if (startMatch === -1) return text;
+
+  const rest = text.slice(startMatch);
+  const endMatch = rest.search(
+    /\n\s*(?:образование|education|ключевые\s+навыки|навыки|skills|обо\s+мне|about|дополнительн|сертификат|курсы)\b/iu
+  );
+
+  return endMatch === -1 ? rest : rest.slice(0, endMatch);
+}
+
+function parseDeclaredExperienceMonths(text: string) {
+  const match = text.match(
+    /(?:опыт\s+работы|experience)\s*[—:\-–]?\s*(?:(\d+)\s*(?:год(?:а|ов)?|лет|years?))?\s*(?:(\d+)\s*(?:месяц(?:а|ев)?|months?))?/iu
+  );
+
+  if (!match) return null;
+
+  const years = Number(match[1] || 0);
+  const months = Number(match[2] || 0);
+  const total = years * 12 + months;
+
+  return total > 0 ? total : null;
+}
+
+function getMonthIndex(rawMonth?: string | null) {
+  if (!rawMonth) return 0;
+
+  const normalizedMonth = rawMonth.toLowerCase().replace(/[^\p{L}]/gu, "");
+  const key = Object.keys(monthNames).find((candidate) =>
+    normalizedMonth.startsWith(candidate)
+  );
+
+  return key ? monthNames[key] : 0;
+}
+
+function parseDatePoint(value: string, fallbackMonth: number) {
+  const yearMatch = value.match(/(?:19|20)\d{2}/u);
+  if (!yearMatch) return null;
+
+  const monthMatch = value.match(/[A-Za-zА-Яа-яЁё]+/u);
+  const year = Number(yearMatch[0]);
+  const month = getMonthIndex(monthMatch?.[0]) || fallbackMonth;
+
+  return { year, month };
+}
+
+function monthIndex(point: { year: number; month: number }) {
+  return point.year * 12 + point.month;
+}
+
+function estimateExperienceMonthsFromDateRanges(text: string) {
+  const ranges: Array<{ start: number; end: number }> = [];
+  const now = new Date();
+  const current = now.getFullYear() * 12 + now.getMonth();
+  const dateRangePattern =
+    /((?:[A-Za-zА-Яа-яЁё]+\s+)?(?:19|20)\d{2})\s*[—–-]\s*((?:[A-Za-zА-Яа-яЁё]+\s+)?(?:19|20)\d{2}|настоящее\s+время|по\s+настоящее|present|current)/giu;
+
+  for (const match of text.matchAll(dateRangePattern)) {
+    const start = parseDatePoint(match[1], 0);
+    const endRaw = match[2];
+    const end = /настоящее|present|current/iu.test(endRaw)
+      ? { year: now.getFullYear(), month: now.getMonth() }
+      : parseDatePoint(endRaw, 11);
+
+    if (!start || !end) continue;
+
+    const startIndex = monthIndex(start);
+    const endIndex = Math.min(monthIndex(end), current);
+
+    if (endIndex >= startIndex) {
+      ranges.push({ start: startIndex, end: endIndex });
+    }
+  }
+
+  if (!ranges.length) return null;
+
+  const sortedRanges = ranges.sort((a, b) => a.start - b.start);
+  const mergedRanges: Array<{ start: number; end: number }> = [];
+
+  for (const range of sortedRanges) {
+    const lastRange = mergedRanges[mergedRanges.length - 1];
+
+    if (!lastRange || range.start > lastRange.end + 1) {
+      mergedRanges.push({ ...range });
+      continue;
+    }
+
+    lastRange.end = Math.max(lastRange.end, range.end);
+  }
+
+  return mergedRanges.reduce((sum, range) => sum + (range.end - range.start + 1), 0);
+}
+
+function getExperienceExpectations(months: number | null) {
+  if (months === null) {
+    return {
+      minWords: 260,
+      targetWords: 520,
+      maxWords: 1_100,
+      minBullets: 4,
+      maxBullets: 18,
+    };
+  }
+
+  const years = months / 12;
+
+  if (years < 1) {
+    return { minWords: 120, targetWords: 240, maxWords: 520, minBullets: 2, maxBullets: 9 };
+  }
+
+  if (years < 3) {
+    return { minWords: 220, targetWords: 430, maxWords: 850, minBullets: 4, maxBullets: 14 };
+  }
+
+  if (years < 5) {
+    return { minWords: 340, targetWords: 650, maxWords: 1_200, minBullets: 6, maxBullets: 20 };
+  }
+
+  if (years < 8) {
+    return { minWords: 480, targetWords: 850, maxWords: 1_550, minBullets: 8, maxBullets: 26 };
+  }
+
+  return { minWords: 620, targetWords: 1_050, maxWords: 1_900, minBullets: 10, maxBullets: 32 };
+}
+
+function calculateDisclosureScore(params: {
+  words: number;
+  bullets: number;
+  totalExperienceMonths: number | null;
+}) {
+  const expectations = getExperienceExpectations(params.totalExperienceMonths);
+  const words = params.words;
+  const bullets = params.bullets;
+  let score = 86;
+  let disclosure: ExperienceProfileDiagnostics["disclosure"] = "balanced";
+
+  if (words < expectations.minWords) {
+    const ratio = words / expectations.minWords;
+    disclosure = "too_short";
+
+    if ((params.totalExperienceMonths || 0) >= 60 && ratio < 0.65) {
+      score = 50;
+    } else if (ratio < 0.55) {
+      score = 48;
+    } else if (ratio < 0.8) {
+      score = 60;
+    } else {
+      score = 70;
+    }
+  } else if (words > expectations.maxWords) {
+    const ratio = words / expectations.maxWords;
+    disclosure = "too_long";
+    score = ratio > 1.5 ? 54 : ratio > 1.25 ? 62 : 70;
+  }
+
+  if (bullets > 0 && bullets < expectations.minBullets) {
+    score = Math.min(score, (params.totalExperienceMonths || 0) >= 60 ? 58 : 66);
+    disclosure = disclosure === "too_long" ? disclosure : "too_short";
+  }
+
+  if (bullets > expectations.maxBullets) {
+    score = Math.min(score, 68);
+    disclosure = "too_long";
+  }
+
+  if (bullets > 0) {
+    const wordsPerBullet = words / bullets;
+
+    if (wordsPerBullet < 9) {
+      score = Math.min(score, 66);
+    }
+
+    if (wordsPerBullet > 70 && bullets >= expectations.minBullets) {
+      score = Math.min(score, 72);
+    }
+  }
+
+  return {
+    ...expectations,
+    disclosure,
+    score: clampScore(score),
+  };
+}
+
+function buildExperienceProfileDiagnostics(resumeMarkdown?: string): ExperienceProfileDiagnostics | null {
+  const normalized = normalizeText(resumeMarkdown || "");
+  if (!normalized) return null;
+
+  const experienceText = extractExperienceText(normalized);
+  const declaredMonths = parseDeclaredExperienceMonths(normalized);
+  const estimatedMonths = estimateExperienceMonthsFromDateRanges(experienceText);
+  const totalExperienceMonths = declaredMonths ?? estimatedMonths;
+  const experienceWords = countWords(experienceText);
+  const bulletCount = countBullets(experienceText);
+  const disclosure = calculateDisclosureScore({
+    words: experienceWords,
+    bullets: bulletCount,
+    totalExperienceMonths,
+  });
+
+  return {
+    totalExperienceMonths,
+    experienceWords,
+    bulletCount,
+    expectedMinWords: disclosure.minWords,
+    expectedMaxWords: disclosure.maxWords,
+    expectedMinBullets: disclosure.minBullets,
+    expectedMaxBullets: disclosure.maxBullets,
+    disclosure: disclosure.disclosure,
+    score: disclosure.score,
+  };
+}
+
+function calculateSections(
+  analysis: AiResumeAnalysis,
+  params: ScoreResumeAnalysisParams = {}
+): ResumeAnalysis["sections"] {
   let positioning = simpleQualityScores[analysis.positioningQuality];
   let roleFit = qualityScores[analysis.relevantExperience];
   let experience = qualityScores[analysis.relevantExperience];
@@ -81,6 +360,11 @@ function calculateSections(analysis: AiResumeAnalysis): ResumeAnalysis["sections
   let scanability = simpleQualityScores[analysis.scanability];
   let ats = simpleQualityScores[analysis.atsCompatibility];
   let credibility = calculateCredibility(analysis.redFlags);
+  const profileDiagnostics = buildExperienceProfileDiagnostics(params.resumeMarkdown);
+
+  if (profileDiagnostics) {
+    scanability = clampScore(scanability * 0.35 + profileDiagnostics.score * 0.65);
+  }
 
   if (hasFlag(analysis, "role_mismatch")) {
     positioning = Math.min(positioning, 42);
@@ -132,7 +416,7 @@ function calculateSections(analysis: AiResumeAnalysis): ResumeAnalysis["sections
   }
 
   if (hasFlag(analysis, "low_scanability") || hasFlag(analysis, "overlong_resume")) {
-    scanability = Math.min(scanability, 42);
+    scanability = Math.min(scanability, 62);
     ats = Math.min(ats, 62);
   }
 
@@ -236,9 +520,11 @@ function applyCaps(analysis: AiResumeAnalysis, score: number) {
 }
 
 export function scoreResumeAnalysis(
-  aiAnalysis: AiResumeAnalysis
+  aiAnalysis: AiResumeAnalysis,
+  params: ScoreResumeAnalysisParams = {}
 ): ScoreResumeAnalysisResult {
-  const sections = calculateSections(aiAnalysis);
+  const profileDiagnostics = buildExperienceProfileDiagnostics(params.resumeMarkdown);
+  const sections = calculateSections(aiAnalysis, params);
   const baseScore = calculateWeightedScore(sections);
   const cappedScore = applyCaps(aiAnalysis, baseScore);
 
@@ -264,6 +550,7 @@ export function scoreResumeAnalysis(
       baseScore,
       finalScore: cappedScore.score,
       appliedCaps: cappedScore.appliedCaps,
+      profile: profileDiagnostics,
     },
   };
 }
