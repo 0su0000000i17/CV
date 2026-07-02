@@ -126,11 +126,11 @@ function skillKey(value: string) {
 }
 
 function isEducationLikeValue(value: string) {
-  const text = cleanText(value);
+  const text = cleanText(value).toLowerCase();
   if (!text) return false;
   if (/^\d{4}$/u.test(text)) return false;
 
-  return /\b(?:университет|институт|академи[яи]|колледж|техникум|лицей|школа|факультет|кафедра|бакалавр|магистр)\b/iu.test(text);
+  return /университет|институт|академи[яи]|колледж|техникум|лицей|школа|факультет|кафедра|бакалавр|магистр/iu.test(text);
 }
 
 function collectEducationLikeSkillValues(params: {
