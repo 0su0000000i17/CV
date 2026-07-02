@@ -8,8 +8,8 @@ import {
 } from "./adaptation-generation/config.js";
 import { SYSTEM_PROMPT } from "./adaptation-generation/prompts.js";
 
-const ADAPTATION_CACHE_VERSION = "adaptation-cache-v2";
-const ADAPTATION_USER_PROMPT_VERSION = "adaptation-user-prompt-v1";
+const CACHE_VERSION = "adaptation-cache-v3";
+const USER_PROMPT_VERSION = "adaptation-user-prompt-v1";
 
 type StableValue =
   | string
@@ -73,14 +73,14 @@ export function createAdaptationCacheMetadata(params: {
   const settingsHash = stableHash(params.settings);
   const promptHash = stableHash({
     systemPrompt: SYSTEM_PROMPT,
-    userPromptVersion: ADAPTATION_USER_PROMPT_VERSION,
+    userPromptVersion: USER_PROMPT_VERSION,
     maxTokens: ADAPT_MAX_TOKENS,
     resumeMaxChars: ADAPT_RESUME_MAX_CHARS,
     vacancyMaxChars: ADAPT_VACANCY_MAX_CHARS,
   });
 
   const cacheKey = stableHash({
-    version: ADAPTATION_CACHE_VERSION,
+    version: CACHE_VERSION,
     userId: params.userId,
     resumeId: params.resumeId,
     resumeHash,
@@ -93,7 +93,7 @@ export function createAdaptationCacheMetadata(params: {
   });
 
   return {
-    version: ADAPTATION_CACHE_VERSION,
+    version: CACHE_VERSION,
     cacheKey,
     resumeHash,
     vacancyHash,
