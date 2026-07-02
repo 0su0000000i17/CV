@@ -4,6 +4,8 @@ import { colors, typography } from "./layout.js";
 import type { PdfWriter, TextStyle } from "./writer.js";
 
 const body: TextStyle = { size: typography.body, color: colors.text, lineGap: 0.2 };
+const salaryAmountStyle: TextStyle = { font: "bold", size: typography.salaryAmount, color: colors.black, lineGap: 0 };
+const salaryNoteStyle: TextStyle = { size: typography.body, color: colors.black, lineGap: 0 };
 
 function targetLines(doc: ClassicDocument) {
   const target = doc.adaptation.target;
@@ -16,25 +18,49 @@ function targetLines(doc: ClassicDocument) {
   ].filter(Boolean);
 }
 
-function normalizeSalary(value: string) {
-  return clean(value)
+function splitSalary(value: string) {
+  const salary = clean(value)
     .replace(/\s+/gu, " ")
     .replace(/\s+[Р₽](?=\s|$)/u, " ₽")
     .replace(/\s+₽\s+/u, " ₽ ");
+
+  const match = salary.match(/^(.+?)\s*[Р₽](?:\s+(.+))?$/u);
+  if (!match?.[1]) return { amount: salary, note: "" };
+
+  const note = clean(match[2] || "");
+  return {
+    amount: clean(match[1]),
+    note: note ? `₽ ${note}` : "₽",
+  };
 }
 
 function renderSalary(writer: PdfWriter, salary: string, y: number) {
-  const text = normalizeSalary(salary);
-  if (!text) return 0;
+  const { amount, note } = splitSalary(salary);
+  if (!amount) return 0;
 
-  const width = 128;
-  const x = writer.right - width;
-  return writer.textAt(text, x, y, width, {
-    font: "bold",
-    size: typography.salaryAmount,
-    color: colors.black,
-    lineGap: 0,
-  });
+  writer.setFont(salaryAmountStyle);
+  const amountWidth = writer.doc.widthOfString(amount);
+  const amountHeight = writer.doc.heightOfString(amount, { width: amountWidth + 1, lineGap: 0 });
+
+  writer.setFont(salaryNoteStyle);
+  const noteWidth = note ? writer.doc.widthOfString(` ${note}`) : 0;
+  const noteHeight = note ? writer.doc.heightOfString(note, { width: noteWidth + 1, lineGap: 0 }) : 0;
+
+  const totalWidth = amountWidth + noteWidth;
+  const x = writer.right - totalWidth;
+
+  writer.setFont(salaryAmountStyle);
+  writer.doc.text(amount, x, y, { width: amountWidth + 1, lineBreak: false });
+
+  if (note) {
+    writer.setFont(salaryNoteStyle);
+    writer.doc.text(` ${note}`, x + amountWidth, y + Math.max(0, typography.salaryAmount - typography.body) * 0.72, {
+      width: noteWidth + 1,
+      lineBreak: false,
+    });
+  }
+
+  return Math.max(amountHeight, noteHeight + Math.max(0, typography.salaryAmount - typography.body) * 0.72);
 }
 
 export function renderTarget(writer: PdfWriter, doc: ClassicDocument) {
@@ -46,7 +72,7 @@ export function renderTarget(writer: PdfWriter, doc: ClassicDocument) {
 
   writer.sectionTitle("Желаемая должность и зарплата");
 
-  const titleWidth = salary ? writer.contentWidth - 132 : writer.contentWidth;
+  const titleWidth = salary ? writer.contentWidth - 156 : writer.contentWidth;
   const titleHeight = doc.targetTitle
     ? writer.textAt(doc.targetTitle, writer.left, writer.y, titleWidth, {
         font: "bold",
