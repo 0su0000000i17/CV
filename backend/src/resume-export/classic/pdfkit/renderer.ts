@@ -20,6 +20,7 @@ function prefix(text: string, p: string) { const a = clean(text); const b = clea
 function metaKey(value: string) { return textKey(clean(value).replace(/^[-•]\s*/u, "")); }
 function bareMeta(value: string) { return clean(value).replace(/^[-•]\s*/u, ""); }
 function mutedMeta(value: string) { return looksLikeUrl(value) || /[a-zа-яё0-9.-]+\.[a-zа-яё]{2,}/iu.test(value); }
+function dedupeByMetaKey(values: string[]) { const seen = new Set<string>(); const out: string[] = []; for (const value of values.map(clean).filter(Boolean)) { const key = metaKey(value); if (!key || seen.has(key)) continue; seen.add(key); out.push(value); } return out; }
 
 function renderTarget(w: PdfWriter, d: ClassicDocument) {
   const t = d.adaptation.target;
@@ -62,21 +63,13 @@ function metaLines(d: ClassicDocument, it: ClassicExperienceItem) {
   const snap = getCompanyMeta(d.snapshot, it.company)?.lines ?? [];
   const direct = toTextLines(it.companyUrl).filter(Boolean);
   const source = sourceMetaLines(d, it);
-  const raw = [...(direct.length ? direct : []), ...snap, ...source].filter((x) => !hasSalary(d, x));
-  const seen = new Set<string>();
-  const deduped: string[] = [];
-  for (const item of raw.map(clean).filter(Boolean)) {
-    const key = metaKey(item);
-    if (!key || seen.has(key)) continue;
-    seen.add(key);
-    deduped.push(item);
-  }
-  const out: string[] = [];
+  const deduped = dedupeByMetaKey([...(direct.length ? direct : []), ...snap, ...source].filter((x) => !hasSalary(d, x)));
+  const combined: string[] = [];
   for (let i = 0; i < deduped.length; i += 1) {
-    if (deduped[i + 1] && city(deduped[i]) && looksLikeUrl(deduped[i + 1])) { out.push(`${deduped[i]}, ${deduped[i + 1]}`); i += 1; }
-    else out.push(deduped[i]);
+    if (deduped[i + 1] && city(deduped[i]) && looksLikeUrl(deduped[i + 1])) { combined.push(`${deduped[i]}, ${deduped[i + 1]}`); i += 1; }
+    else combined.push(deduped[i]);
   }
-  return out;
+  return dedupeByMetaKey(combined);
 }
 
 function roleFromLine(line: string) {
@@ -97,6 +90,19 @@ function position(d: ClassicDocument, it: ClassicExperienceItem) {
   return roleFromLine(`${target} Проект:`) || target;
 }
 
+function stripBeforeStructuredPrefix(text: string, pos: string) {
+  const projectIndex = text.indexOf("Проект:");
+  const stackIndex = text.indexOf("Стек:");
+  const candidates = [projectIndex, stackIndex].filter((value) => value > 0);
+  if (!candidates.length) return text;
+  const index = Math.min(...candidates);
+  const before = clean(text.slice(0, index));
+  if (!before) return text;
+  const hasRole = /(^|\s)(разработчик|developer|engineer|программист|аналитик|дизайнер|менеджер)(\s|$)/iu.test(before);
+  if (hasRole || (pos && before.includes(pos))) return clean(text.slice(index));
+  return text;
+}
+
 function cleanWork(line: string, pos: string, metas: string[]) {
   let t = clean(stripBullet(line));
   const pfx = uniqueLines(metas.map(bareMeta).filter((m) => !looksLikeUrl(m) && !m.includes(",")));
@@ -107,7 +113,14 @@ function cleanWork(line: string, pos: string, metas: string[]) {
   }
   const noPos = prefix(t, pos);
   if (noPos.startsWith("Проект:") || noPos.startsWith("Стек:")) t = noPos;
-  return clean(t);
+  return clean(stripBeforeStructuredPrefix(t, pos));
+}
+
+function renderedMetaLine(line: string, pos: string, metas: string[]) {
+  const key = metaKey(line);
+  if (!key) return false;
+  if (pos && key === metaKey(pos)) return true;
+  return metas.some((meta) => key === metaKey(meta));
 }
 
 function drawFlow(w: PdfWriter, text: string, x: number, y: number, width: number, gap: number) {
@@ -126,7 +139,7 @@ function renderExperienceItem(w: PdfWriter, d: ClassicDocument, it: ClassicExper
   if (it.company) y += w.textAt(it.company, x, y, width, { font: "bold", size: typography.company, color: colors.black }) + 1.5;
   for (const m of metas) y += w.textAt(m.startsWith("•") ? m : bareMeta(m), x, y, width, { size: typography.meta, color: mutedMeta(m) ? colors.lightMuted : colors.text, lineGap: 0 }) + 0.75;
   if (pos) y += 7.5 + w.textAt(pos, x, y + 7.5, width, { size: typography.position, color: colors.text, lineGap: 0 }) + 5.25;
-  const lines = [it.focus || "", ...it.adaptedBullets].map((v) => cleanWork(v, pos, metas)).filter((v) => v && !hasSalary(d, v));
+  const lines = [it.focus || "", ...it.adaptedBullets].map((v) => cleanWork(v, pos, metas)).filter((v) => v && !hasSalary(d, v) && !renderedMetaLine(v, pos, metas));
   const projects = lines.filter((v) => v.startsWith("Проект:"));
   const stacks = lines.filter((v) => v.startsWith("Стек:"));
   const plain = lines.filter((v) => v.startsWith("Достижения:") && !projects.includes(v) && !stacks.includes(v));
@@ -139,6 +152,7 @@ function renderExperienceItem(w: PdfWriter, d: ClassicDocument, it: ClassicExper
 
 function renderExperience(w: PdfWriter, d: ClassicDocument) {
   if (!d.adaptation.adaptedResume.experience.length) return;
+  w.y += layout.experienceSectionTopGap;
   w.sectionTitle(d.snapshot.experienceTitle || "Опыт работы");
   d.adaptation.adaptedResume.experience.forEach((it, i) => renderExperienceItem(w, d, it, i === 0));
 }
@@ -158,13 +172,15 @@ function renderEducation(w: PdfWriter, d: ClassicDocument) {
 }
 
 function labeled(w: PdfWriter, label: string, lines: string[], gap = 7.5) { if (!lines.length) return; const x = w.left + layout.skillLabelWidth + layout.skillGap; const width = w.right - x; const start = w.y; w.textAt(label, w.left, start, layout.skillLabelWidth, muted); let y = start; for (const l of lines) y += w.textAt(l, x, y, width, body) + 1.5; w.y = Math.max(start + 13.5, y) + gap; }
+function renderLanguageValue(w: PdfWriter, line: string, x: number, y: number, width: number) { const marker = " — "; const index = line.indexOf(marker); if (index < 0) return w.textAt(line, x, y, width, body); const name = line.slice(0, index); const level = line.slice(index); const h = w.measure(line, width, body); w.setFont(body); w.doc.text(name, x, y, { width, lineBreak: false }); const nameWidth = w.doc.widthOfString(name); w.setFont(muted); w.doc.text(level, x + nameWidth, y, { width: Math.max(0, width - nameWidth), lineBreak: false }); return h; }
+function renderLanguages(w: PdfWriter, lines: string[], gap = 7.5) { if (!lines.length) return; const x = w.left + layout.skillLabelWidth + layout.skillGap; const width = w.right - x; const start = w.y; w.textAt("Знание языков", w.left, start, layout.skillLabelWidth, muted); let y = start; for (const line of lines) y += renderLanguageValue(w, line, x, y, width) + 1.5; w.y = Math.max(start + 13.5, y) + gap; }
 
 function asciiToken(s: string) { return s.split("").every((ch) => "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+#./()-".includes(ch)); }
 function packedSkill(part: string) { const words = clean(part).split(" ").filter(Boolean); return words.length >= 3 && words.every(asciiToken); }
 function splitPacked(words: string[]) { const out: string[] = []; for (let i = 0; i < words.length; i += 1) { const pair = [words[i], words[i + 1]].filter(Boolean).join(" "); const triple = [words[i], words[i + 1], words[i + 2]].filter(Boolean).join(" "); if (triple === "React Hook Form") { out.push(triple); i += 2; } else if (["REST API", "RTK Query", "Redux Thunk", "React hooks"].includes(pair)) { out.push(pair); i += 1; } else out.push(words[i]); } return out; }
 function skillParts(value: string) { const parts = clean(value).split(/[\n,;|•]+/u).map(clean).filter(Boolean); return parts.flatMap((part) => packedSkill(part) ? splitPacked(part.split(" ").filter(Boolean)) : [part]); }
 function removeRedundantSkillTags(values: string[]) { const keys = new Set(values.map((v) => textKey(v))); return values.filter((v) => { const words = clean(v).split(" ").filter(Boolean); return !(words.length > 1 && words.every((word) => keys.has(textKey(word)))); }); }
-function renderSkills(w: PdfWriter, d: ClassicDocument) { if (!d.snapshot.languageLines.length && !d.skills.length) return; w.sectionTitle("Навыки"); labeled(w, "Знание языков", d.snapshot.languageLines, 7.5); const x0 = w.left + layout.skillLabelWidth + layout.skillGap; const width = w.right - x0; let x = x0; let y = w.y; w.textAt("Навыки", w.left, y, layout.skillLabelWidth, muted); for (const s of removeRedundantSkillTags(uniqueStrings(d.skills.flatMap(skillParts)))) { w.setFont({ size: typography.skillTag }); const tw = Math.min(w.doc.widthOfString(s) + 6, width); if (x + tw > x0 + width) { x = x0; y += 18; } const tag = w.tag(s, x, y, width); x += tag.width + 6.75; } w.y = y + 18; }
+function renderSkills(w: PdfWriter, d: ClassicDocument) { if (!d.snapshot.languageLines.length && !d.skills.length) return; w.sectionTitle("Навыки"); renderLanguages(w, d.snapshot.languageLines, 7.5); const x0 = w.left + layout.skillLabelWidth + layout.skillGap; const width = w.right - x0; let x = x0; let y = w.y; w.textAt("Навыки", w.left, y, layout.skillLabelWidth, muted); for (const s of removeRedundantSkillTags(uniqueStrings(d.skills.flatMap(skillParts)))) { w.setFont({ size: typography.skillTag }); const tw = Math.min(w.doc.widthOfString(s) + 6, width); if (x + tw > x0 + width) { x = x0; y += 18; } const tag = w.tag(s, x, y, width); x += tag.width + 6.75; } w.y = y + 18; }
 function renderDetails(w: PdfWriter, d: ClassicDocument) { const lines = uniqueStrings([clean(d.adaptation.adaptedResume.summary), ...d.adaptation.adaptedResume.additionalInfo.flatMap(toTextLines), ...d.snapshot.detailLines].map(clean).filter(Boolean)); if (!lines.length) return; w.sectionTitle("Дополнительная информация"); labeled(w, "Обо мне", [lines.join("\n")], 0); }
 function renderFooter(w: PdfWriter, d: ClassicDocument) { const footer = clean(d.snapshot.footer || "").replace(/^(Резюме\s+обновлено\s*)+/iu, "Резюме обновлено "); if (!footer) return; w.y += 21; w.paragraph(clean(footer), w.contentWidth, { size: typography.footer, color: colors.muted, lineGap: 0 }); }
 
