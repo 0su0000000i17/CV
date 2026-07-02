@@ -1,13 +1,10 @@
 import { createSha256Hash, getExpectedAiSignature } from "../resume-analysis/hashing.js";
-import {
-  ADAPT_MAX_TOKENS,
-  ADAPT_RESUME_MAX_CHARS,
-} from "../resume-adaptation/adaptation-generation/config.js";
+import { ADAPT_MAX_TOKENS, ADAPT_RESUME_MAX_CHARS } from "../resume-adaptation/adaptation-generation/config.js";
 import { createSystemPrompt } from "./improvement-prompts/system-prompt.js";
 import { createUserPrompt } from "./improvement-prompts/user-prompt.js";
 
-const IMPROVEMENT_CACHE_VERSION = "improvement-cache-v2";
-const IMPROVEMENT_USER_PROMPT_PLACEHOLDER = "__RESUME_MARKDOWN__";
+const CACHE_VERSION = "improvement-cache-v3";
+const PROMPT_PLACEHOLDER = "__RESUME_MARKDOWN__";
 
 export type ImprovementCacheMetadata = {
   version: string;
@@ -38,12 +35,12 @@ export function createImprovementCacheMetadata(params: {
   const resumeHash = createSha256Hash(resumeForPrompt);
   const promptHash = stableHash({
     systemPrompt: createSystemPrompt(),
-    userPrompt: createUserPrompt(IMPROVEMENT_USER_PROMPT_PLACEHOLDER),
+    userPrompt: createUserPrompt(PROMPT_PLACEHOLDER),
     maxTokens: getImprovementMaxTokens(),
     resumeMaxChars: ADAPT_RESUME_MAX_CHARS,
   });
   const cacheKey = stableHash({
-    version: IMPROVEMENT_CACHE_VERSION,
+    version: CACHE_VERSION,
     userId: params.userId,
     resumeId: params.resumeId,
     resumeHash,
@@ -53,7 +50,7 @@ export function createImprovementCacheMetadata(params: {
   });
 
   return {
-    version: IMPROVEMENT_CACHE_VERSION,
+    version: CACHE_VERSION,
     cacheKey,
     resumeHash,
     promptHash,
