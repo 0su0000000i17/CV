@@ -32,8 +32,14 @@ function sourceTelegram(sourceText: string) {
   return `telegram: @${handle}`;
 }
 
+function sentenceCaseContact(value: string) {
+  const text = clean(value);
+  if (!text || /^[a-z0-9_.+-]+@/iu.test(text) || /^telegram:/iu.test(text)) return text;
+  return text[0] ? `${text[0].toUpperCase()}${text.slice(1)}` : text;
+}
+
 function contactLines(doc: ClassicDocument) {
-  const lines = doc.contactLines.filter((line) => !isFakeTelegram(line));
+  const lines = doc.contactLines.filter((line) => !isFakeTelegram(line)).map(sentenceCaseContact);
   const telegram = sourceTelegram(doc.sourceText);
   if (!telegram || lines.some((line) => parseTelegramHandle(line))) return lines;
 
