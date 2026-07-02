@@ -62,20 +62,17 @@ export function createClassicStyles() {
     .plain-line + .plain-line { margin-top: 2px; }
     .plain-line--indent { padding-left: 20px; }
     .experience-item {
-      position: relative;
-      display: block;
+      display: grid;
+      grid-template-columns: 99px minmax(0, 1fr);
+      column-gap: 14px;
       min-height: 44px;
       margin-top: 18px;
-      padding-left: 113px;
       break-inside: auto;
       page-break-inside: auto;
     }
     .experience-item:first-of-type { margin-top: 0; }
+    .experience-item > div:last-child { min-width: 0; }
     .dates {
-      position: absolute;
-      left: 0;
-      top: 2px;
-      width: 99px;
       color: #8f8f8f;
       font-size: 11px;
       line-height: 1.38;
@@ -92,15 +89,15 @@ export function createClassicStyles() {
     .work-text + .work-text { margin-top: 6px; }
     .bullet { margin: 0; font-size: 13px; line-height: 1.36; color: #222; }
     .bullet + .bullet { margin-top: 5px; }
-    .education-row, .skill-row, .details-grid {
+    .skill-row, .details-grid {
       display: grid;
       grid-template-columns: 99px 1fr;
       column-gap: 14px;
     }
-    .education-row { margin-top: 8px; }
-    .education-year, .side-label { color: #8f8f8f; font-size: 11px; line-height: 1.38; }
-    .side-label { font-size: 13px; line-height: 1.36; }
-    .education-text { margin: 0; font-size: 17px; line-height: 1.3; }
+    .education-row { display: block; margin-top: 8px; }
+    .education-year { display: inline; margin-right: 8px; color: #8f8f8f; font-size: 11px; line-height: 1.38; }
+    .side-label { color: #8f8f8f; font-size: 13px; line-height: 1.36; }
+    .education-text { display: inline; margin: 0; font-size: 17px; line-height: 1.3; }
     .skill-row { margin-top: 7px; }
     .language-lines { margin-bottom: 10px; }
     .skill-tags { display: block; line-height: 1.95; }
