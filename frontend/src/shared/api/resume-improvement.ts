@@ -23,9 +23,31 @@ const IMPROVEMENT_MAX_POLLS = Number(
   process.env.NEXT_PUBLIC_IMPROVEMENT_MAX_POLLS ||
     process.env.NEXT_PUBLIC_ADAPTATION_MAX_POLLS
 ) || 240;
+const CACHE_HIT_MIN_DELAY_MS = Number(
+  process.env.NEXT_PUBLIC_IMPROVEMENT_CACHE_HIT_MIN_DELAY_MS ||
+    process.env.NEXT_PUBLIC_ADAPTATION_CACHE_HIT_MIN_DELAY_MS
+) || 20_000;
+const CACHE_HIT_MAX_DELAY_MS = Number(
+  process.env.NEXT_PUBLIC_IMPROVEMENT_CACHE_HIT_MAX_DELAY_MS ||
+    process.env.NEXT_PUBLIC_ADAPTATION_CACHE_HIT_MAX_DELAY_MS
+) || 30_000;
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getCacheHitDelayMs() {
+  const minDelay = Math.max(0, CACHE_HIT_MIN_DELAY_MS);
+  const maxDelay = Math.max(minDelay, CACHE_HIT_MAX_DELAY_MS);
+  return Math.round(minDelay + Math.random() * (maxDelay - minDelay));
+}
+
+async function delayCachedImprovementResult(result: ResumeAdaptationResponse) {
+  if (result.meta.cacheHit) {
+    await sleep(getCacheHitDelayMs());
+  }
+
+  return result;
 }
 
 function isImprovedResponse(value: ResumeImprovementApiResponse): value is ResumeAdaptationResponse {
@@ -91,7 +113,7 @@ export async function improveResume(params: {
   );
 
   if (isImprovedResponse(result)) {
-    return result;
+    return delayCachedImprovementResult(result);
   }
 
   if (result.status === 'failed') {
