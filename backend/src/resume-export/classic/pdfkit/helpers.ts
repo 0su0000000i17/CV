@@ -4,8 +4,17 @@ export function clean(value?: string | null) {
   return cleanText(value);
 }
 
+function isRoleOnlyLine(value: string) {
+  const text = clean(value).replace(/^[-•]\s*/u, "");
+  if (!text || text.includes(":")) return false;
+  return /(^|\s)(разработчик|developer|engineer|программист|аналитик|дизайнер|менеджер)(\s|$)/iu.test(text);
+}
+
 export function textKey(value: string) {
-  return clean(value).toLowerCase().replace(/[^a-zа-яё0-9]+/giu, "");
+  const text = clean(value);
+  if (isRoleOnlyLine(text)) return "";
+
+  return text.toLowerCase().replace(/[^a-zа-яё0-9]+/giu, "");
 }
 
 export function uniqueLines(values: string[]) {
