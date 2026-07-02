@@ -6,7 +6,7 @@ import {
 import { createSystemPrompt } from "./improvement-prompts/system-prompt.js";
 import { createUserPrompt } from "./improvement-prompts/user-prompt.js";
 
-const IMPROVEMENT_CACHE_VERSION = "improvement-cache-v1";
+const IMPROVEMENT_CACHE_VERSION = "improvement-cache-v2";
 const IMPROVEMENT_USER_PROMPT_PLACEHOLDER = "__RESUME_MARKDOWN__";
 
 export type ImprovementCacheMetadata = {
