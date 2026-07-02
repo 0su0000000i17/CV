@@ -3,10 +3,10 @@ export const MM_TO_PT = 2.8346456693;
 export const page = {
   width: 210 * MM_TO_PT,
   height: 297 * MM_TO_PT,
-  marginLeft: 14.5 * MM_TO_PT,
-  marginRight: 14.5 * MM_TO_PT,
-  marginTop: 18 * MM_TO_PT,
-  marginBottom: 19 * MM_TO_PT,
+  marginLeft: 14 * MM_TO_PT,
+  marginRight: 14 * MM_TO_PT,
+  marginTop: 15 * MM_TO_PT,
+  marginBottom: 17 * MM_TO_PT,
 };
 
 export const colors = {
@@ -27,25 +27,26 @@ export const fonts = {
 
 export const layout = {
   contentWidth: page.width - page.marginLeft - page.marginRight,
-  leftColumnWidth: 99,
-  columnGap: 14,
-  sectionGap: 24,
-  experienceGap: 18,
-  skillLabelWidth: 99,
-  skillGap: 14,
+  leftColumnWidth: 84,
+  columnGap: 12,
+  sectionGap: 18,
+  experienceGap: 7,
+  skillLabelWidth: 84,
+  skillGap: 12,
 };
 
 export const typography = {
-  name: 33,
-  sectionTitle: 15,
-  targetTitle: 16,
-  salaryAmount: 20,
-  salaryNote: 12,
-  body: 13,
-  company: 16,
-  meta: 12.5,
-  position: 17,
-  date: 11,
-  summary: 12.5,
-  footer: 11,
+  name: 26,
+  sectionTitle: 12.5,
+  targetTitle: 13.2,
+  salaryAmount: 15,
+  salaryNote: 10,
+  body: 10.4,
+  company: 13.2,
+  meta: 10,
+  position: 13.2,
+  date: 9.4,
+  summary: 10.4,
+  footer: 9.4,
+  skillTag: 10.4,
 };
