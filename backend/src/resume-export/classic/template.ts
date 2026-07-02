@@ -9,16 +9,16 @@ import {
 } from "./text.js";
 import { createClassicStyles } from "./styles.js";
 
+function clean(value?: string | null) {
+  return value?.replace(/\s+/g, " ").trim() || "";
+}
+
 function line(text: string, className = "plain-line") {
   return `<p class="${className}">${escapeHtml(text)}</p>`;
 }
 
 function sectionTitle(title: string) {
-  return `<h2 class="section-title"><span>${escapeHtml(title)}</span></h2>`;
-}
-
-function clean(value?: string | null) {
-  return value?.replace(/\s+/g, " ").trim() || "";
+  return `<h2 class="section-title">${escapeHtml(title)}</h2>`;
 }
 
 function salaryDigits(value: string) {
@@ -49,16 +49,13 @@ function renderMutedAfterDash(value: string) {
   return `${escapeHtml(match[1])}<span class="muted">${escapeHtml(match[2])}</span>`;
 }
 
-function renderContactLine(item: string, index: number, lines: string[]) {
-  const hasGap =
-    index > 0 &&
-    (item.startsWith("Проживает:") || lines[index - 1]?.includes("предпочитаемый способ связи"));
-  const className = `contact-line${hasGap ? " contact-line--gap" : ""}`;
+function renderContactLine(item: string) {
   if (item.includes("— предпочитаемый способ связи")) {
     const main = item.replace("— предпочитаемый способ связи", "").trim();
-    return `<p class="${className}">${escapeHtml(main)} <span class="muted">— предпочитаемый способ связи</span></p>`;
+    return `<p class="contact-line">${escapeHtml(main)} <span class="muted">— предпочитаемый способ связи</span></p>`;
   }
-  return `<p class="${className}">${escapeHtml(item)}</p>`;
+
+  return `<p class="contact-line">${escapeHtml(item)}</p>`;
 }
 
 function parsePngSize(buffer: Buffer) {
@@ -164,78 +161,41 @@ function renderPhoto(doc: ClassicDocument) {
 }
 
 function renderHeader(doc: ClassicDocument) {
-  const photo = renderPhoto(doc);
-  const contactLines = doc.contactLines.map((item, index) => renderContactLine(item, index, doc.contactLines)).join("");
-  return `<header class="header${hasPhoto(doc) ? "" : " header--no-photo"}">${photo}<div class="header-content"><h1 class="name">${escapeHtml(doc.name)}</h1><div class="contacts">${contactLines}</div></div></header>`;
+  const contacts = doc.contactLines.map(renderContactLine).join("");
+  return `<header class="header">${renderPhoto(doc)}<div><h1 class="name">${escapeHtml(doc.name)}</h1><div class="contacts">${contacts}</div></div></header>`;
 }
 
 function targetSalary(doc: ClassicDocument) {
   return clean(doc.adaptation.target.salary);
 }
 
-function targetHasStructuredDetails(doc: ClassicDocument) {
-  const target = doc.adaptation.target;
-  return Boolean(
-    target.specializations.length ||
-      clean(target.employment) ||
-      clean(target.schedule) ||
-      clean(target.workFormat) ||
-      clean(target.commuteTime)
-  );
-}
-
 function targetDetailLines(doc: ClassicDocument) {
   const target = doc.adaptation.target;
+  const structured: string[] = [];
 
-  if (targetHasStructuredDetails(doc)) {
-    const result: Array<{ text: string; indent?: boolean }> = [];
-    const specializations = target.specializations.map(clean).filter(Boolean);
-
-    if (specializations.length) {
-      result.push({ text: "Специализации:" });
-      specializations.forEach((item) => result.push({ text: `— ${item}`, indent: true }));
-    }
-
-    if (clean(target.employment)) result.push({ text: `Тип занятости: ${clean(target.employment)}` });
-    if (clean(target.schedule)) result.push({ text: `График: ${clean(target.schedule)}` });
-    if (clean(target.workFormat)) result.push({ text: `Формат работы: ${clean(target.workFormat)}` });
-    if (clean(target.commuteTime)) result.push({ text: `Желательное время в пути до работы: ${clean(target.commuteTime)}` });
-
-    return result;
+  if (target.specializations.length) {
+    structured.push("Специализации:", ...target.specializations.map((item) => `— ${clean(item)}`).filter(Boolean));
   }
+
+  if (clean(target.employment)) structured.push(`Тип занятости: ${clean(target.employment)}`);
+  if (clean(target.schedule)) structured.push(`График: ${clean(target.schedule)}`);
+  if (clean(target.workFormat)) structured.push(`Формат работы: ${clean(target.workFormat)}`);
+  if (clean(target.commuteTime)) structured.push(`Желательное время в пути до работы: ${clean(target.commuteTime)}`);
+
+  if (structured.length) return structured;
 
   const salary = targetSalary(doc);
-  return doc.snapshot.targetDetails
-    .filter((item) => !isKnownSalaryLine(item, salary))
-    .map((item) => ({ text: item, indent: item.startsWith("—") }));
-}
-
-function renderSalary(value: string) {
-  if (!value) return "";
-
-  const currencyMatch = value.match(/^(.*?)(?:\s*)(₽|руб\.?|RUB)(.*)$/iu);
-
-  if (!currencyMatch?.[1] || !currencyMatch[2]) {
-    return `<div class="target-salary"><span class="target-salary-amount">${escapeHtml(value)}</span></div>`;
-  }
-
-  const amount = clean(currencyMatch[1]);
-  const currency = currencyMatch[2].toLowerCase().startsWith("руб") ? "₽" : currencyMatch[2];
-  const note = clean(currencyMatch[3]);
-  const noteText = [currency, note].filter(Boolean).join(" ");
-
-  return `<div class="target-salary"><span class="target-salary-amount">${escapeHtml(amount)}</span>${noteText ? ` <span class="target-salary-note">${escapeHtml(noteText)}</span>` : ""}</div>`;
+  return doc.snapshot.targetDetails.filter((item) => !isKnownSalaryLine(item, salary));
 }
 
 function renderTarget(doc: ClassicDocument) {
   const salary = targetSalary(doc);
-  const details = targetDetailLines(doc)
-    .map((item) => line(item.text, item.indent ? "plain-line plain-line--indent" : "plain-line"))
-    .join("");
-
+  const details = targetDetailLines(doc).map((item) => line(item)).join("");
   if (!doc.targetTitle && !salary && !details) return "";
 
-  return `<section class="section">${sectionTitle("Желаемая должность и зарплата")}<div class="target-heading-row">${doc.targetTitle ? `<h3 class="target-title">${escapeHtml(doc.targetTitle)}</h3>` : "<div></div>"}${renderSalary(salary)}</div>${details}</section>`;
+  const title = doc.targetTitle ? `<h3 class="target-title">${escapeHtml(doc.targetTitle)}</h3>` : "";
+  const salaryBlock = salary ? `<p class="target-salary">${escapeHtml(salary)}</p>` : "";
+  return `<section class="section">${sectionTitle("Желаемая должность и зарплата")}${title}${salaryBlock}${details}</section>`;
 }
 
 function looksLikeUrl(value: string) {
@@ -248,35 +208,34 @@ function renderCompanyMeta(doc: ClassicDocument, item: ClassicExperienceItem) {
   const metaLines = getCompanyMeta(doc.snapshot, item.company)?.lines ?? [];
   const directLines = toTextLines(item.companyUrl).filter(Boolean);
   const lines = directLines.length
-    ? [...directLines, ...metaLines.filter((line) => !directLines.includes(line))]
+    ? [...directLines, ...metaLines.filter((metaLine) => !directLines.includes(metaLine))]
     : metaLines;
+
   return lines
     .filter((text) => !isKnownSalaryLine(text, salary))
-    .map((text) => `<p class="${looksLikeUrl(text) ? "company-meta company-meta--muted" : "company-meta"}">${escapeHtml(text)}</p>`)
+    .map((text) => line(text, looksLikeUrl(text) ? "company-meta company-meta--muted" : "company-meta"))
     .join("");
 }
 
 function renderFocus(item: ClassicExperienceItem, salary: string) {
   return toTextLines(item.focus)
     .filter((focusLine) => !isKnownSalaryLine(focusLine, salary))
-    .map((focusLine) => `<p class="work-text">${escapeHtml(focusLine)}</p>`)
+    .map((focusLine) => line(focusLine, "work-text"))
     .join("");
 }
 
 function renderExperienceItem(doc: ClassicDocument, item: ClassicExperienceItem) {
   const salary = targetSalary(doc);
   const duration = calculateExperienceDuration(item.dates);
-  const dates = [...splitDateLines(item.dates), duration]
-    .filter(Boolean)
-    .map((dateLine) => `<p class="date-line">${escapeHtml(dateLine)}</p>`)
-    .join("");
+  const dateLine = [...splitDateLines(item.dates), duration].filter(Boolean).join(" / ");
   const bullets = item.adaptedBullets
     .map(stripBullet)
     .filter(Boolean)
     .filter((bullet) => !isKnownSalaryLine(bullet, salary))
-    .map((bullet) => `<p class="bullet">- ${escapeHtml(bullet)}</p>`)
+    .map((bullet) => line(`- ${bullet}`, "bullet"))
     .join("");
-  return `<article class="experience-item"><div class="dates">${dates}</div><div>${item.company ? `<h3 class="company">${escapeHtml(item.company)}</h3>` : ""}${renderCompanyMeta(doc, item)}${item.position ? `<h4 class="position">${escapeHtml(item.position)}</h4>` : ""}${renderFocus(item, salary)}${bullets}</div></article>`;
+
+  return `<article class="experience-item">${dateLine ? line(dateLine, "date-line") : ""}${item.company ? `<h3 class="company">${escapeHtml(item.company)}</h3>` : ""}${renderCompanyMeta(doc, item)}${item.position ? `<h4 class="position">${escapeHtml(item.position)}</h4>` : ""}${renderFocus(item, salary)}${bullets}</article>`;
 }
 
 function renderExperience(doc: ClassicDocument) {
@@ -285,30 +244,29 @@ function renderExperience(doc: ClassicDocument) {
   return `<section class="section">${sectionTitle(doc.snapshot.experienceTitle || "Опыт работы")}${items.map((item) => renderExperienceItem(doc, item)).join("")}</section>`;
 }
 
-function splitEducationLine(item: string) {
-  const match = item.match(/^(\d{4})\s+(.+)$/);
-  return match?.[1] && match[2] ? { year: match[1], text: match[2] } : null;
-}
-
 function renderEducation(doc: ClassicDocument) {
   if (!doc.educationLines.length) return "";
-  const [level, ...rest] = doc.educationLines;
-  const rows = rest
-    .map((item) => {
-      const split = splitEducationLine(item);
-      return split
-        ? `<div class="education-row"><div class="education-year">${escapeHtml(split.year)}</div><p class="education-text"><strong>${escapeHtml(split.text)}</strong></p></div>`
-        : `<div class="education-row"><div></div><p class="education-text">${escapeHtml(item)}</p></div>`;
-    })
-    .join("");
-  return `<section class="section">${sectionTitle("Образование")}${level ? line(level) : ""}${rows}</section>`;
+  return `<section class="section">${sectionTitle("Образование")}${doc.educationLines.map((item) => line(item)).join("")}</section>`;
+}
+
+function isSkillToken(value: string) {
+  const text = clean(value);
+  if (!text) return false;
+  if (/^(?:навыки|образование|высшее|среднее|луганск)$/iu.test(text)) return false;
+  if (/университет|институт|академи[яи]|колледж|техникум|факультет|кафедра/iu.test(text)) return false;
+  if (/^[А-ЯЁ][а-яё-]{2,}$/u.test(text)) return false;
+  return true;
 }
 
 function renderSkills(doc: ClassicDocument) {
-  if (!doc.snapshot.languageLines.length && !doc.skills.length) return "";
-  const languages = doc.snapshot.languageLines.map((item) => `<p class="plain-line">${renderMutedAfterDash(item)}</p>`).join("");
-  const skills = doc.skills.map((item) => `<span class="skill-tag">${escapeHtml(item)}</span>`).join("");
-  return `<section class="section">${sectionTitle("Навыки")}${languages ? `<div class="skill-row language-lines"><div class="side-label">Знание языков</div><div>${languages}</div></div>` : ""}${skills ? `<div class="skill-row"><div class="side-label">Навыки</div><div class="skill-tags">${skills}</div></div>` : ""}</section>`;
+  const languages = doc.snapshot.languageLines
+    .map((item) => `<p class="plain-line">${renderMutedAfterDash(item)}</p>`)
+    .join("");
+  const skills = doc.skills.filter(isSkillToken);
+  const skillLine = skills.length ? line(skills.join(", "), "skill-list") : "";
+
+  if (!languages && !skillLine) return "";
+  return `<section class="section">${sectionTitle("Навыки")}${languages}${skillLine}</section>`;
 }
 
 function textKey(value: string) {
@@ -334,7 +292,7 @@ function renderDetails(doc: ClassicDocument) {
   const fallback = doc.snapshot.detailLines;
   const details = uniqueDetails(summary, [...additional, ...fallback]);
   if (!details.length) return "";
-  return `<section class="section">${sectionTitle("Дополнительная информация")}<div class="details-grid"><div class="side-label">Обо мне</div><p class="summary">${escapeHtml(details.join("\n"))}</p></div></section>`;
+  return `<section class="section">${sectionTitle("Дополнительная информация")}<h3 class="details-title">Обо мне</h3><p class="summary">${escapeHtml(details.join("\n"))}</p></section>`;
 }
 
 export function renderClassicHtml(doc: ClassicDocument) {
