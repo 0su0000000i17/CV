@@ -77,15 +77,16 @@ function toExperienceItem(item: ExperienceItem, index: number) {
   const split = splitExperienceBlocks(item.blocks);
   const position = resolveRawPosition(item) || text(item.position);
   const constants = resolveExperienceConstants(item, position);
-  const blockedLines = [position, ...constants.metaLines];
+  const company = constants.company || text(item.company.name);
+  const metadataText = createMetadataText(constants.metaLines, company) || text(item.company.url);
+  const blockedLines = [position, company, ...constants.metaLines];
   const filteredFocus = removeExactLines(split.focus, blockedLines);
   const filteredBullets = removeExactLines(split.bullets, blockedLines);
-  const metadataText = constants.metaLines.join("\n");
 
   return {
     sourceIndex: Number.isFinite(item.sourceIndex) ? item.sourceIndex : index,
-    company: constants.company || text(item.company.name) || null,
-    companyUrl: metadataText || text(item.company.url) || null,
+    company: company || null,
+    companyUrl: metadataText || null,
     position: position || null,
     dates: formatDates(item.dates),
     adaptedBullets: filteredBullets,
@@ -256,6 +257,13 @@ function isBulletLikeLine(value: string) {
 function getExperienceHeaderLines(lines: string[]) {
   const firstBulletIndex = lines.findIndex(isBulletLikeLine);
   return firstBulletIndex >= 0 ? lines.slice(0, firstBulletIndex) : lines;
+}
+
+function createMetadataText(lines: string[], company: string) {
+  const companyKey = textKey(company);
+  return uniquePreserve(lines)
+    .filter((line) => !companyKey || textKey(line) !== companyKey)
+    .join("\n");
 }
 
 function resolveExperienceConstants(item: ExperienceItem, position: string) {
