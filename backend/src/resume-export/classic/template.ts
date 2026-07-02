@@ -9,20 +9,38 @@ import {
 } from "./text.js";
 import { createClassicStyles } from "./styles.js";
 
+function clean(value?: string | null) {
+  return value?.replace(/\s+/g, " ").trim() || "";
+}
+
 function line(text: string, className = "plain-line") {
   return `<p class="${className}">${escapeHtml(text)}</p>`;
 }
 
 function sectionTitle(title: string) {
-  return `<h2 class="section-title"><span>${escapeHtml(title)}</span></h2>`;
-}
-
-function clean(value?: string | null) {
-  return value?.replace(/\s+/g, " ").trim() || "";
+  return `<p class="section-title"><span>${escapeHtml(title)}</span></p>`;
 }
 
 function salaryDigits(value: string) {
   return clean(value).replace(/\D/g, "");
+}
+
+function textKey(value: string) {
+  return clean(value).toLowerCase().replace(/[^a-zа-яё0-9]+/giu, "");
+}
+
+function uniqueLines(values: string[]) {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const item of values.map((value) => clean(stripBullet(value))).filter(Boolean)) {
+    const key = textKey(item);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    result.push(item);
+  }
+
+  return result;
 }
 
 function isKnownSalaryLine(value: string, salary: string) {
@@ -243,13 +261,23 @@ function looksLikeUrl(value: string) {
   return /^https?:\/\//i.test(text) || /^[a-zа-яё0-9.-]+\.[a-zа-яё]{2,}(?:\/.*)?$/i.test(text);
 }
 
+function normalizeCompanyMetaLines(lines: string[]) {
+  const cleaned = uniqueLines(lines);
+  const urlLines = cleaned.filter(looksLikeUrl);
+  const plainLines = cleaned.filter((item) => !looksLikeUrl(item));
+
+  return [...urlLines, ...plainLines];
+}
+
 function renderCompanyMeta(doc: ClassicDocument, item: ClassicExperienceItem) {
   const salary = targetSalary(doc);
   const metaLines = getCompanyMeta(doc.snapshot, item.company)?.lines ?? [];
   const directLines = toTextLines(item.companyUrl).filter(Boolean);
-  const lines = directLines.length
+  const mergedLines = directLines.length
     ? [...directLines, ...metaLines.filter((line) => !directLines.includes(line))]
     : metaLines;
+  const lines = normalizeCompanyMetaLines(mergedLines);
+
   return lines
     .filter((text) => !isKnownSalaryLine(text, salary))
     .map((text) => `<p class="${looksLikeUrl(text) ? "company-meta company-meta--muted" : "company-meta"}">${escapeHtml(text)}</p>`)
@@ -290,9 +318,35 @@ function splitEducationLine(item: string) {
   return match?.[1] && match[2] ? { year: match[1], text: match[2] } : null;
 }
 
+function hasEducationInstitution(lines: string[]) {
+  return lines.some((item) => /университет|институт|академи[яи]|колледж|техникум|факультет|кафедра/iu.test(item));
+}
+
+function extractSourceEducationLines(doc: ClassicDocument) {
+  const lines = toTextLines(doc.sourceText);
+  const startIndex = lines.findIndex((item) => /^Образование(?:\s|$)/iu.test(item));
+  if (startIndex < 0) return [];
+
+  const endIndex = lines.findIndex((item, index) => {
+    return index > startIndex && /^(?:Навыки|Ключевые навыки|Знание языков|Дополнительная информация|Обо мне)(?:\s|$)/iu.test(item);
+  });
+  const section = lines.slice(startIndex + 1, endIndex > startIndex ? endIndex : lines.length);
+  return uniqueLines(section.filter((item) => !/резюме\s+обновлено/iu.test(item)));
+}
+
+function resolveEducationLines(doc: ClassicDocument) {
+  if (hasEducationInstitution(doc.educationLines)) return doc.educationLines;
+
+  const sourceLines = extractSourceEducationLines(doc);
+  if (hasEducationInstitution(sourceLines)) return sourceLines;
+
+  return doc.educationLines;
+}
+
 function renderEducation(doc: ClassicDocument) {
-  if (!doc.educationLines.length) return "";
-  const [level, ...rest] = doc.educationLines;
+  const educationLines = resolveEducationLines(doc);
+  if (!educationLines.length) return "";
+  const [level, ...rest] = educationLines;
   const rows = rest
     .map((item) => {
       const split = splitEducationLine(item);
@@ -309,10 +363,6 @@ function renderSkills(doc: ClassicDocument) {
   const languages = doc.snapshot.languageLines.map((item) => `<p class="plain-line">${renderMutedAfterDash(item)}</p>`).join("");
   const skills = doc.skills.map((item) => `<span class="skill-tag">${escapeHtml(item)}</span>`).join("");
   return `<section class="section">${sectionTitle("Навыки")}${languages ? `<div class="skill-row language-lines"><div class="side-label">Знание языков</div><div>${languages}</div></div>` : ""}${skills ? `<div class="skill-row"><div class="side-label">Навыки</div><div class="skill-tags">${skills}</div></div>` : ""}</section>`;
-}
-
-function textKey(value: string) {
-  return value.toLowerCase().replace(/[^a-zа-яё0-9]+/giu, "");
 }
 
 function uniqueDetails(summary: string, additional: string[]) {
@@ -337,6 +387,13 @@ function renderDetails(doc: ClassicDocument) {
   return `<section class="section">${sectionTitle("Дополнительная информация")}<div class="details-grid"><div class="side-label">Обо мне</div><p class="summary">${escapeHtml(details.join("\n"))}</p></div></section>`;
 }
 
+function renderFooter(doc: ClassicDocument) {
+  const footer = clean(doc.snapshot.footer);
+  if (!footer) return "";
+  const text = /^Резюме\s+обновлено/iu.test(footer) ? footer : `Резюме обновлено ${footer}`;
+  return `<p class="footer">${escapeHtml(text)}</p>`;
+}
+
 export function renderClassicHtml(doc: ClassicDocument) {
-  return `<!doctype html><html lang="ru"><head><meta charset="utf-8" /><style>${createClassicStyles()}</style></head><body><main class="resume">${renderHeader(doc)}${renderTarget(doc)}${renderExperience(doc)}${renderEducation(doc)}${renderSkills(doc)}${renderDetails(doc)}${doc.snapshot.footer ? `<p class="footer">${escapeHtml(doc.snapshot.footer)}</p>` : ""}</main></body></html>`;
+  return `<!doctype html><html lang="ru"><head><meta charset="utf-8" /><style>${createClassicStyles()}</style></head><body><main class="resume">${renderHeader(doc)}${renderTarget(doc)}${renderExperience(doc)}${renderEducation(doc)}${renderSkills(doc)}${renderDetails(doc)}${renderFooter(doc)}</main></body></html>`;
 }
