@@ -5,7 +5,7 @@ import { calculateExperienceDuration, splitDateLines, stripBullet, toTextLines, 
 import type { ClassicDocument, ClassicExperienceItem } from "../types.js";
 import { renderHeader } from "./contacts.js";
 import { registerPdfFonts } from "./fonts.js";
-import { clean, looksLikeUrl, uniqueLines } from "./helpers.js";
+import { clean, looksLikeUrl, textKey, uniqueLines } from "./helpers.js";
 import { colors, layout, page, typography } from "./layout.js";
 import { PdfWriter, type TextStyle } from "./writer.js";
 
@@ -17,6 +17,8 @@ function salary(d: ClassicDocument) { return lower(d.adaptation.target.salary); 
 function hasSalary(d: ClassicDocument, line: string) { const s = salary(d); const t = lower(line); return Boolean(s && t.includes(s)); }
 function city(value: string) { const t = clean(value); return t.length > 2 && t.length < 36 && !t.includes(".") && !t.includes("/") && t[0] === t[0].toUpperCase(); }
 function prefix(text: string, p: string) { const a = clean(text); const b = clean(p); return b && lower(a).startsWith(`${lower(b)} `) ? clean(a.slice(b.length)) : a; }
+function metaKey(value: string) { return textKey(clean(value).replace(/^[-•]\s*/u, "")); }
+function bareMeta(value: string) { return clean(value).replace(/^[-•]\s*/u, ""); }
 
 function renderTarget(w: PdfWriter, d: ClassicDocument) {
   const t = d.adaptation.target;
@@ -37,29 +39,70 @@ function renderTarget(w: PdfWriter, d: ClassicDocument) {
   for (const line of lines) { const indent = line.startsWith("—"); w.y += w.textAt(line, indent ? w.left + 15 : w.left, w.y, indent ? w.contentWidth - 15 : w.contentWidth, body) + 1.5; }
 }
 
+function sourceMetaLines(d: ClassicDocument, it: ClassicExperienceItem) {
+  const company = clean(it.company);
+  if (!company) return [];
+  const lines = toTextLines(d.sourceText).map(clean).filter(Boolean);
+  const index = lines.findIndex((line) => line === company);
+  if (index < 0) return [];
+  const result: string[] = [];
+  for (let offset = index + 1; offset < Math.min(lines.length, index + 10); offset += 1) {
+    const line = lines[offset];
+    if (!line || line === company || hasSalary(d, line)) continue;
+    if (line.startsWith("Проект:") || line.startsWith("Стек:") || line.startsWith("Достижения:")) break;
+    if (/(^|\s)(разработчик|developer|engineer|программист|аналитик|дизайнер|менеджер)(\s|$)/iu.test(line)) break;
+    if (/^(Образование|Навыки|Дополнительная информация|Резюме обновлено)/iu.test(line)) break;
+    result.push(line);
+  }
+  return result;
+}
+
 function metaLines(d: ClassicDocument, it: ClassicExperienceItem) {
   const snap = getCompanyMeta(d.snapshot, it.company)?.lines ?? [];
   const direct = toTextLines(it.companyUrl).filter(Boolean);
-  const raw = uniqueLines((direct.length ? [...direct, ...snap.filter((x) => !direct.includes(x))] : snap).filter((x) => !hasSalary(d, x)));
+  const source = sourceMetaLines(d, it);
+  const raw = [...(direct.length ? direct : []), ...snap, ...source].filter((x) => !hasSalary(d, x));
+  const seen = new Set<string>();
+  const deduped: string[] = [];
+  for (const item of raw.map(clean).filter(Boolean)) {
+    const key = metaKey(item);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(item);
+  }
   const out: string[] = [];
-  for (let i = 0; i < raw.length; i += 1) {
-    if (raw[i + 1] && city(raw[i]) && looksLikeUrl(raw[i + 1])) { out.push(`${raw[i]}, ${raw[i + 1]}`); i += 1; }
-    else out.push(raw[i]);
+  for (let i = 0; i < deduped.length; i += 1) {
+    if (deduped[i + 1] && city(deduped[i]) && looksLikeUrl(deduped[i + 1])) { out.push(`${deduped[i]}, ${deduped[i + 1]}`); i += 1; }
+    else out.push(deduped[i]);
   }
   return out;
 }
 
+function roleFromLine(line: string) {
+  const text = clean(stripBullet(line));
+  const positions = [text.indexOf("Проект:"), text.indexOf("Стек:")].filter((x) => x > 0);
+  const boundary = positions.length ? Math.min(...positions) : -1;
+  if (boundary < 1) return "";
+  const before = clean(text.slice(0, boundary));
+  return /(^|\s)(разработчик|developer|engineer|программист|аналитик|дизайнер|менеджер)(\s|$)/iu.test(before) ? before : "";
+}
+
 function position(d: ClassicDocument, it: ClassicExperienceItem) {
-  return clean(it.position) || clean(d.targetTitle).replace("(React, Next.js)", "").trim() || "Frontend-разработчик";
+  const direct = clean(it.position);
+  if (direct) return direct;
+  const inferred = [it.focus || "", ...it.adaptedBullets].map(roleFromLine).find(Boolean);
+  if (inferred) return inferred;
+  const target = clean(d.targetTitle).replace(/\s*\([^)]*\)\s*$/u, "");
+  return roleFromLine(`${target} Проект:`) || target;
 }
 
 function cleanWork(line: string, pos: string, metas: string[]) {
   let t = clean(stripBullet(line));
-  const pfx = uniqueLines([...metas.filter((m) => !looksLikeUrl(m) && !m.includes(",")), "Банк", "Разработка программного обеспечения"]);
+  const pfx = uniqueLines(metas.map(bareMeta).filter((m) => !looksLikeUrl(m) && !m.includes(",")));
   for (const p of pfx.sort((a, b) => b.length - a.length)) {
     t = prefix(t, `${p} ${pos}`);
     const noMeta = prefix(t, p);
-    if (["Проект:", "Стек:", "Frontend", "Backend", "Fullstack", "Разработка"].some((x) => noMeta.startsWith(x))) t = noMeta;
+    if (noMeta.startsWith("Проект:") || noMeta.startsWith("Стек:") || roleFromLine(noMeta)) t = noMeta;
   }
   const noPos = prefix(t, pos);
   if (noPos.startsWith("Проект:") || noPos.startsWith("Стек:")) t = noPos;
@@ -80,13 +123,15 @@ function renderExperienceItem(w: PdfWriter, d: ClassicDocument, it: ClassicExper
   const duration = calculateExperienceDuration(it.dates); const dates = [...splitDateLines(it.dates), duration].filter(Boolean).join("\n");
   const dh = dates ? w.textAt(dates, w.left, start, layout.leftColumnWidth, { size: typography.date, color: colors.muted, lineGap: 0.2 }) : 0;
   if (it.company) y += w.textAt(it.company, x, y, width, { font: "bold", size: typography.company, color: colors.black }) + 1.5;
-  for (const m of metas) y += w.textAt((m === "Банк" || m === "Разработка программного обеспечения") ? `• ${m}` : m, x, y, width, { size: typography.meta, color: looksLikeUrl(m) || m.includes(",") ? colors.lightMuted : colors.text, lineGap: 0 }) + 0.75;
+  for (const m of metas) y += w.textAt(m.startsWith("•") ? m : bareMeta(m), x, y, width, { size: typography.meta, color: looksLikeUrl(m) || m.includes(",") ? colors.lightMuted : colors.text, lineGap: 0 }) + 0.75;
   if (pos) y += 7.5 + w.textAt(pos, x, y + 7.5, width, { size: typography.position, color: colors.text, lineGap: 0 }) + 5.25;
   const lines = [it.focus || "", ...it.adaptedBullets].map((v) => cleanWork(v, pos, metas)).filter((v) => v && !hasSalary(d, v));
-  const plain = lines.filter((v) => v.startsWith("Проект:") || v.startsWith("Стек:") || v.startsWith("Достижения:"));
-  const bullets = lines.filter((v) => !plain.includes(v));
-  for (const v of plain) { const r = drawFlow(w, v, x, y, width, 4.5); y = r.next; broke ||= r.broke; }
-  if (bullets.length) { const r = drawFlow(w, "Достижения:", x, y, width, 3.75); y = r.next; broke ||= r.broke; }
+  const projects = lines.filter((v) => v.startsWith("Проект:"));
+  const stacks = lines.filter((v) => v.startsWith("Стек:"));
+  const plain = lines.filter((v) => v.startsWith("Достижения:") && !projects.includes(v) && !stacks.includes(v));
+  const bullets = lines.filter((v) => !projects.includes(v) && !stacks.includes(v) && !plain.includes(v));
+  for (const v of [...projects, ...stacks, ...plain]) { const r = drawFlow(w, v, x, y, width, 4.5); y = r.next; broke ||= r.broke; }
+  if (bullets.length && !plain.length) { const r = drawFlow(w, "Достижения:", x, y, width, 3.75); y = r.next; broke ||= r.broke; }
   for (const v of bullets) { const r = drawFlow(w, `- ${v}`, x, y, width, 3.75); y = r.next; broke ||= r.broke; }
   w.y = broke ? y : Math.max(start + dh, y);
 }
@@ -117,7 +162,8 @@ function asciiToken(s: string) { return s.split("").every((ch) => "ABCDEFGHIJKLM
 function packedSkill(part: string) { const words = clean(part).split(" ").filter(Boolean); return words.length >= 3 && words.every(asciiToken); }
 function splitPacked(words: string[]) { const out: string[] = []; for (let i = 0; i < words.length; i += 1) { const pair = [words[i], words[i + 1]].filter(Boolean).join(" "); const triple = [words[i], words[i + 1], words[i + 2]].filter(Boolean).join(" "); if (triple === "React Hook Form") { out.push(triple); i += 2; } else if (["REST API", "RTK Query", "Redux Thunk", "React hooks"].includes(pair)) { out.push(pair); i += 1; } else out.push(words[i]); } return out; }
 function skillParts(value: string) { const parts = clean(value).split(/[\n,;|•]+/u).map(clean).filter(Boolean); return parts.flatMap((part) => packedSkill(part) ? splitPacked(part.split(" ").filter(Boolean)) : [part]); }
-function renderSkills(w: PdfWriter, d: ClassicDocument) { if (!d.snapshot.languageLines.length && !d.skills.length) return; w.sectionTitle("Навыки"); labeled(w, "Знание языков", d.snapshot.languageLines, 7.5); const x0 = w.left + layout.skillLabelWidth + layout.skillGap; const width = w.right - x0; let x = x0; let y = w.y; w.textAt("Навыки", w.left, y, layout.skillLabelWidth, muted); for (const s of uniqueStrings(d.skills.flatMap(skillParts))) { w.setFont({ size: typography.skillTag }); const tw = Math.min(w.doc.widthOfString(s) + 6, width); if (x + tw > x0 + width) { x = x0; y += 18; } const tag = w.tag(s, x, y, width); x += tag.width + 6.75; } w.y = y + 18; }
+function removeRedundantSkillTags(values: string[]) { const keys = new Set(values.map((v) => textKey(v))); return values.filter((v) => { const words = clean(v).split(" ").filter(Boolean); return !(words.length > 1 && words.every((word) => keys.has(textKey(word)))); }); }
+function renderSkills(w: PdfWriter, d: ClassicDocument) { if (!d.snapshot.languageLines.length && !d.skills.length) return; w.sectionTitle("Навыки"); labeled(w, "Знание языков", d.snapshot.languageLines, 7.5); const x0 = w.left + layout.skillLabelWidth + layout.skillGap; const width = w.right - x0; let x = x0; let y = w.y; w.textAt("Навыки", w.left, y, layout.skillLabelWidth, muted); for (const s of removeRedundantSkillTags(uniqueStrings(d.skills.flatMap(skillParts)))) { w.setFont({ size: typography.skillTag }); const tw = Math.min(w.doc.widthOfString(s) + 6, width); if (x + tw > x0 + width) { x = x0; y += 18; } const tag = w.tag(s, x, y, width); x += tag.width + 6.75; } w.y = y + 18; }
 function renderDetails(w: PdfWriter, d: ClassicDocument) { const lines = uniqueStrings([clean(d.adaptation.adaptedResume.summary), ...d.adaptation.adaptedResume.additionalInfo.flatMap(toTextLines), ...d.snapshot.detailLines].map(clean).filter(Boolean)); if (!lines.length) return; w.sectionTitle("Дополнительная информация"); labeled(w, "Обо мне", [lines.join("\n")], 0); }
 function renderFooter(w: PdfWriter, d: ClassicDocument) { const footer = clean(d.snapshot.footer || "").replace(/^(Резюме\s+обновлено\s*)+/iu, "Резюме обновлено "); if (!footer) return; w.y += 21; w.paragraph(clean(footer), w.contentWidth, { size: typography.footer, color: colors.muted, lineGap: 0 }); }
 
