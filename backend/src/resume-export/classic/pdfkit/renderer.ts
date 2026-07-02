@@ -21,6 +21,7 @@ function metaKey(value: string) { return textKey(clean(value).replace(/^[-•]\s
 function bareMeta(value: string) { return clean(value).replace(/^[-•]\s*/u, ""); }
 function mutedMeta(value: string) { return looksLikeUrl(value) || /[a-zа-яё0-9.-]+\.[a-zа-яё]{2,}/iu.test(value); }
 function dedupeByMetaKey(values: string[]) { const seen = new Set<string>(); const out: string[] = []; for (const value of values.map(clean).filter(Boolean)) { const key = metaKey(value); if (!key || seen.has(key)) continue; seen.add(key); out.push(value); } return out; }
+function roleText(value: string) { return /(^|\s)(разработчик|developer|engineer|программист|аналитик|дизайнер|менеджер)(\s|$)/iu.test(clean(value)); }
 
 function renderTarget(w: PdfWriter, d: ClassicDocument) {
   const t = d.adaptation.target;
@@ -52,7 +53,7 @@ function sourceMetaLines(d: ClassicDocument, it: ClassicExperienceItem) {
     const line = lines[offset];
     if (!line || line === company || hasSalary(d, line)) continue;
     if (line.startsWith("Проект:") || line.startsWith("Стек:") || line.startsWith("Достижения:")) break;
-    if (/(^|\s)(разработчик|developer|engineer|программист|аналитик|дизайнер|менеджер)(\s|$)/iu.test(line)) break;
+    if (roleText(line)) break;
     if (/^(Образование|Навыки|Дополнительная информация|Резюме обновлено)/iu.test(line)) break;
     result.push(line);
   }
@@ -78,16 +79,18 @@ function roleFromLine(line: string) {
   const boundary = positions.length ? Math.min(...positions) : -1;
   if (boundary < 1) return "";
   const before = clean(text.slice(0, boundary));
-  return /(^|\s)(разработчик|developer|engineer|программист|аналитик|дизайнер|менеджер)(\s|$)/iu.test(before) ? before : "";
+  return roleText(before) ? before : "";
 }
 
-function position(d: ClassicDocument, it: ClassicExperienceItem) {
+function position(d: ClassicDocument, it: ClassicExperienceItem, metas: string[]) {
   const direct = clean(it.position);
-  if (direct) return direct;
+  const directIsMeta = metas.some((meta) => metaKey(direct) === metaKey(meta));
   const inferred = [it.focus || "", ...it.adaptedBullets].map(roleFromLine).find(Boolean);
+  if (direct && roleText(direct) && !directIsMeta) return direct;
   if (inferred) return inferred;
   const target = clean(d.targetTitle).replace(/\s*\([^)]*\)\s*$/u, "");
-  return roleFromLine(`${target} Проект:`) || target;
+  if (roleText(target)) return target;
+  return direct && !directIsMeta ? direct : target;
 }
 
 function stripBeforeStructuredPrefix(text: string, pos: string) {
@@ -98,7 +101,7 @@ function stripBeforeStructuredPrefix(text: string, pos: string) {
   const index = Math.min(...candidates);
   const before = clean(text.slice(0, index));
   if (!before) return text;
-  const hasRole = /(^|\s)(разработчик|developer|engineer|программист|аналитик|дизайнер|менеджер)(\s|$)/iu.test(before);
+  const hasRole = roleText(before);
   if (hasRole || (pos && before.includes(pos))) return clean(text.slice(index));
   return text;
 }
@@ -131,7 +134,7 @@ function drawFlow(w: PdfWriter, text: string, x: number, y: number, width: numbe
 }
 
 function renderExperienceItem(w: PdfWriter, d: ClassicDocument, it: ClassicExperienceItem, first: boolean) {
-  const metas = metaLines(d, it); const pos = position(d, it); const x = w.left + layout.leftColumnWidth + layout.columnGap; const width = w.right - x;
+  const metas = metaLines(d, it); const pos = position(d, it, metas); const x = w.left + layout.leftColumnWidth + layout.columnGap; const width = w.right - x;
   if (!first) w.y += layout.experienceGap; w.ensureSpace(42);
   const start = w.y; let broke = false; let y = start;
   const duration = calculateExperienceDuration(it.dates); const dates = [...splitDateLines(it.dates), duration].filter(Boolean).join("\n");
