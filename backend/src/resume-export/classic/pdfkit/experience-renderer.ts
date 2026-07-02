@@ -20,6 +20,13 @@ function metaMuted(value: string) { return looksLikeUrl(value); }
 function lines(doc: ClassicDocument) { return toTextLines(doc.sourceText).map(clean).filter(Boolean); }
 function companyAt(doc: ClassicDocument, item: ClassicExperienceItem) { const company = clean(item.company); return company ? lines(doc).findIndex((line) => line === company) : -1; }
 
+function companyCandidate(doc: ClassicDocument, value: string) {
+  const text = bare(value);
+  if (!text || hasSalary(doc, text) || isRole(text) || isCity(text) || isStop(text)) return false;
+  if (text.includes(":") || text.startsWith("•") || text.includes(",") || looksLikeUrl(text)) return false;
+  return text.length <= 90;
+}
+
 function dedupe(values: string[]) {
   const seen = new Set<string>();
   const result: string[] = [];
@@ -57,6 +64,12 @@ function meta(doc: ClassicDocument, item: ClassicExperienceItem) {
     else result.push(raw[i]);
   }
   return dedupe(result);
+}
+
+function displayCompany(doc: ClassicDocument, item: ClassicExperienceItem, metas: string[]) {
+  const direct = clean(item.company);
+  if (direct) return direct;
+  return clean(metas.find((line) => companyCandidate(doc, line)) || "");
 }
 
 function sourcePosition(doc: ClassicDocument, item: ClassicExperienceItem) {
@@ -134,6 +147,8 @@ function draw(writer: PdfWriter, text: string, x: number, y: number, width: numb
 
 function renderItem(writer: PdfWriter, doc: ClassicDocument, item: ClassicExperienceItem, first: boolean) {
   const metas = meta(doc, item);
+  const company = displayCompany(doc, item, metas);
+  const visibleMetas = company ? metas.filter((line) => !same(line, company)) : metas;
   const pos = position(doc, item);
   const x = writer.left + layout.leftColumnWidth + layout.columnGap;
   const width = writer.right - x;
@@ -144,10 +159,10 @@ function renderItem(writer: PdfWriter, doc: ClassicDocument, item: ClassicExperi
   let broke = false;
   const dateText = [...splitDateLines(item.dates), calculateExperienceDuration(item.dates)].filter(Boolean).join("\n");
   const dateHeight = dateText ? writer.textAt(dateText, writer.left, start, layout.leftColumnWidth, { size: typography.date, color: colors.muted, lineGap: 0.2 }) : 0;
-  if (item.company) y += writer.textAt(item.company, x, y, width, { font: "bold", size: typography.company, color: colors.black }) + 1.5;
-  for (const itemMeta of metas) y += writer.textAt(bare(itemMeta), x, y, width, { size: typography.meta, color: metaMuted(itemMeta) ? colors.lightMuted : colors.text, lineGap: 0 }) + 0.75;
-  if (pos) y += 7.5 + writer.textAt(pos, x, y + 7.5, width, { size: typography.position, color: colors.text, lineGap: 0 }) + 5.25;
-  const content = [item.focus || "", ...item.adaptedBullets].flatMap(toTextLines).map((line) => cleanContent(line, pos, metas)).filter((line) => !skipContent(doc, line, pos, metas));
+  if (company) y += writer.textAt(company, x, y, width, { font: "bold", size: typography.company, color: colors.black }) + 1.5;
+  for (const itemMeta of visibleMetas) y += writer.textAt(bare(itemMeta), x, y, width, { size: typography.meta, color: metaMuted(itemMeta) ? colors.lightMuted : colors.text, lineGap: 0 }) + 0.75;
+  if (pos) y += 7.5 + writer.textAt(pos, x, y + 7.5, width, { size: typography.position, color: colors.black, lineGap: 0 }) + 5.25;
+  const content = [item.focus || "", ...item.adaptedBullets].flatMap(toTextLines).map((line) => cleanContent(line, pos, visibleMetas)).filter((line) => !skipContent(doc, line, pos, visibleMetas));
   for (const line of content) { const result = draw(writer, line, x, y, width); y = result.next; broke ||= result.broke; }
   writer.y = broke ? y : Math.max(start + dateHeight, y);
 }
