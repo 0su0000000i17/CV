@@ -65,7 +65,7 @@ function photoDimensions(doc: ClassicDocument) {
 function renderContactLine(writer: PdfWriter, line: string, x: number, y: number, width: number) {
   const marker = " — ";
   const markerIndex = line.indexOf(marker);
-  if (!line.includes("@") || markerIndex < 0) {
+  if (markerIndex < 0) {
     return writer.textAt(line, x, y, width, contactStyle);
   }
 
