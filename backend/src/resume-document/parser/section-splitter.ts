@@ -20,6 +20,8 @@ export type ResumeSectionSplit = {
   warnings: string[];
 };
 
+type SectionKind = "target" | "experience" | "education" | "skills" | "additional";
+
 export function splitResumeSections(lines: string[]): ResumeSectionSplit {
   const warnings: string[] = [];
 
@@ -45,19 +47,19 @@ export function splitResumeSections(lines: string[]): ResumeSectionSplit {
     headerLines: lines.slice(0, headerEnd),
 
     targetTitle: getLine(lines, targetIndex),
-    targetLines: sliceBetween(lines, targetIndex, experienceIndex),
+    targetLines: sliceSection(lines, targetIndex, experienceIndex, "target"),
 
     experienceTitle: getLine(lines, experienceIndex),
-    experienceLines: sliceBetween(lines, experienceIndex, educationIndex),
+    experienceLines: sliceSection(lines, experienceIndex, educationIndex, "experience"),
 
     educationTitle: getLine(lines, educationIndex),
-    educationLines: sliceBetween(lines, educationIndex, skillsIndex),
+    educationLines: sliceSection(lines, educationIndex, skillsIndex, "education"),
 
     skillsTitle: getLine(lines, skillsIndex),
-    skillsLines: sliceBetween(lines, skillsIndex, additionalIndex),
+    skillsLines: sliceSection(lines, skillsIndex, additionalIndex, "skills"),
 
     additionalTitle: getLine(lines, additionalIndex),
-    additionalLines: additionalIndex >= 0 ? lines.slice(additionalIndex + 1) : [],
+    additionalLines: sliceSection(lines, additionalIndex, lines.length, "additional"),
 
     sectionOrder: [
       getLine(lines, targetIndex),
@@ -75,10 +77,24 @@ function getLine(lines: string[], index: number) {
   return index >= 0 ? lines[index] ?? null : null;
 }
 
-function sliceBetween(lines: string[], startIndex: number, endIndex: number) {
+function sliceSection(lines: string[], startIndex: number, endIndex: number, kind: SectionKind) {
   if (startIndex < 0) return [];
+  const content = getInlineHeadingContent(lines[startIndex] ?? "", kind);
+  const rest = lines.slice(startIndex + 1, endIndex >= 0 ? endIndex : lines.length);
+  return content ? [content, ...rest] : rest;
+}
 
-  return lines.slice(startIndex + 1, endIndex >= 0 ? endIndex : lines.length);
+function getInlineHeadingContent(line: string, kind: SectionKind) {
+  const patterns: Record<SectionKind, RegExp> = {
+    target: /^Желаемая должность и зарплата\s*/i,
+    experience: /^Опыт работы(?:\s+—\s+.+)?\s*/i,
+    education: /^Образование\s*/i,
+    skills: /^(?:Навыки|Ключевые навыки)\s*/i,
+    additional: /^(?:Дополнительная информация|Обо мне)\s*/i,
+  };
+
+  const content = line.replace(patterns[kind], "").trim();
+  return content && content !== line ? content : "";
 }
 
 function findIndexFrom(
@@ -106,13 +122,13 @@ function isExperienceHeading(line: string) {
 }
 
 function isEducationHeading(line: string) {
-  return line === "Образование";
+  return /^Образование(?:\s|$)/i.test(line);
 }
 
 function isSkillsHeading(line: string) {
-  return line === "Навыки" || line === "Ключевые навыки";
+  return /^(?:Навыки|Ключевые навыки)(?:\s|$)/i.test(line);
 }
 
 function isAdditionalHeading(line: string) {
-  return line === "Дополнительная информация";
+  return /^(?:Дополнительная информация|Обо мне)(?:\s|$)/i.test(line);
 }
