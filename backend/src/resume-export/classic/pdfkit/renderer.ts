@@ -14,8 +14,8 @@ import { registerPdfFonts } from "./fonts.js";
 import { colors, layout, page, typography } from "./layout.js";
 import { PdfWriter, type TextStyle } from "./writer.js";
 
-const bodyStyle: TextStyle = { size: typography.body, color: colors.text, lineGap: 0.4 };
-const mutedStyle: TextStyle = { size: typography.body, color: colors.muted, lineGap: 0.4 };
+const bodyStyle: TextStyle = { size: typography.body, color: colors.text, lineGap: 0.2 };
+const mutedStyle: TextStyle = { size: typography.body, color: colors.muted, lineGap: 0.2 };
 
 function clean(value?: string | null) {
   return cleanText(value);
@@ -99,12 +99,22 @@ function shouldRenderContactLine(value: string) {
   ].includes(handle);
 }
 
+function resolvePhotoDimensions(doc: ClassicDocument) {
+  const fallbackWidth = layout.photoWidth;
+  const rawWidth = doc.photoSize?.width || 0;
+  const rawHeight = doc.photoSize?.height || 0;
+  const ratio = rawWidth > 0 && rawHeight > 0 ? rawHeight / rawWidth : 1.22;
+  const width = fallbackWidth;
+  const height = Math.min(width * ratio, 95);
+
+  return { width, height };
+}
+
 function renderHeader(writer: PdfWriter, doc: ClassicDocument) {
   const photo = parseDataImage(doc.photoUrl);
-  const photoWidth = doc.photoSize?.width || 88;
-  const photoHeight = doc.photoSize?.height || 108;
+  const { width: photoWidth, height: photoHeight } = resolvePhotoDimensions(doc);
   const hasPhoto = Boolean(photo && photoWidth > 35 && photoHeight > 35);
-  const contentX = hasPhoto ? writer.left + photoWidth + 17 : writer.left;
+  const contentX = hasPhoto ? writer.left + photoWidth + layout.photoGap : writer.left;
   const contentWidth = writer.right - contentX;
   const top = writer.y;
 
@@ -115,19 +125,19 @@ function renderHeader(writer: PdfWriter, doc: ClassicDocument) {
     });
   }
 
-  let y = top - (hasPhoto ? 3 : 0);
+  let y = top - (hasPhoto ? 3.75 : 0);
   y += writer.textAt(doc.name, contentX, y, contentWidth, {
     font: "bold",
     size: typography.name,
     color: colors.black,
-  }) + 3;
+  }) + 1.5;
 
   for (const contact of doc.contactLines.filter(shouldRenderContactLine)) {
-    if (contact.startsWith("Проживает:")) y += 8;
-    y += writer.textAt(contact, contentX, y, contentWidth, bodyStyle) + 0.5;
+    if (contact.startsWith("Проживает:")) y += 12;
+    y += writer.textAt(contact, contentX, y, contentWidth, bodyStyle) + 0.75;
   }
 
-  writer.y = Math.max(y, top + (hasPhoto ? photoHeight : 0)) + 19;
+  writer.y = Math.max(y, top + (hasPhoto ? photoHeight : 0)) + 22;
 }
 
 function targetHasStructuredDetails(doc: ClassicDocument) {
@@ -174,7 +184,7 @@ function renderTarget(writer: PdfWriter, doc: ClassicDocument) {
 
   writer.sectionTitle("Желаемая должность и зарплата");
 
-  const titleWidth = salary ? writer.contentWidth - 130 : writer.contentWidth;
+  const titleWidth = salary ? writer.contentWidth - 112 : writer.contentWidth;
   const titleHeight = doc.targetTitle
     ? writer.textAt(doc.targetTitle, writer.left, writer.y, titleWidth, {
         font: "bold",
@@ -184,21 +194,21 @@ function renderTarget(writer: PdfWriter, doc: ClassicDocument) {
     : 0;
 
   const salaryHeight = salary
-    ? writer.textAt(salary, writer.right - 125, writer.y, 125, {
+    ? writer.textAt(salary, writer.right - 108, writer.y, 108, {
         font: "bold",
         size: typography.salaryAmount,
         color: colors.black,
       })
     : 0;
 
-  writer.y += Math.max(titleHeight, salaryHeight) + 4;
+  writer.y += Math.max(titleHeight, salaryHeight) + 4.5;
 
   for (const item of details) {
-    const x = item.indent ? writer.left + 16 : writer.left;
-    const width = item.indent ? writer.contentWidth - 16 : writer.contentWidth;
-    writer.ensureSpace(15);
+    const x = item.indent ? writer.left + 15 : writer.left;
+    const width = item.indent ? writer.contentWidth - 15 : writer.contentWidth;
+    writer.ensureSpace(14);
     const used = writer.textAt(item.text, x, writer.y, width, bodyStyle);
-    writer.y += used + 1.3;
+    writer.y += used + 1.5;
   }
 }
 
@@ -216,11 +226,20 @@ function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function cleanupPrefixes(metaLines: string[]) {
+  return uniqueLines([
+    ...metaLines.filter((line) => !looksLikeUrl(line)),
+    "Банк",
+    "Разработка программного обеспечения",
+    "Информационные технологии, системная интеграция, интернет",
+  ]).sort((a, b) => b.length - a.length);
+}
+
 function cleanExperienceTextLine(value: string, item: ClassicExperienceItem, metaLines: string[]) {
   let text = clean(stripBullet(value));
   const position = clean(item.position);
 
-  for (const meta of metaLines.filter((line) => !looksLikeUrl(line)).sort((a, b) => b.length - a.length)) {
+  for (const meta of cleanupPrefixes(metaLines)) {
     const metaPattern = escapeRegExp(meta).replace(/\s+/g, "\\s+");
     if (position) {
       const positionPattern = escapeRegExp(position).replace(/\s+/g, "\\s+");
@@ -245,7 +264,7 @@ function renderCompanyMeta(writer: PdfWriter, metaLines: string[], x: number, y:
       color: looksLikeUrl(meta) ? colors.lightMuted : colors.text,
       lineGap: 0,
     });
-    currentY += used + 0.5;
+    currentY += used + 0.75;
   }
 
   return currentY - y;
@@ -259,7 +278,7 @@ function renderExperienceItem(writer: PdfWriter, doc: ClassicDocument, item: Cla
   const contentWidth = writer.right - contentX;
 
   if (!isFirst) writer.y += layout.experienceGap;
-  writer.ensureSpace(48);
+  writer.ensureSpace(42);
 
   const startY = writer.y;
   const duration = calculateExperienceDuration(item.dates);
@@ -268,7 +287,7 @@ function renderExperienceItem(writer: PdfWriter, doc: ClassicDocument, item: Cla
     ? writer.textAt(dates, leftX, startY, layout.leftColumnWidth, {
         size: typography.date,
         color: colors.muted,
-        lineGap: 0.4,
+        lineGap: 0.2,
       })
     : 0;
 
@@ -278,18 +297,18 @@ function renderExperienceItem(writer: PdfWriter, doc: ClassicDocument, item: Cla
       font: "bold",
       size: typography.company,
       color: colors.black,
-    }) + 1;
+    }) + 1.5;
   }
 
   contentY += renderCompanyMeta(writer, metaLines, contentX, contentY, contentWidth);
 
   if (item.position) {
-    contentY += 4;
+    contentY += 7.5;
     contentY += writer.textAt(item.position, contentX, contentY, contentWidth, {
       size: typography.position,
       color: colors.text,
       lineGap: 0,
-    }) + 3;
+    }) + 5.25;
   }
 
   for (const focusLine of toTextLines(item.focus)
@@ -301,7 +320,7 @@ function renderExperienceItem(writer: PdfWriter, doc: ClassicDocument, item: Cla
       writer.y = page.marginTop;
       contentY = writer.y;
     }
-    contentY += writer.textAt(focusLine, contentX, contentY, contentWidth, bodyStyle) + 3;
+    contentY += writer.textAt(focusLine, contentX, contentY, contentWidth, bodyStyle) + 4.5;
   }
 
   for (const bullet of item.adaptedBullets
@@ -314,7 +333,7 @@ function renderExperienceItem(writer: PdfWriter, doc: ClassicDocument, item: Cla
       writer.y = page.marginTop;
       contentY = writer.y;
     }
-    contentY += writer.textAt(text, contentX, contentY, contentWidth, bodyStyle) + 2.2;
+    contentY += writer.textAt(text, contentX, contentY, contentWidth, bodyStyle) + 3.75;
   }
 
   writer.y = Math.max(startY + dateHeight, contentY);
@@ -339,13 +358,25 @@ function hasEducationInstitution(lines: string[]) {
 function extractSourceEducationLines(doc: ClassicDocument) {
   const lines = toTextLines(doc.sourceText);
   const startIndex = lines.findIndex((item) => /^Образование(?:\s|$)/iu.test(item));
-  if (startIndex < 0) return [];
+  const sectionEnd = startIndex >= 0
+    ? lines.findIndex((item, index) => index > startIndex && /^(?:Навыки|Ключевые навыки|Знание языков|Дополнительная информация|Обо мне)(?:\s|$)/iu.test(item))
+    : -1;
+  const section = startIndex >= 0
+    ? lines.slice(startIndex + 1, sectionEnd > startIndex ? sectionEnd : lines.length)
+    : [];
+  const sectionLines = uniqueLines(section.filter((item) => !/резюме\s+обновлено/iu.test(item)));
+  if (hasEducationInstitution(sectionLines)) return sectionLines;
 
-  const endIndex = lines.findIndex((item, index) => {
-    return index > startIndex && /^(?:Навыки|Ключевые навыки|Знание языков|Дополнительная информация|Обо мне)(?:\s|$)/iu.test(item);
-  });
-  const section = lines.slice(startIndex + 1, endIndex > startIndex ? endIndex : lines.length);
-  return uniqueLines(section.filter((item) => !/резюме\s+обновлено/iu.test(item)));
+  const institutionIndex = lines.findIndex((item) => /университет|институт|академи[яи]|колледж|техникум|факультет|кафедра/iu.test(item));
+  if (institutionIndex < 0) return sectionLines;
+
+  const institutionLine = clean(lines[institutionIndex]);
+  const prevYear = clean(lines[institutionIndex - 1] || "").match(/^\d{4}$/u)?.[0] || "";
+  const inlineYear = institutionLine.match(/^(\d{4})\s+(.+)$/u);
+  const level = clean(lines.slice(Math.max(0, institutionIndex - 4), institutionIndex).find((item) => /^Высшее|Среднее|Бакалавр|Магистр/iu.test(item)) || "Высшее");
+
+  if (inlineYear?.[1] && inlineYear[2]) return uniqueLines([level, `${inlineYear[1]} ${inlineYear[2]}`]);
+  return uniqueLines([level, prevYear ? `${prevYear} ${institutionLine}` : institutionLine]);
 }
 
 function resolveEducationLines(doc: ClassicDocument) {
@@ -366,12 +397,12 @@ function renderEducation(writer: PdfWriter, doc: ClassicDocument) {
 
   writer.sectionTitle("Образование");
   const [level, ...rest] = educationLines;
-  if (level) writer.paragraph(level, writer.contentWidth, bodyStyle, 5);
+  if (level) writer.paragraph(level, writer.contentWidth, bodyStyle, 6);
 
   for (const item of rest) {
     const split = splitEducationLine(item);
     if (!split) {
-      writer.paragraph(item, writer.contentWidth, { size: typography.targetTitle, color: colors.text, lineGap: 0.5 }, 3);
+      writer.paragraph(item, writer.contentWidth, { size: typography.position, color: colors.text, lineGap: 0.4 }, 3);
       continue;
     }
 
@@ -383,15 +414,15 @@ function renderEducation(writer: PdfWriter, doc: ClassicDocument) {
     });
     const textHeight = writer.textAt(split.text, writer.left + layout.leftColumnWidth + layout.columnGap, startY, writer.contentWidth - layout.leftColumnWidth - layout.columnGap, {
       font: "bold",
-      size: typography.targetTitle,
+      size: typography.position,
       color: colors.text,
-      lineGap: 0.5,
+      lineGap: 0.4,
     });
-    writer.y += Math.max(yearHeight, textHeight) + 3;
+    writer.y += Math.max(yearHeight, textHeight) + 4;
   }
 }
 
-function renderLabeledLines(writer: PdfWriter, label: string, lines: string[], gapAfter = 7) {
+function renderLabeledLines(writer: PdfWriter, label: string, lines: string[], gapAfter = 7.5) {
   if (!lines.length) return;
   const labelX = writer.left;
   const contentX = writer.left + layout.skillLabelWidth + layout.skillGap;
@@ -401,10 +432,10 @@ function renderLabeledLines(writer: PdfWriter, label: string, lines: string[], g
   writer.textAt(label, labelX, startY, layout.skillLabelWidth, mutedStyle);
   let y = startY;
   for (const item of lines) {
-    y += writer.textAt(item, contentX, y, contentWidth, bodyStyle) + 1.2;
+    y += writer.textAt(item, contentX, y, contentWidth, bodyStyle) + 1.5;
   }
 
-  writer.y = Math.max(startY + 15, y) + gapAfter;
+  writer.y = Math.max(startY + 13.5, y) + gapAfter;
 }
 
 function isSkillSequence(value: string) {
@@ -466,12 +497,12 @@ function renderSkillTags(writer: PdfWriter, skills: string[]) {
 
   for (const skill of expandedSkills) {
     writer.setFont({ size: typography.skillTag });
-    const tagWidth = Math.min(writer.doc.widthOfString(skill) + 7, contentWidth);
+    const tagWidth = Math.min(writer.doc.widthOfString(skill) + 6, contentWidth);
     if (x + tagWidth > contentX + contentWidth) {
       x = contentX;
-      y += 19;
+      y += 18;
     }
-    if (y + 18 > writer.bottom) {
+    if (y + 17 > writer.bottom) {
       writer.doc.addPage();
       writer.y = page.marginTop;
       x = contentX;
@@ -479,17 +510,17 @@ function renderSkillTags(writer: PdfWriter, skills: string[]) {
       writer.textAt("Навыки", labelX, y, layout.skillLabelWidth, mutedStyle);
     }
     const tag = writer.tag(skill, x, y, contentWidth);
-    x += tag.width + 6;
+    x += tag.width + 6.75;
   }
 
-  writer.y = y + 19;
+  writer.y = y + 18;
 }
 
 function renderSkills(writer: PdfWriter, doc: ClassicDocument) {
   if (!doc.snapshot.languageLines.length && !doc.skills.length) return;
 
   writer.sectionTitle("Навыки");
-  renderLabeledLines(writer, "Знание языков", doc.snapshot.languageLines, 7);
+  renderLabeledLines(writer, "Знание языков", doc.snapshot.languageLines, 7.5);
   renderSkillTags(writer, doc.skills);
 }
 
@@ -527,7 +558,7 @@ function renderFooter(writer: PdfWriter, doc: ClassicDocument) {
   const footer = normalizeFooter(doc.snapshot.footer || "");
   if (!footer) return;
 
-  writer.y += 18;
+  writer.y += 21;
   writer.paragraph(footer, writer.contentWidth, {
     size: typography.footer,
     color: colors.muted,
