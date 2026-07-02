@@ -174,8 +174,34 @@ function isKnownCity(value: string) {
   ].includes(text(value).toLowerCase());
 }
 
+function isLikelyCityName(value: string) {
+  const line = text(value);
+  if (!line || line.length > 60 || /[A-Za-z0-9@/:()]/.test(line)) return false;
+  const words = line.split(/\s+/).filter(Boolean);
+  return words.length > 0 && words.length <= 3 && words.every((word) => /^[А-ЯЁ][а-яё]+(?:-[А-ЯЁа-яё]+)*$/.test(word));
+}
+
+function isCityValue(value: string) {
+  return isKnownCity(value) || isLikelyCityName(value);
+}
+
 function looksLikeUrl(value: string) {
   return /^https?:\/\//i.test(value) || /^[a-zа-яё0-9.-]+\.[a-zа-яё]{2,}(?:\/.*)?$/i.test(value);
+}
+
+function extractMixedCityUrl(value: string) {
+  const line = normalizeBulletPrefix(value);
+  const url = line.match(/(?:https?:\/\/)?(?:www\.)?[a-zа-яё0-9.-]+\.[a-zа-яё]{2,}(?:\/[^\s,]*)?/iu)?.[0] || "";
+  if (!url) return [];
+
+  const city = text(line.replace(url, "").replace(/^[,;\s]+|[,;\s]+$/gu, ""));
+  if (!isCityValue(city)) return [];
+
+  return [city, url].filter(Boolean);
+}
+
+function isMixedCityUrl(value: string) {
+  return extractMixedCityUrl(value).length > 0;
 }
 
 function isServiceLine(value: string) {
@@ -191,7 +217,7 @@ function isLikelyPositionLine(value: string) {
   const line = text(value);
   if (!line) return false;
   if (/^(?:Компания|Команда|Стек|Технологии|Работал[аи]?\s+над|Примеры задач)\b/i.test(line)) return false;
-  if (looksLikeUrl(line)) return false;
+  if (looksLikeUrl(line) || isMixedCityUrl(line)) return false;
   if (/^[-—–•*]/u.test(line)) return false;
 
   return /(?:developer|разработчик|программист|инженер|designer|дизайнер|manager|менеджер|аналитик|qa|тестировщик|backend|frontend|fullstack|devops|smm|маркетолог)/iu.test(line);
@@ -201,11 +227,20 @@ function isLikelyCompanyLine(value: string) {
   const line = text(value);
   if (!line || line.length > 80) return false;
   if (isServiceLine(line) || isKnownCity(line) || isLikelyIndustryLine(line)) return false;
-  if (looksLikeUrl(line) || isLikelyPositionLine(line)) return false;
+  if (looksLikeUrl(line) || isMixedCityUrl(line) || isLikelyPositionLine(line)) return false;
   if (/^[-—–•*]/u.test(line)) return false;
   if (/[:]/u.test(line)) return false;
   if (/^(?:Компания|Команда|Стек|Технологии|Работал[аи]?\s+над|Примеры задач|Обязанности|Задачи|Достижения)\b/i.test(line)) return false;
   return /[a-zа-яё0-9]/iu.test(line);
+}
+
+function expandMetaLine(value: string) {
+  const mixedCityUrl = extractMixedCityUrl(value);
+  return mixedCityUrl.length ? mixedCityUrl : [normalizeBulletPrefix(value)];
+}
+
+function isMetaLine(value: string) {
+  return isMixedCityUrl(value) || isKnownCity(value) || looksLikeUrl(value) || isLikelyIndustryLine(value);
 }
 
 function resolveExperienceConstants(item: ExperienceItem, position: string) {
@@ -218,8 +253,8 @@ function resolveExperienceConstants(item: ExperienceItem, position: string) {
   const metaLines = uniquePreserve(
     beforePosition
       .filter((line) => !company || textKey(line) !== textKey(company))
-      .filter((line) => isKnownCity(line) || looksLikeUrl(line) || isLikelyIndustryLine(line))
-      .map(normalizeBulletPrefix)
+      .filter(isMetaLine)
+      .flatMap(expandMetaLine)
   );
 
   return { company, metaLines };
@@ -258,14 +293,8 @@ function formatLanguage(item: SourceResumeDocument["skills"]["languages"][number
   return [item.name, item.level, item.description].map(text).filter(Boolean).join(" — ");
 }
 
-function cleanList(items: string[]) {
-  const seen = new Set<string>();
-  return items.map(text).filter((item) => {
-    const key = item.toLowerCase();
-    if (!item || seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+function cleanList(values: string[]) {
+  return values.map(text).filter(Boolean);
 }
 
 function text(value?: string | null) {
