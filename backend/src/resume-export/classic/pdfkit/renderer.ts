@@ -106,18 +106,22 @@ function removeRedundantSkillTags(values: string[]) {
   });
 }
 
+function drawSkillsLabel(writer: PdfWriter, y: number) {
+  writer.textAt("Навыки", writer.left, y, layout.skillLabelWidth, muted);
+}
+
 function renderSkills(writer: PdfWriter, doc: ClassicDocument) {
   if (!doc.snapshot.languageLines.length && !doc.skills.length) return;
 
   writer.sectionTitle("Навыки");
-  renderLanguages(writer, doc.snapshot.languageLines, 7.5);
+  renderLanguages(writer, doc.snapshot.languageLines, layout.languageToSkillsGap);
 
   const x0 = writer.left + layout.skillLabelWidth + layout.skillGap;
   const width = writer.right - x0;
   let x = x0;
   let y = writer.y;
 
-  writer.textAt("Навыки", writer.left, y, layout.skillLabelWidth, muted);
+  drawSkillsLabel(writer, y);
 
   const skills = removeRedundantSkillTags(uniqueStrings(doc.skills.flatMap(splitSkill)));
   for (const skill of skills) {
@@ -129,11 +133,19 @@ function renderSkills(writer: PdfWriter, doc: ClassicDocument) {
       y += 18;
     }
 
+    if (y + 18 > writer.bottom) {
+      writer.doc.addPage();
+      writer.y = page.marginTop;
+      x = x0;
+      y = writer.y;
+      drawSkillsLabel(writer, y);
+    }
+
     const tag = writer.tag(skill, x, y, width);
     x += tag.width + 6.75;
   }
 
-  writer.y = y + 18;
+  writer.y = y + 18 + layout.skillsBottomGap;
 }
 
 function renderDetails(writer: PdfWriter, doc: ClassicDocument) {
