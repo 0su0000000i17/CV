@@ -20,6 +20,7 @@ export type SourceSnapshot = {
   companyMeta: CompanyMeta[];
   educationLines: string[];
   languageLines: string[];
+  detailLines: string[];
   footer: string | null;
 };
 
