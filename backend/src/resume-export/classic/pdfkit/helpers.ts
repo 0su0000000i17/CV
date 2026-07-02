@@ -8,7 +8,7 @@ function isRoleOnlyLine(value: string) {
   const text = clean(value).replace(/^[-•]\s*/u, "");
   if (!text || text.includes(":")) return false;
 
-  return /(?:^|[\s\-‑–—])(разработчик|developer|engineer|программист|аналитик|дизайнер|менеджер)(?:\s|$)/iu.test(text);
+  return /(?:^|[\s\-‑–—\/])(разработчик|developer|engineer|программист|аналитик|дизайнер|менеджер|специалист|редактор)(?:\s|$)/iu.test(text);
 }
 
 export function textKey(value: string) {
@@ -32,9 +32,33 @@ export function uniqueLines(values: string[]) {
   return result;
 }
 
+const urlTlds = new Set([
+  "ru",
+  "рф",
+  "com",
+  "org",
+  "net",
+  "io",
+  "ai",
+  "co",
+  "me",
+  "info",
+  "biz",
+  "app",
+  "dev",
+  "site",
+  "online",
+  "pro",
+]);
+
 export function looksLikeUrl(value: string) {
   const text = value.trim();
-  return /^https?:\/\//i.test(text) || /^[a-zа-яё0-9.-]+\.[a-zа-яё]{2,}(?:\/.*)?$/i.test(text);
+  if (/^https?:\/\//i.test(text) || /^www\./i.test(text)) return true;
+
+  const match = text.match(/^[a-zа-яё0-9][a-zа-яё0-9.-]*\.([a-zа-яё]{2,})(?:\/.*)?$/iu);
+  if (!match?.[1]) return false;
+
+  return urlTlds.has(match[1].toLowerCase());
 }
 
 export function parseDataImage(value?: string | null) {
