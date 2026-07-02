@@ -1,9 +1,10 @@
 import { chromium } from "playwright";
 
+import { renderClassicResumePdfWithPdfKit } from "./pdfkit/renderer.js";
 import type { ClassicDocument } from "./types.js";
 import { renderClassicHtml } from "./template.js";
 
-export async function renderClassicResumePdf(doc: ClassicDocument) {
+async function renderClassicResumePdfWithPlaywright(doc: ClassicDocument) {
   const browser = await chromium.launch({
     headless: true,
   });
@@ -49,4 +50,12 @@ export async function renderClassicResumePdf(doc: ClassicDocument) {
   } finally {
     await browser.close();
   }
+}
+
+export async function renderClassicResumePdf(doc: ClassicDocument) {
+  if (process.env.CLASSIC_PDF_RENDERER === "playwright") {
+    return renderClassicResumePdfWithPlaywright(doc);
+  }
+
+  return renderClassicResumePdfWithPdfKit(doc);
 }
