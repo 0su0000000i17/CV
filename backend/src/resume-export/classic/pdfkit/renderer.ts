@@ -14,8 +14,8 @@ import { registerPdfFonts } from "./fonts.js";
 import { colors, layout, page, typography } from "./layout.js";
 import { PdfWriter, type TextStyle } from "./writer.js";
 
-const bodyStyle: TextStyle = { size: typography.body, color: colors.text, lineGap: 1 };
-const mutedStyle: TextStyle = { size: typography.body, color: colors.muted, lineGap: 1 };
+const bodyStyle: TextStyle = { size: typography.body, color: colors.text, lineGap: 0.4 };
+const mutedStyle: TextStyle = { size: typography.body, color: colors.muted, lineGap: 0.4 };
 
 function clean(value?: string | null) {
   return cleanText(value);
@@ -81,12 +81,30 @@ function isKnownSalaryLine(value: string, salary: string) {
   );
 }
 
+function shouldRenderContactLine(value: string) {
+  const text = clean(value);
+  const telegramMatch = text.match(/^Telegram:\s*@?([a-z0-9_.-]+)$/iu);
+  if (!telegramMatch?.[1]) return true;
+
+  const handle = telegramMatch[1].toLowerCase();
+  return ![
+    "yandex",
+    "ya",
+    "mail",
+    "gmail",
+    "bk",
+    "inbox",
+    "rambler",
+    "email",
+  ].includes(handle);
+}
+
 function renderHeader(writer: PdfWriter, doc: ClassicDocument) {
   const photo = parseDataImage(doc.photoUrl);
-  const photoWidth = doc.photoSize?.width || 95;
-  const photoHeight = doc.photoSize?.height || 115;
+  const photoWidth = doc.photoSize?.width || 88;
+  const photoHeight = doc.photoSize?.height || 108;
   const hasPhoto = Boolean(photo && photoWidth > 35 && photoHeight > 35);
-  const contentX = hasPhoto ? writer.left + photoWidth + 19 : writer.left;
+  const contentX = hasPhoto ? writer.left + photoWidth + 17 : writer.left;
   const contentWidth = writer.right - contentX;
   const top = writer.y;
 
@@ -97,20 +115,19 @@ function renderHeader(writer: PdfWriter, doc: ClassicDocument) {
     });
   }
 
-  let y = top - (hasPhoto ? 5 : 0);
+  let y = top - (hasPhoto ? 3 : 0);
   y += writer.textAt(doc.name, contentX, y, contentWidth, {
     font: "bold",
     size: typography.name,
     color: colors.black,
-  }) + 2;
+  }) + 3;
 
-  for (const contact of doc.contactLines) {
-    const gap = contact.startsWith("Проживает:") ? 14 : 1;
-    y += gap === 14 ? 14 : 0;
-    y += writer.textAt(contact, contentX, y, contentWidth, bodyStyle) + 1;
+  for (const contact of doc.contactLines.filter(shouldRenderContactLine)) {
+    if (contact.startsWith("Проживает:")) y += 8;
+    y += writer.textAt(contact, contentX, y, contentWidth, bodyStyle) + 0.5;
   }
 
-  writer.y = Math.max(y, top + (hasPhoto ? photoHeight : 0)) + 28;
+  writer.y = Math.max(y, top + (hasPhoto ? photoHeight : 0)) + 19;
 }
 
 function targetHasStructuredDetails(doc: ClassicDocument) {
@@ -157,7 +174,7 @@ function renderTarget(writer: PdfWriter, doc: ClassicDocument) {
 
   writer.sectionTitle("Желаемая должность и зарплата");
 
-  const titleWidth = salary ? writer.contentWidth - 150 : writer.contentWidth;
+  const titleWidth = salary ? writer.contentWidth - 130 : writer.contentWidth;
   const titleHeight = doc.targetTitle
     ? writer.textAt(doc.targetTitle, writer.left, writer.y, titleWidth, {
         font: "bold",
@@ -167,40 +184,68 @@ function renderTarget(writer: PdfWriter, doc: ClassicDocument) {
     : 0;
 
   const salaryHeight = salary
-    ? writer.textAt(salary, writer.right - 145, writer.y, 145, {
+    ? writer.textAt(salary, writer.right - 125, writer.y, 125, {
         font: "bold",
         size: typography.salaryAmount,
         color: colors.black,
       })
     : 0;
 
-  writer.y += Math.max(titleHeight, salaryHeight) + 6;
+  writer.y += Math.max(titleHeight, salaryHeight) + 4;
 
   for (const item of details) {
-    const x = item.indent ? writer.left + 20 : writer.left;
-    const width = item.indent ? writer.contentWidth - 20 : writer.contentWidth;
-    writer.ensureSpace(20);
+    const x = item.indent ? writer.left + 16 : writer.left;
+    const width = item.indent ? writer.contentWidth - 16 : writer.contentWidth;
+    writer.ensureSpace(15);
     const used = writer.textAt(item.text, x, writer.y, width, bodyStyle);
-    writer.y += used + 2;
+    writer.y += used + 1.3;
   }
 }
 
-function renderCompanyMeta(writer: PdfWriter, doc: ClassicDocument, item: ClassicExperienceItem, x: number, y: number, width: number) {
-  const salary = targetSalary(doc);
+function getExperienceMetaLines(doc: ClassicDocument, item: ClassicExperienceItem) {
   const metaLines = getCompanyMeta(doc.snapshot, item.company)?.lines ?? [];
   const directLines = toTextLines(item.companyUrl).filter(Boolean);
   const mergedLines = directLines.length
     ? [...directLines, ...metaLines.filter((line) => !directLines.includes(line))]
     : metaLines;
 
+  return uniqueLines(mergedLines).filter((line) => !isKnownSalaryLine(line, targetSalary(doc)));
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function cleanExperienceTextLine(value: string, item: ClassicExperienceItem, metaLines: string[]) {
+  let text = clean(stripBullet(value));
+  const position = clean(item.position);
+
+  for (const meta of metaLines.filter((line) => !looksLikeUrl(line)).sort((a, b) => b.length - a.length)) {
+    const metaPattern = escapeRegExp(meta).replace(/\s+/g, "\\s+");
+    if (position) {
+      const positionPattern = escapeRegExp(position).replace(/\s+/g, "\\s+");
+      text = clean(text.replace(new RegExp(`^${metaPattern}\\s+${positionPattern}\\s*`, "iu"), ""));
+    }
+    text = clean(text.replace(new RegExp(`^${metaPattern}\\s+(?=Проект:|Стек:|Разработка|Frontend|Backend|Fullstack)`, "iu"), ""));
+  }
+
+  if (position) {
+    const positionPattern = escapeRegExp(position).replace(/\s+/g, "\\s+");
+    text = clean(text.replace(new RegExp(`^${positionPattern}\\s+(?=Проект:|Стек:)`, "iu"), ""));
+  }
+
+  return text;
+}
+
+function renderCompanyMeta(writer: PdfWriter, metaLines: string[], x: number, y: number, width: number) {
   let currentY = y;
-  for (const meta of uniqueLines(mergedLines).filter((line) => !isKnownSalaryLine(line, salary))) {
+  for (const meta of metaLines) {
     const used = writer.textAt(meta, x, currentY, width, {
       size: typography.meta,
       color: looksLikeUrl(meta) ? colors.lightMuted : colors.text,
       lineGap: 0,
     });
-    currentY += used + 1;
+    currentY += used + 0.5;
   }
 
   return currentY - y;
@@ -208,12 +253,13 @@ function renderCompanyMeta(writer: PdfWriter, doc: ClassicDocument, item: Classi
 
 function renderExperienceItem(writer: PdfWriter, doc: ClassicDocument, item: ClassicExperienceItem, isFirst: boolean) {
   const salary = targetSalary(doc);
+  const metaLines = getExperienceMetaLines(doc, item);
   const leftX = writer.left;
   const contentX = writer.left + layout.leftColumnWidth + layout.columnGap;
   const contentWidth = writer.right - contentX;
 
   if (!isFirst) writer.y += layout.experienceGap;
-  writer.ensureSpace(70);
+  writer.ensureSpace(48);
 
   const startY = writer.y;
   const duration = calculateExperienceDuration(item.dates);
@@ -222,7 +268,7 @@ function renderExperienceItem(writer: PdfWriter, doc: ClassicDocument, item: Cla
     ? writer.textAt(dates, leftX, startY, layout.leftColumnWidth, {
         size: typography.date,
         color: colors.muted,
-        lineGap: 1,
+        lineGap: 0.4,
       })
     : 0;
 
@@ -232,31 +278,35 @@ function renderExperienceItem(writer: PdfWriter, doc: ClassicDocument, item: Cla
       font: "bold",
       size: typography.company,
       color: colors.black,
-    }) + 2;
+    }) + 1;
   }
 
-  contentY += renderCompanyMeta(writer, doc, item, contentX, contentY, contentWidth);
+  contentY += renderCompanyMeta(writer, metaLines, contentX, contentY, contentWidth);
 
   if (item.position) {
-    contentY += 8;
+    contentY += 4;
     contentY += writer.textAt(item.position, contentX, contentY, contentWidth, {
       size: typography.position,
       color: colors.text,
       lineGap: 0,
-    }) + 6;
+    }) + 3;
   }
 
-  for (const focusLine of toTextLines(item.focus).filter((line) => !isKnownSalaryLine(line, salary))) {
+  for (const focusLine of toTextLines(item.focus)
+    .map((line) => cleanExperienceTextLine(line, item, metaLines))
+    .filter((line) => line && !isKnownSalaryLine(line, salary))) {
     const height = writer.measure(focusLine, contentWidth, bodyStyle);
     if (contentY + height > writer.bottom) {
       writer.doc.addPage();
       writer.y = page.marginTop;
       contentY = writer.y;
     }
-    contentY += writer.textAt(focusLine, contentX, contentY, contentWidth, bodyStyle) + 6;
+    contentY += writer.textAt(focusLine, contentX, contentY, contentWidth, bodyStyle) + 3;
   }
 
-  for (const bullet of item.adaptedBullets.map(stripBullet).filter(Boolean).filter((line) => !isKnownSalaryLine(line, salary))) {
+  for (const bullet of item.adaptedBullets
+    .map((line) => cleanExperienceTextLine(line, item, metaLines))
+    .filter((line) => line && !isKnownSalaryLine(line, salary))) {
     const text = `- ${bullet}`;
     const height = writer.measure(text, contentWidth, bodyStyle);
     if (contentY + height > writer.bottom) {
@@ -264,7 +314,7 @@ function renderExperienceItem(writer: PdfWriter, doc: ClassicDocument, item: Cla
       writer.y = page.marginTop;
       contentY = writer.y;
     }
-    contentY += writer.textAt(text, contentX, contentY, contentWidth, bodyStyle) + 5;
+    contentY += writer.textAt(text, contentX, contentY, contentWidth, bodyStyle) + 2.2;
   }
 
   writer.y = Math.max(startY + dateHeight, contentY);
@@ -282,37 +332,66 @@ function splitEducationLine(item: string) {
   return match?.[1] && match[2] ? { year: match[1], text: match[2] } : null;
 }
 
+function hasEducationInstitution(lines: string[]) {
+  return lines.some((item) => /университет|институт|академи[яи]|колледж|техникум|факультет|кафедра/iu.test(item));
+}
+
+function extractSourceEducationLines(doc: ClassicDocument) {
+  const lines = toTextLines(doc.sourceText);
+  const startIndex = lines.findIndex((item) => /^Образование(?:\s|$)/iu.test(item));
+  if (startIndex < 0) return [];
+
+  const endIndex = lines.findIndex((item, index) => {
+    return index > startIndex && /^(?:Навыки|Ключевые навыки|Знание языков|Дополнительная информация|Обо мне)(?:\s|$)/iu.test(item);
+  });
+  const section = lines.slice(startIndex + 1, endIndex > startIndex ? endIndex : lines.length);
+  return uniqueLines(section.filter((item) => !/резюме\s+обновлено/iu.test(item)));
+}
+
+function resolveEducationLines(doc: ClassicDocument) {
+  if (hasEducationInstitution(doc.educationLines)) return doc.educationLines;
+
+  const snapshotLines = doc.snapshot.educationLines;
+  if (hasEducationInstitution(snapshotLines)) return snapshotLines;
+
+  const sourceLines = extractSourceEducationLines(doc);
+  if (hasEducationInstitution(sourceLines)) return sourceLines;
+
+  return doc.educationLines;
+}
+
 function renderEducation(writer: PdfWriter, doc: ClassicDocument) {
-  if (!doc.educationLines.length) return;
+  const educationLines = resolveEducationLines(doc);
+  if (!educationLines.length) return;
 
   writer.sectionTitle("Образование");
-  const [level, ...rest] = doc.educationLines;
-  if (level) writer.paragraph(level, writer.contentWidth, bodyStyle, 8);
+  const [level, ...rest] = educationLines;
+  if (level) writer.paragraph(level, writer.contentWidth, bodyStyle, 5);
 
   for (const item of rest) {
     const split = splitEducationLine(item);
     if (!split) {
-      writer.paragraph(item, writer.contentWidth, { size: 17, color: colors.text, lineGap: 1 }, 4);
+      writer.paragraph(item, writer.contentWidth, { size: typography.targetTitle, color: colors.text, lineGap: 0.5 }, 3);
       continue;
     }
 
-    writer.ensureSpace(24);
+    writer.ensureSpace(20);
     const startY = writer.y;
-    const yearHeight = writer.textAt(split.year, writer.left, startY + 3, layout.leftColumnWidth, {
+    const yearHeight = writer.textAt(split.year, writer.left, startY + 2, layout.leftColumnWidth, {
       size: typography.date,
       color: colors.muted,
     });
     const textHeight = writer.textAt(split.text, writer.left + layout.leftColumnWidth + layout.columnGap, startY, writer.contentWidth - layout.leftColumnWidth - layout.columnGap, {
       font: "bold",
-      size: 17,
+      size: typography.targetTitle,
       color: colors.text,
-      lineGap: 1,
+      lineGap: 0.5,
     });
-    writer.y += Math.max(yearHeight, textHeight) + 4;
+    writer.y += Math.max(yearHeight, textHeight) + 3;
   }
 }
 
-function renderLabeledLines(writer: PdfWriter, label: string, lines: string[], gapAfter = 10) {
+function renderLabeledLines(writer: PdfWriter, label: string, lines: string[], gapAfter = 7) {
   if (!lines.length) return;
   const labelX = writer.left;
   const contentX = writer.left + layout.skillLabelWidth + layout.skillGap;
@@ -322,14 +401,60 @@ function renderLabeledLines(writer: PdfWriter, label: string, lines: string[], g
   writer.textAt(label, labelX, startY, layout.skillLabelWidth, mutedStyle);
   let y = startY;
   for (const item of lines) {
-    y += writer.textAt(item, contentX, y, contentWidth, bodyStyle) + 2;
+    y += writer.textAt(item, contentX, y, contentWidth, bodyStyle) + 1.2;
   }
 
-  writer.y = Math.max(startY + 18, y) + gapAfter;
+  writer.y = Math.max(startY + 15, y) + gapAfter;
+}
+
+function isSkillSequence(value: string) {
+  const tokens = clean(value).split(/\s+/u).filter(Boolean);
+  if (tokens.length < 3) return false;
+  return tokens.every((token) => /^[A-Za-z0-9+#./()\-]+$/u.test(token));
+}
+
+function splitSkillSequence(value: string) {
+  const tokens = clean(value).split(/\s+/u).filter(Boolean);
+  const result: string[] = [];
+
+  for (let index = 0; index < tokens.length; index += 1) {
+    const current = tokens[index];
+    const next = tokens[index + 1];
+    const third = tokens[index + 2];
+    const pair = [current, next].filter(Boolean).join(" ");
+    const triple = [current, next, third].filter(Boolean).join(" ");
+
+    if (/^React Hook Form$/iu.test(triple)) {
+      result.push("React Hook Form");
+      index += 2;
+      continue;
+    }
+
+    if (/^(REST API|RTK Query|Redux Thunk|React hooks)$/iu.test(pair)) {
+      result.push(pair);
+      index += 1;
+      continue;
+    }
+
+    result.push(current);
+  }
+
+  return result;
+}
+
+function expandSkillTags(skills: string[]) {
+  return uniqueStrings(
+    skills.flatMap((skill) => {
+      const explicitParts = clean(skill).split(/[\n,;|•]+/u).map(clean).filter(Boolean);
+      const parts = explicitParts.length > 1 ? explicitParts : [skill];
+      return parts.flatMap((part) => (isSkillSequence(part) ? splitSkillSequence(part) : [clean(part)]));
+    })
+  );
 }
 
 function renderSkillTags(writer: PdfWriter, skills: string[]) {
-  if (!skills.length) return;
+  const expandedSkills = expandSkillTags(skills);
+  if (!expandedSkills.length) return;
 
   const labelX = writer.left;
   const contentX = writer.left + layout.skillLabelWidth + layout.skillGap;
@@ -339,14 +464,14 @@ function renderSkillTags(writer: PdfWriter, skills: string[]) {
 
   writer.textAt("Навыки", labelX, y, layout.skillLabelWidth, mutedStyle);
 
-  for (const skill of skills) {
-    writer.setFont({ size: 13 });
-    const tagWidth = Math.min(writer.doc.widthOfString(skill) + 8, contentWidth);
+  for (const skill of expandedSkills) {
+    writer.setFont({ size: typography.skillTag });
+    const tagWidth = Math.min(writer.doc.widthOfString(skill) + 7, contentWidth);
     if (x + tagWidth > contentX + contentWidth) {
       x = contentX;
-      y += 25;
+      y += 19;
     }
-    if (y + 22 > writer.bottom) {
+    if (y + 18 > writer.bottom) {
       writer.doc.addPage();
       writer.y = page.marginTop;
       x = contentX;
@@ -354,17 +479,17 @@ function renderSkillTags(writer: PdfWriter, skills: string[]) {
       writer.textAt("Навыки", labelX, y, layout.skillLabelWidth, mutedStyle);
     }
     const tag = writer.tag(skill, x, y, contentWidth);
-    x += tag.width + 9;
+    x += tag.width + 6;
   }
 
-  writer.y = y + 25;
+  writer.y = y + 19;
 }
 
 function renderSkills(writer: PdfWriter, doc: ClassicDocument) {
   if (!doc.snapshot.languageLines.length && !doc.skills.length) return;
 
   writer.sectionTitle("Навыки");
-  renderLabeledLines(writer, "Знание языков", doc.snapshot.languageLines, 10);
+  renderLabeledLines(writer, "Знание языков", doc.snapshot.languageLines, 7);
   renderSkillTags(writer, doc.skills);
 }
 
@@ -393,13 +518,17 @@ function renderDetails(writer: PdfWriter, doc: ClassicDocument) {
   renderLabeledLines(writer, "Обо мне", [details.join("\n")], 0);
 }
 
+function normalizeFooter(value: string) {
+  const text = clean(value).replace(/^(?:Резюме\s+обновлено\s*)+/iu, "Резюме обновлено ");
+  return clean(text);
+}
+
 function renderFooter(writer: PdfWriter, doc: ClassicDocument) {
-  const footer = clean(doc.snapshot.footer);
+  const footer = normalizeFooter(doc.snapshot.footer || "");
   if (!footer) return;
 
-  const text = /^Резюме\s+обновлено/iu.test(footer) ? footer : `Резюме обновлено ${footer}`;
-  writer.y += 28;
-  writer.paragraph(text, writer.contentWidth, {
+  writer.y += 18;
+  writer.paragraph(footer, writer.contentWidth, {
     size: typography.footer,
     color: colors.muted,
     lineGap: 0,
