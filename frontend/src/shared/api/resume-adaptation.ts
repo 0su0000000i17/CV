@@ -73,6 +73,8 @@ export type ResumeAdaptationResponse = {
     markdownLimited: boolean;
     provider: string;
     model: string;
+    cacheHit?: boolean;
+    cacheKey?: string | null;
   };
 };
 
@@ -92,9 +94,29 @@ const ADAPTATION_POLL_INTERVAL_MS = Number(
   process.env.NEXT_PUBLIC_ADAPTATION_POLL_INTERVAL_MS
 ) || 2_500;
 const ADAPTATION_MAX_POLLS = Number(process.env.NEXT_PUBLIC_ADAPTATION_MAX_POLLS) || 240;
+const CACHE_HIT_MIN_DELAY_MS = Number(
+  process.env.NEXT_PUBLIC_ADAPTATION_CACHE_HIT_MIN_DELAY_MS
+) || 20_000;
+const CACHE_HIT_MAX_DELAY_MS = Number(
+  process.env.NEXT_PUBLIC_ADAPTATION_CACHE_HIT_MAX_DELAY_MS
+) || 30_000;
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getCacheHitDelayMs() {
+  const minDelay = Math.max(0, CACHE_HIT_MIN_DELAY_MS);
+  const maxDelay = Math.max(minDelay, CACHE_HIT_MAX_DELAY_MS);
+  return Math.round(minDelay + Math.random() * (maxDelay - minDelay));
+}
+
+async function delayCachedAdaptationResult(result: ResumeAdaptationResponse) {
+  if (result.meta.cacheHit) {
+    await sleep(getCacheHitDelayMs());
+  }
+
+  return result;
 }
 
 function isAdaptedResponse(value: ResumeAdaptationApiResponse): value is ResumeAdaptationResponse {
@@ -167,7 +189,7 @@ export async function adaptResumeToVacancy(params: {
   );
 
   if (isAdaptedResponse(result)) {
-    return result;
+    return delayCachedAdaptationResult(result);
   }
 
   if (result.status === 'failed') {
