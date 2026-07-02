@@ -331,7 +331,8 @@ function uniqueDetails(summary: string, additional: string[]) {
 function renderDetails(doc: ClassicDocument) {
   const summary = doc.adaptation.adaptedResume.summary.trim();
   const additional = doc.adaptation.adaptedResume.additionalInfo.flatMap((item) => toTextLines(item)).filter(Boolean);
-  const details = uniqueDetails(summary, additional);
+  const fallback = doc.snapshot.detailLines;
+  const details = uniqueDetails(summary, [...additional, ...fallback]);
   if (!details.length) return "";
   return `<section class="section">${sectionTitle("Дополнительная информация")}<div class="details-grid"><div class="side-label">Обо мне</div><p class="summary">${escapeHtml(details.join("\n"))}</p></div></section>`;
 }
