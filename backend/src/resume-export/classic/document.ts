@@ -119,6 +119,58 @@ function createSnapshot(params: {
   };
 }
 
+function skillKey(value: string) {
+  return cleanText(value)
+    .toLowerCase()
+    .replace(/[^a-zа-яё0-9+#.]+/giu, "");
+}
+
+function isEducationLikeValue(value: string) {
+  const text = cleanText(value);
+  if (!text) return false;
+  if (/^\d{4}$/u.test(text)) return false;
+
+  return /\b(?:университет|институт|академи[яи]|колледж|техникум|лицей|школа|факультет|кафедра|бакалавр|магистр)\b/iu.test(text);
+}
+
+function collectEducationLikeSkillValues(params: {
+  payload: ClassicExportPayload;
+  sourceDocument: SourceResumeDocument | null;
+}) {
+  const skills = params.payload.adaptation.adaptedResume.skills;
+  const sourceItems = params.sourceDocument?.skills.items ?? [];
+
+  return uniqueStrings([
+    ...skills.primary,
+    ...skills.secondary,
+    ...skills.deprioritized,
+    ...sourceItems,
+  ]
+    .map(cleanText)
+    .filter(isEducationLikeValue));
+}
+
+function educationHasInstitution(lines: string[]) {
+  return lines.some(isEducationLikeValue);
+}
+
+function repairEducationLines(params: {
+  lines: string[];
+  educationCandidates: string[];
+}) {
+  const lines = uniqueStrings(params.lines.map(cleanText).filter(Boolean));
+  const candidate = params.educationCandidates[0];
+
+  if (!candidate || educationHasInstitution(lines)) return lines;
+
+  const yearIndex = lines.findIndex((line) => /^\d{4}$/u.test(line));
+  if (yearIndex >= 0) {
+    return lines.map((line, index) => (index === yearIndex ? `${line} ${candidate}` : line));
+  }
+
+  return uniqueStrings([...lines, candidate]);
+}
+
 function resolveEducationLines(params: {
   payload: ClassicExportPayload;
   snapshot: SourceSnapshot;
@@ -128,16 +180,18 @@ function resolveEducationLines(params: {
   const notes = params.payload.adaptation.adaptedResume.education.notes
     .map((item) => cleanText(item))
     .filter(Boolean);
+  const educationCandidates = collectEducationLikeSkillValues({
+    payload: params.payload,
+    sourceDocument: params.sourceDocument,
+  });
 
-  if (documentLines.length) return documentLines;
-  if (params.snapshot.educationLines.length) return params.snapshot.educationLines;
-  return notes;
-}
+  const lines = documentLines.length
+    ? documentLines
+    : params.snapshot.educationLines.length
+      ? params.snapshot.educationLines
+      : notes;
 
-function skillKey(value: string) {
-  return cleanText(value)
-    .toLowerCase()
-    .replace(/[^a-zа-яё0-9+#.]+/giu, "");
+  return repairEducationLines({ lines, educationCandidates });
 }
 
 function escapeRegExp(value: string) {
@@ -201,7 +255,7 @@ function splitPackedSkillLine(value: string) {
 function normalizeSkillCandidates(values: string[]) {
   return uniqueStrings(values.flatMap(splitExplicitSkillValue))
     .map(cleanText)
-    .filter((item) => Boolean(item) && !isPackedSkillLine(item));
+    .filter((item) => Boolean(item) && !isPackedSkillLine(item) && !isEducationLikeValue(item));
 }
 
 function splitByKnownCandidates(value: string, candidates: string[]) {
@@ -248,12 +302,12 @@ function splitSkillValue(value: string, candidates: string[]) {
   }
 
   const text = explicitParts[0] || cleanText(value);
-  if (!text) return [];
+  if (!text || isEducationLikeValue(text)) return [];
 
   const candidateParts = splitByKnownCandidates(text, candidates);
   if (candidateParts.length > 1) return candidateParts;
 
-  return splitPackedSkillLine(text);
+  return splitPackedSkillLine(text).filter((item) => !isEducationLikeValue(item));
 }
 
 function collectLanguageLines(params: {
@@ -320,7 +374,9 @@ function isKnownLanguageSkill(
 }
 
 function rawSkillsFromSourceDocument(document: SourceResumeDocument | null) {
-  return document ? document.skills.items.map(cleanText).filter(Boolean) : [];
+  return document
+    ? document.skills.items.map(cleanText).filter((item) => Boolean(item) && !isEducationLikeValue(item))
+    : [];
 }
 
 function shouldDropPackedSkill(value: string, allSkills: string[]) {
@@ -354,7 +410,7 @@ function resolveSkills(params: {
     ...skills.deprioritized,
   ]
     .map(cleanText)
-    .filter(Boolean);
+    .filter((item) => Boolean(item) && !isEducationLikeValue(item));
   const rawSourceSkills = rawSkillsFromSourceDocument(params.sourceDocument);
   const candidates = normalizeSkillCandidates(rawAdaptedSkills);
   const sourceSkills = rawSourceSkills.flatMap((item) =>
@@ -378,6 +434,7 @@ function resolveSkills(params: {
     if (
       !value ||
       !key ||
+      isEducationLikeValue(value) ||
       isKnownLanguageSkill(value, languageLines, languagePartKeys) ||
       seen.has(key)
     ) {
