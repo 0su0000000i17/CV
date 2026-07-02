@@ -1,6 +1,6 @@
 export function createClassicStyles() {
   return `
-    @page { size: 210mm 297mm; margin: 18mm 14.5mm 19mm; }
+    @page { size: A4; margin: 18mm 15mm; }
     * { box-sizing: border-box; }
     html, body {
       margin: 0;
@@ -9,109 +9,32 @@ export function createClassicStyles() {
       color: #222;
       font-family: Arial, Helvetica, sans-serif;
       font-size: 13px;
-      line-height: 1.34;
+      line-height: 1.36;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
-    p, h1, h2, h3, h4 { orphans: 3; widows: 3; }
-    .resume { width: 100%; min-height: auto; background: #fff; overflow: visible; }
-    .header {
-      display: grid;
-      grid-template-columns: auto minmax(0, 1fr);
-      column-gap: 19px;
-      align-items: start;
-      margin-bottom: 34px;
-    }
-    .header--no-photo { display: block; }
-    .header-content { min-width: 0; }
-    .header:not(.header--no-photo) .header-content { margin-top: -5px; }
-    .name { margin: 0 0 2px; font-size: 33px; line-height: 1.12; font-weight: 700; letter-spacing: -0.4px; color: #000; }
-    .contacts { max-width: 650px; color: #222; }
-    .contact-line { min-height: 18px; margin: 0; font-size: 13px; line-height: 1.35; }
-    .contact-line + .contact-line { margin-top: 1px; }
-    .contact-line--gap { margin-top: 16px; }
-    .muted { color: #b4b4b4; }
-    .photo { display: block; width: 95px; height: auto; object-fit: contain; border-radius: 0; }
-    .section { margin-top: 24px; }
-    .section-title {
-      display: block;
-      width: 100%;
-      margin: 0 0 12px;
-      padding: 0 0 2px;
-      border-bottom: 1px solid #d7d7d7;
-      color: #b3b3b3;
-      font-size: 15px;
-      font-weight: 400;
-      line-height: 1.05;
-      break-after: avoid;
-      page-break-after: avoid;
-    }
-    .section-title span { position: relative; top: 1px; display: inline; white-space: nowrap; }
-    .target-heading-row {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      column-gap: 24px;
-      align-items: start;
-      margin-bottom: 6px;
-    }
-    .target-title { margin: 0; font-size: 16px; line-height: 1.3; font-weight: 700; color: #000; }
-    .target-salary { align-self: start; margin-top: -2px; white-space: nowrap; text-align: right; color: #000; line-height: 1.1; }
-    .target-salary-amount { font-size: 20px; font-weight: 700; letter-spacing: -0.2px; }
-    .target-salary-note { font-size: 12px; font-weight: 400; color: #222; }
-    .plain-line { margin: 0; font-size: 13px; line-height: 1.36; }
-    .plain-line + .plain-line { margin-top: 2px; }
-    .plain-line--indent { padding-left: 20px; }
-    .experience-item {
-      display: grid;
-      grid-template-columns: 99px minmax(0, 1fr);
-      column-gap: 14px;
-      min-height: 44px;
-      margin-top: 18px;
-      break-inside: auto;
-      page-break-inside: auto;
-    }
+    .resume { width: 100%; background: #fff; }
+    .header { display: block; margin-bottom: 28px; }
+    .photo { display: block; width: 95px; height: auto; margin-bottom: 12px; }
+    .name { margin: 0 0 8px; font-size: 30px; line-height: 1.12; font-weight: 700; color: #000; }
+    .contact-line { margin: 0 0 2px; font-size: 13px; line-height: 1.35; }
+    .muted { color: #9d9d9d; }
+    .section { margin-top: 22px; break-inside: auto; page-break-inside: auto; }
+    .section-title { margin: 0 0 10px; padding-bottom: 3px; border-bottom: 1px solid #d7d7d7; color: #a7a7a7; font-size: 15px; font-weight: 400; line-height: 1.2; }
+    .target-title { margin: 0 0 5px; font-size: 18px; line-height: 1.25; font-weight: 700; color: #000; }
+    .target-salary { margin: 0 0 6px; font-size: 18px; font-weight: 700; color: #000; }
+    .plain-line { margin: 0 0 3px; font-size: 13px; line-height: 1.36; }
+    .experience-item { display: block; margin-top: 18px; break-inside: auto; page-break-inside: auto; }
     .experience-item:first-of-type { margin-top: 0; }
-    .experience-item > div:last-child { min-width: 0; }
-    .dates {
-      color: #8f8f8f;
-      font-size: 11px;
-      line-height: 1.38;
-      break-inside: avoid;
-      page-break-inside: avoid;
-    }
-    .date-line { margin: 0; }
-    .company { margin: 0 0 2px; font-size: 16px; line-height: 1.28; font-weight: 700; color: #000; break-after: avoid; page-break-after: avoid; }
-    .company-meta { margin: 0; color: #222; font-size: 12.5px; line-height: 1.35; }
-    .company-meta--muted { color: #b5b5b5; }
-    .company-meta + .company-meta { margin-top: 1px; }
-    .position { margin: 10px 0 7px; font-size: 17px; line-height: 1.22; font-weight: 400; color: #222; break-after: avoid; page-break-after: avoid; }
-    .work-text { margin: 0; font-size: 13px; line-height: 1.36; color: #222; }
-    .work-text + .work-text { margin-top: 6px; }
-    .bullet { margin: 0; font-size: 13px; line-height: 1.36; color: #222; }
-    .bullet + .bullet { margin-top: 5px; }
-    .skill-row, .details-grid {
-      display: grid;
-      grid-template-columns: 99px 1fr;
-      column-gap: 14px;
-    }
-    .education-row { display: block; margin-top: 8px; }
-    .education-year { display: inline; margin-right: 8px; color: #8f8f8f; font-size: 11px; line-height: 1.38; }
-    .side-label { color: #8f8f8f; font-size: 13px; line-height: 1.36; }
-    .education-text { display: inline; margin: 0; font-size: 17px; line-height: 1.3; }
-    .skill-row { margin-top: 7px; }
-    .language-lines { margin-bottom: 10px; }
-    .skill-tags { display: block; line-height: 1.95; }
-    .skill-tag {
-      display: inline-block;
-      margin: 0 9px 7px 0;
-      padding: 1px 4px 2px;
-      background: #d4d4d4;
-      font-size: 13px;
-      line-height: 1.18;
-      color: #222;
-      white-space: nowrap;
-    }
-    .summary { margin: 0; white-space: pre-wrap; font-size: 12.5px; line-height: 1.35; }
+    .date-line { margin: 0 0 3px; color: #8f8f8f; font-size: 11px; line-height: 1.35; }
+    .company { margin: 0 0 2px; font-size: 16px; line-height: 1.28; font-weight: 700; color: #000; }
+    .company-meta { margin: 0 0 1px; color: #222; font-size: 12.5px; line-height: 1.35; }
+    .company-meta--muted { color: #9d9d9d; }
+    .position { margin: 9px 0 6px; font-size: 17px; line-height: 1.22; font-weight: 400; color: #222; }
+    .work-text, .bullet { margin: 0 0 5px; font-size: 13px; line-height: 1.36; color: #222; }
+    .skill-list { margin: 8px 0 0; font-size: 13px; line-height: 1.55; color: #222; }
+    .details-title { margin: 0 0 4px; color: #8f8f8f; font-size: 13px; font-weight: 400; line-height: 1.36; }
+    .summary { margin: 0; white-space: pre-wrap; font-size: 12.5px; line-height: 1.36; }
     .footer { margin-top: 28px; color: #8f8f8f; font-size: 11px; line-height: 1.3; }
   `;
 }
