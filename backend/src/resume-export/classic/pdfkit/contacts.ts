@@ -1,8 +1,11 @@
 import type { ClassicDocument } from "../types.js";
 import { layout, typography } from "./layout.js";
-import type { PdfWriter } from "./writer.js";
+import type { PdfWriter, TextStyle } from "./writer.js";
 import { clean, parseDataImage } from "./helpers.js";
 import { colors } from "./layout.js";
+
+const contactStyle: TextStyle = { size: typography.body, color: colors.text, lineGap: 0.2 };
+const mutedContactStyle: TextStyle = { size: typography.body, color: colors.muted, lineGap: 0.2 };
 
 const fakeTelegramHandles = new Set([
   "yandex",
@@ -34,7 +37,7 @@ function sourceTelegram(sourceText: string) {
 
 function sentenceCaseContact(value: string) {
   const text = clean(value);
-  if (!text || /^[a-z0-9_.+-]+@/iu.test(text) || /^telegram:/iu.test(text)) return text;
+  if (!text || text.includes("@") || text.toLowerCase().startsWith("telegram:")) return text;
   return text[0] ? `${text[0].toUpperCase()}${text.slice(1)}` : text;
 }
 
@@ -43,7 +46,7 @@ function contactLines(doc: ClassicDocument) {
   const telegram = sourceTelegram(doc.sourceText);
   if (!telegram || lines.some((line) => parseTelegramHandle(line))) return lines;
 
-  const emailIndex = lines.findIndex((line) => /@/.test(line) && !/^telegram:/iu.test(line));
+  const emailIndex = lines.findIndex((line) => line.includes("@") && !line.toLowerCase().startsWith("telegram:"));
   if (emailIndex < 0) return [...lines, telegram];
 
   return [...lines.slice(0, emailIndex + 1), telegram, ...lines.slice(emailIndex + 1)];
@@ -57,6 +60,30 @@ function photoDimensions(doc: ClassicDocument) {
   const height = Math.min(width * ratio, 95);
 
   return { width, height };
+}
+
+function renderContactLine(writer: PdfWriter, line: string, x: number, y: number, width: number) {
+  const marker = " — ";
+  const markerIndex = line.indexOf(marker);
+  if (!line.includes("@") || markerIndex < 0) {
+    return writer.textAt(line, x, y, width, contactStyle);
+  }
+
+  const main = line.slice(0, markerIndex);
+  const suffix = line.slice(markerIndex);
+  const fullHeight = writer.measure(line, width, contactStyle);
+
+  writer.setFont(contactStyle);
+  writer.doc.text(main, x, y, { width, lineBreak: false });
+  const mainWidth = writer.doc.widthOfString(main);
+
+  writer.setFont(mutedContactStyle);
+  writer.doc.text(suffix, x + mainWidth, y, {
+    width: Math.max(0, width - mainWidth),
+    lineBreak: false,
+  });
+
+  return fullHeight;
 }
 
 export function renderHeader(writer: PdfWriter, doc: ClassicDocument) {
@@ -78,11 +105,7 @@ export function renderHeader(writer: PdfWriter, doc: ClassicDocument) {
 
   for (const line of contactLines(doc)) {
     if (line.startsWith("Проживает:")) y += 12;
-    y += writer.textAt(line, contentX, y, contentWidth, {
-      size: typography.body,
-      color: colors.text,
-      lineGap: 0.2,
-    }) + 0.75;
+    y += renderContactLine(writer, line, contentX, y, contentWidth) + 0.75;
   }
 
   writer.y = Math.max(y, top + (hasPhoto ? photoHeight : 0)) + 22;
