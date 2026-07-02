@@ -19,6 +19,7 @@ function city(value: string) { const t = clean(value); return t.length > 2 && t.
 function prefix(text: string, p: string) { const a = clean(text); const b = clean(p); return b && lower(a).startsWith(`${lower(b)} `) ? clean(a.slice(b.length)) : a; }
 function metaKey(value: string) { return textKey(clean(value).replace(/^[-•]\s*/u, "")); }
 function bareMeta(value: string) { return clean(value).replace(/^[-•]\s*/u, ""); }
+function mutedMeta(value: string) { return looksLikeUrl(value) || /[a-zа-яё0-9.-]+\.[a-zа-яё]{2,}/iu.test(value); }
 
 function renderTarget(w: PdfWriter, d: ClassicDocument) {
   const t = d.adaptation.target;
@@ -123,7 +124,7 @@ function renderExperienceItem(w: PdfWriter, d: ClassicDocument, it: ClassicExper
   const duration = calculateExperienceDuration(it.dates); const dates = [...splitDateLines(it.dates), duration].filter(Boolean).join("\n");
   const dh = dates ? w.textAt(dates, w.left, start, layout.leftColumnWidth, { size: typography.date, color: colors.muted, lineGap: 0.2 }) : 0;
   if (it.company) y += w.textAt(it.company, x, y, width, { font: "bold", size: typography.company, color: colors.black }) + 1.5;
-  for (const m of metas) y += w.textAt(m.startsWith("•") ? m : bareMeta(m), x, y, width, { size: typography.meta, color: looksLikeUrl(m) || m.includes(",") ? colors.lightMuted : colors.text, lineGap: 0 }) + 0.75;
+  for (const m of metas) y += w.textAt(m.startsWith("•") ? m : bareMeta(m), x, y, width, { size: typography.meta, color: mutedMeta(m) ? colors.lightMuted : colors.text, lineGap: 0 }) + 0.75;
   if (pos) y += 7.5 + w.textAt(pos, x, y + 7.5, width, { size: typography.position, color: colors.text, lineGap: 0 }) + 5.25;
   const lines = [it.focus || "", ...it.adaptedBullets].map((v) => cleanWork(v, pos, metas)).filter((v) => v && !hasSalary(d, v));
   const projects = lines.filter((v) => v.startsWith("Проект:"));
