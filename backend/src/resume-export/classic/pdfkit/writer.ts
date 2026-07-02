@@ -1,5 +1,5 @@
 import type { RegisteredPdfFonts } from "./fonts.js";
-import { colors, layout, page } from "./layout.js";
+import { colors, layout, page, typography } from "./layout.js";
 
 type PdfDoc = {
   page: { width: number; height: number };
@@ -103,20 +103,20 @@ export class PdfWriter {
   sectionTitle(title: string) {
     if (!title.trim()) return;
 
-    this.ensureSpace(26);
+    this.ensureSpace(21);
     this.textAt(title, this.left, this.y, this.contentWidth, {
       font: "regular",
-      size: 15,
+      size: typography.sectionTitle,
       color: colors.lightMuted,
     });
-    this.y += 17;
+    this.y += 13;
     this.doc
       .strokeColor(colors.line)
       .lineWidth(1)
       .moveTo(this.left, this.y)
       .lineTo(this.right, this.y)
       .stroke();
-    this.y += 11;
+    this.y += 8;
   }
 
   line(x1: number, y1: number, x2: number, y2: number, color = colors.line) {
@@ -124,14 +124,14 @@ export class PdfWriter {
   }
 
   tag(text: string, x: number, y: number, maxWidth: number) {
-    this.setFont({ size: 13, color: colors.text });
-    const textWidth = Math.min(this.doc.widthOfString(text), maxWidth - 8);
-    const tagWidth = textWidth + 8;
-    const tagHeight = 18;
+    this.setFont({ size: typography.skillTag, color: colors.text });
+    const textWidth = Math.min(this.doc.widthOfString(text), maxWidth - 7);
+    const tagWidth = textWidth + 7;
+    const tagHeight = 15;
 
     this.doc.roundedRect(x, y, tagWidth, tagHeight, 1).fill(colors.tagBg);
-    this.setFont({ size: 13, color: colors.text });
-    this.doc.text(text, x + 4, y + 3, { width: textWidth + 1, lineBreak: false });
+    this.setFont({ size: typography.skillTag, color: colors.text });
+    this.doc.text(text, x + 3.5, y + 2.3, { width: textWidth + 1, lineBreak: false });
 
     return { width: tagWidth, height: tagHeight };
   }
