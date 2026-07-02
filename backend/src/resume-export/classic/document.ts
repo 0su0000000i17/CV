@@ -2,6 +2,7 @@ import type { SourceResumeDocument } from "../../resume-document/types.js";
 import type {
   ClassicContacts,
   ClassicDocument,
+  ClassicExperienceItem,
   ClassicExportPayload,
   CompanyMeta,
   SourceSnapshot,
@@ -13,49 +14,82 @@ function createBaseName(sourceTitle: string) {
   return cleanText(sourceTitle).replace(/\.[^.]+$/i, "") || "resume";
 }
 
+function compact(values: Array<string | null | undefined>) {
+  return values.map(cleanText).filter(Boolean);
+}
+
 function contactLinesFromContacts(contacts: ClassicContacts) {
-  const personal = [contacts.gender, contacts.age, contacts.birthDate]
-    .filter(Boolean)
-    .join(", ");
+  const personal = compact([contacts.gender, contacts.age, contacts.birthDate]).join(", ");
   const permission = contacts.workPermit
     ? `есть разрешение на работу: ${contacts.workPermit}`
     : "";
-  const citizenship = [contacts.citizenship, permission]
-    .filter(Boolean)
-    .join(", ");
-  const mobility = [contacts.relocation, contacts.businessTrips]
-    .filter(Boolean)
-    .join(", ");
+  const citizenship = compact([contacts.citizenship, permission]).join(", ");
+  const mobility = compact([contacts.relocation, contacts.businessTrips]).join(", ");
 
-  return [
+  return compact([
     personal,
     contacts.phone,
     contacts.email,
     contacts.city ? `Проживает: ${contacts.city}` : "",
     citizenship ? `Гражданство: ${citizenship}` : "",
     mobility,
-  ].filter(Boolean);
+  ]);
+}
+
+function contactLinesFromSourceDocument(document: SourceResumeDocument | null) {
+  if (!document) return [];
+
+  const personal = compact([
+    document.personal.gender,
+    document.personal.age,
+    document.personal.birthDate,
+  ]).join(", ");
+  const phone = cleanText(document.personal.phone || document.additional.phone);
+  const email = cleanText(document.personal.email || document.additional.email);
+  const preferredContact = cleanText(document.personal.preferredContactRaw);
+  const permission = document.personal.workPermit
+    ? `есть разрешение на работу: ${document.personal.workPermit}`
+    : "";
+  const citizenship = compact([document.personal.citizenship, permission]).join(", ");
+  const mobility = compact([
+    document.personal.relocation,
+    document.personal.businessTrips,
+  ]).join(", ");
+
+  return compact([
+    personal,
+    phone && preferredContact?.includes(phone) ? `${phone} — предпочитаемый способ связи` : phone,
+    email && preferredContact?.includes(email) ? `${email} — предпочитаемый способ связи` : email,
+    document.personal.telegram ? `Telegram: ${document.personal.telegram}` : "",
+    document.personal.city ? `Проживает: ${document.personal.city}` : "",
+    citizenship ? `Гражданство: ${citizenship}` : "",
+    mobility,
+  ]);
 }
 
 function countContacts(contacts: ClassicContacts) {
   return Object.values(contacts).filter((value) => cleanText(value)).length;
 }
 
-function resolveContactLines(contacts: ClassicContacts, snapshot: SourceSnapshot) {
-  const contactLines = contactLinesFromContacts(contacts);
-  if (countContacts(contacts) >= 6) return contactLines;
-  return snapshot.contactLines.length ? snapshot.contactLines : contactLines;
+function resolveContactLines(params: {
+  contacts: ClassicContacts;
+  snapshot: SourceSnapshot;
+  sourceDocument: SourceResumeDocument | null;
+}) {
+  const sourceLines = contactLinesFromSourceDocument(params.sourceDocument);
+  if (sourceLines.length) return sourceLines;
+
+  const contactLines = contactLinesFromContacts(params.contacts);
+  if (countContacts(params.contacts) >= 6) return contactLines;
+
+  return params.snapshot.contactLines.length ? params.snapshot.contactLines : contactLines;
 }
 
 function formatEducationItem(
   item: SourceResumeDocument["education"]["items"][number]
 ) {
-  const details = [item.institution, item.faculty, item.specialization]
-    .map(cleanText)
-    .filter(Boolean)
-    .join(", ");
-
-  return [item.year, details].map(cleanText).filter(Boolean).join(" ");
+  const details = compact([item.institution, item.faculty, item.specialization]).join(", ");
+  return compact([item.year, details]).join(" ");
 }
 
 function educationFromSourceDocument(document: SourceResumeDocument | null) {
@@ -72,31 +106,68 @@ function languagesFromSourceDocument(document: SourceResumeDocument | null) {
 
   return uniqueStrings(
     document.skills.languages.map((item) =>
-      [item.name, item.level, item.description]
-        .map(cleanText)
-        .filter(Boolean)
-        .join(" — ")
+      compact([item.name, item.level, item.description]).join(" — ")
     )
   );
 }
 
+function companyMetaFromSourceItem(
+  item: SourceResumeDocument["experience"]["items"][number]
+): CompanyMeta | null {
+  const company = cleanText(item.company.name);
+  if (!company) return null;
+
+  return {
+    company,
+    lines: uniqueStrings([
+      item.company.city || "",
+      item.company.url || "",
+      ...item.company.industries,
+    ]),
+  };
+}
+
 function companyMetaFromSourceDocument(document: SourceResumeDocument | null) {
   if (!document) return [];
-
   return document.experience.items
-    .map((item) => {
-      const company = cleanText(item.company.name);
-      if (!company) return null;
-
-      const lines = uniqueStrings([
-        item.company.city || "",
-        item.company.url || "",
-        ...item.company.industries,
-      ]);
-
-      return { company, lines };
-    })
+    .map(companyMetaFromSourceItem)
     .filter((item): item is CompanyMeta => Boolean(item));
+}
+
+function targetDetailsFromSourceDocument(document: SourceResumeDocument | null) {
+  if (!document) return [];
+
+  const target = document.target;
+  const result: string[] = [];
+
+  if (target.specializations.length) {
+    result.push("Специализации:");
+    target.specializations.forEach((item) => result.push(`— ${item}`));
+  }
+
+  if (target.employment) result.push(`Тип занятости: ${target.employment}`);
+  if (target.schedule) result.push(`График: ${target.schedule}`);
+  if (target.workFormat) result.push(`Формат работы: ${target.workFormat}`);
+  if (target.commuteTime) {
+    result.push(`Желательное время в пути до работы: ${target.commuteTime}`);
+  }
+
+  return result;
+}
+
+function experienceTitleFromSourceDocument(document: SourceResumeDocument | null) {
+  if (!document) return "";
+  return document.experience.total ? `Опыт работы — ${document.experience.total}` : "Опыт работы";
+}
+
+function detailsFromSourceDocument(document: SourceResumeDocument | null) {
+  if (!document) return [];
+  return uniqueStrings(document.additional.about);
+}
+
+function footerFromSourceDocument(document: SourceResumeDocument | null) {
+  const updatedAt = cleanText(document?.meta.updatedAtRaw);
+  return updatedAt ? `Резюме обновлено ${updatedAt}` : null;
 }
 
 function createSnapshot(params: {
@@ -104,18 +175,131 @@ function createSnapshot(params: {
   payload: ClassicExportPayload;
   sourceDocument: SourceResumeDocument | null;
 }) {
-  const snapshot = createSourceSnapshot({
+  const fallback = createSourceSnapshot({
     sourceText: params.sourceText,
     contacts: params.payload.contacts,
     experience: params.payload.adaptation.adaptedResume.experience,
   });
-  const languageLines = languagesFromSourceDocument(params.sourceDocument);
+
+  if (!params.sourceDocument) return fallback;
+
+  const contactLines = contactLinesFromSourceDocument(params.sourceDocument);
+  const targetDetails = targetDetailsFromSourceDocument(params.sourceDocument);
   const companyMeta = companyMetaFromSourceDocument(params.sourceDocument);
+  const educationLines = educationFromSourceDocument(params.sourceDocument);
+  const languageLines = languagesFromSourceDocument(params.sourceDocument);
+  const detailLines = detailsFromSourceDocument(params.sourceDocument);
 
   return {
-    ...snapshot,
-    languageLines: languageLines.length ? languageLines : snapshot.languageLines,
-    companyMeta: companyMeta.length ? companyMeta : snapshot.companyMeta,
+    sourceName: cleanText(params.sourceDocument.personal.fullName) || fallback.sourceName,
+    contactLines: contactLines.length ? contactLines : fallback.contactLines,
+    targetDetails: targetDetails.length ? targetDetails : fallback.targetDetails,
+    experienceTitle: experienceTitleFromSourceDocument(params.sourceDocument) || fallback.experienceTitle,
+    companyMeta: companyMeta.length ? companyMeta : fallback.companyMeta,
+    educationLines: educationLines.length ? educationLines : fallback.educationLines,
+    languageLines: languageLines.length ? languageLines : fallback.languageLines,
+    detailLines: detailLines.length ? detailLines : fallback.detailLines,
+    footer: footerFromSourceDocument(params.sourceDocument) || fallback.footer,
+  };
+}
+
+function formatSourceDates(item: SourceResumeDocument["experience"]["items"][number]) {
+  const dates = compact([item.dates.start, item.dates.end]).join(" — ");
+  return dates || cleanText(item.dates.duration) || null;
+}
+
+function formatSourceCompanyMeta(item: SourceResumeDocument["experience"]["items"][number]) {
+  return companyMetaFromSourceItem(item)?.lines.join("\n") || null;
+}
+
+function findAdaptedExperienceItem(
+  sourceItem: SourceResumeDocument["experience"]["items"][number],
+  sourceIndex: number,
+  items: ClassicExperienceItem[]
+) {
+  return (
+    items.find((item) => item.sourceIndex === sourceItem.sourceIndex) ||
+    items.find((item) => item.sourceIndex === sourceIndex) ||
+    items[sourceIndex] ||
+    null
+  );
+}
+
+function applySourceExperienceStructure(
+  payload: ClassicExportPayload,
+  sourceDocument: SourceResumeDocument | null
+) {
+  if (!sourceDocument?.experience.items.length) {
+    return payload.adaptation.adaptedResume.experience;
+  }
+
+  const adaptedItems = payload.adaptation.adaptedResume.experience;
+
+  return sourceDocument.experience.items.map((sourceItem, index) => {
+    const adapted = findAdaptedExperienceItem(sourceItem, index, adaptedItems);
+
+    return {
+      sourceIndex: sourceItem.sourceIndex,
+      company: cleanText(sourceItem.company.name) || adapted?.company || null,
+      companyUrl: formatSourceCompanyMeta(sourceItem) || adapted?.companyUrl || null,
+      position: cleanText(sourceItem.position) || adapted?.position || null,
+      dates: formatSourceDates(sourceItem) || adapted?.dates || null,
+      adaptedBullets: adapted?.adaptedBullets ?? [],
+      focus: adapted?.focus ?? null,
+      preservedFacts: adapted?.preservedFacts ?? [],
+      warnings: adapted?.warnings ?? [],
+    };
+  });
+}
+
+function applySourceStructure(
+  payload: ClassicExportPayload,
+  sourceDocument: SourceResumeDocument | null
+): ClassicExportPayload {
+  if (!sourceDocument) return payload;
+
+  return {
+    ...payload,
+    contacts: {
+      ...payload.contacts,
+      fullName: cleanText(sourceDocument.personal.fullName) || payload.contacts.fullName,
+      gender: cleanText(sourceDocument.personal.gender) || payload.contacts.gender,
+      age: cleanText(sourceDocument.personal.age) || payload.contacts.age,
+      birthDate: cleanText(sourceDocument.personal.birthDate) || payload.contacts.birthDate,
+      phone: cleanText(sourceDocument.personal.phone || sourceDocument.additional.phone) || payload.contacts.phone,
+      email: cleanText(sourceDocument.personal.email || sourceDocument.additional.email) || payload.contacts.email,
+      city: cleanText(sourceDocument.personal.city) || payload.contacts.city,
+      citizenship: cleanText(sourceDocument.personal.citizenship) || payload.contacts.citizenship,
+      workPermit: cleanText(sourceDocument.personal.workPermit) || payload.contacts.workPermit,
+      relocation: cleanText(sourceDocument.personal.relocation) || payload.contacts.relocation,
+      businessTrips: cleanText(sourceDocument.personal.businessTrips) || payload.contacts.businessTrips,
+    },
+    adaptation: {
+      ...payload.adaptation,
+      target: {
+        ...payload.adaptation.target,
+        title: cleanText(payload.adaptation.adaptedResume.headline) || cleanText(sourceDocument.target.title) || payload.adaptation.target.title,
+        salary: cleanText(payload.adaptation.target.salary) || cleanText(sourceDocument.target.salary) || null,
+        specializations: sourceDocument.target.specializations.length
+          ? sourceDocument.target.specializations
+          : payload.adaptation.target.specializations,
+        employment: cleanText(sourceDocument.target.employment) || payload.adaptation.target.employment,
+        schedule: cleanText(sourceDocument.target.schedule) || payload.adaptation.target.schedule,
+        workFormat: cleanText(sourceDocument.target.workFormat) || payload.adaptation.target.workFormat,
+        commuteTime: cleanText(sourceDocument.target.commuteTime) || payload.adaptation.target.commuteTime,
+      },
+      adaptedResume: {
+        ...payload.adaptation.adaptedResume,
+        experience: applySourceExperienceStructure(payload, sourceDocument),
+        education: {
+          ...payload.adaptation.adaptedResume.education,
+          policy: educationFromSourceDocument(sourceDocument).length ? "unchanged" : payload.adaptation.adaptedResume.education.policy,
+          notes: educationFromSourceDocument(sourceDocument).length
+            ? educationFromSourceDocument(sourceDocument)
+            : payload.adaptation.adaptedResume.education.notes,
+        },
+      },
+    },
   };
 }
 
@@ -126,72 +310,13 @@ function skillKey(value: string) {
 }
 
 function isEducationLikeValue(value: string) {
-  const text = cleanText(value).toLowerCase();
-  if (!text) return false;
-  if (/^\d{4}$/u.test(text)) return false;
-
-  return /университет|институт|академи[яи]|колледж|техникум|лицей|школа|факультет|кафедра|бакалавр|магистр/iu.test(text);
+  const text = cleanText(value);
+  if (!text || /^\d{4}$/u.test(text)) return false;
+  return /(?:университет|институт|академи[яи]|колледж|техникум|лицей|школа|факультет|кафедра|бакалавр|магистр)/iu.test(text);
 }
 
-function collectEducationLikeSkillValues(params: {
-  payload: ClassicExportPayload;
-  sourceDocument: SourceResumeDocument | null;
-}) {
-  const skills = params.payload.adaptation.adaptedResume.skills;
-  const sourceItems = params.sourceDocument?.skills.items ?? [];
-
-  return uniqueStrings([
-    ...skills.primary,
-    ...skills.secondary,
-    ...skills.deprioritized,
-    ...sourceItems,
-  ]
-    .map(cleanText)
-    .filter(isEducationLikeValue));
-}
-
-function educationHasInstitution(lines: string[]) {
-  return lines.some(isEducationLikeValue);
-}
-
-function repairEducationLines(params: {
-  lines: string[];
-  educationCandidates: string[];
-}) {
-  const lines = uniqueStrings(params.lines.map(cleanText).filter(Boolean));
-  const candidate = params.educationCandidates[0];
-
-  if (!candidate || educationHasInstitution(lines)) return lines;
-
-  const yearIndex = lines.findIndex((line) => /^\d{4}$/u.test(line));
-  if (yearIndex >= 0) {
-    return lines.map((line, index) => (index === yearIndex ? `${line} ${candidate}` : line));
-  }
-
-  return uniqueStrings([...lines, candidate]);
-}
-
-function resolveEducationLines(params: {
-  payload: ClassicExportPayload;
-  snapshot: SourceSnapshot;
-  sourceDocument: SourceResumeDocument | null;
-}) {
-  const documentLines = educationFromSourceDocument(params.sourceDocument);
-  const notes = params.payload.adaptation.adaptedResume.education.notes
-    .map((item) => cleanText(item))
-    .filter(Boolean);
-  const educationCandidates = collectEducationLikeSkillValues({
-    payload: params.payload,
-    sourceDocument: params.sourceDocument,
-  });
-
-  const lines = documentLines.length
-    ? documentLines
-    : params.snapshot.educationLines.length
-      ? params.snapshot.educationLines
-      : notes;
-
-  return repairEducationLines({ lines, educationCandidates });
+function isCityOnlySkill(value: string) {
+  return /^(?:москва|санкт-петербург|луганск|краснодар|воронеж|екатеринбург|томск|усть-лабинск|ульяновск|симферополь)$/iu.test(cleanText(value));
 }
 
 function escapeRegExp(value: string) {
@@ -220,7 +345,6 @@ function isLowercaseDescriptor(value: string) {
 function isPackedSkillLine(value: string) {
   const tokens = cleanText(value).split(/\s+/u).filter(Boolean);
   if (tokens.length < 4) return false;
-
   return tokens.some((token) => /[A-Za-z0-9+#.]/u.test(token));
 }
 
@@ -255,7 +379,7 @@ function splitPackedSkillLine(value: string) {
 function normalizeSkillCandidates(values: string[]) {
   return uniqueStrings(values.flatMap(splitExplicitSkillValue))
     .map(cleanText)
-    .filter((item) => Boolean(item) && !isPackedSkillLine(item) && !isEducationLikeValue(item));
+    .filter((item) => Boolean(item) && !isPackedSkillLine(item) && !isEducationLikeValue(item) && !isCityOnlySkill(item));
 }
 
 function splitByKnownCandidates(value: string, candidates: string[]) {
@@ -302,34 +426,20 @@ function splitSkillValue(value: string, candidates: string[]) {
   }
 
   const text = explicitParts[0] || cleanText(value);
-  if (!text || isEducationLikeValue(text)) return [];
+  if (!text || isEducationLikeValue(text) || isCityOnlySkill(text)) return [];
 
   const candidateParts = splitByKnownCandidates(text, candidates);
   if (candidateParts.length > 1) return candidateParts;
 
-  return splitPackedSkillLine(text).filter((item) => !isEducationLikeValue(item));
+  return splitPackedSkillLine(text).filter((item) => !isEducationLikeValue(item) && !isCityOnlySkill(item));
 }
 
 function collectLanguageLines(params: {
   sourceDocument: SourceResumeDocument | null;
   snapshot: SourceSnapshot;
 }) {
-  const documentLanguages = params.sourceDocument
-    ? params.sourceDocument.skills.languages.flatMap((item) => [
-        item.name,
-        item.raw,
-        [item.name, item.level, item.description]
-          .map(cleanText)
-          .filter(Boolean)
-          .join(" — "),
-      ])
-    : [];
-
-  return uniqueStrings(
-    [...documentLanguages, ...params.snapshot.languageLines]
-      .map(cleanText)
-      .filter(Boolean)
-  );
+  const documentLanguages = languagesFromSourceDocument(params.sourceDocument);
+  return documentLanguages.length ? documentLanguages : params.snapshot.languageLines;
 }
 
 function collectLanguagePartKeys(languageLines: string[]) {
@@ -348,8 +458,7 @@ function removeKnownLanguageFragments(value: string, languageLines: string[]) {
   for (const languageLine of [...languageLines].sort((a, b) => b.length - a.length)) {
     const escaped = escapeRegExp(cleanText(languageLine)).replace(/\s+/g, "\\s+");
     if (!escaped) continue;
-
-    result = result.replace(new RegExp(`\s+${escaped}(?=\s|$)`, "giu"), " ");
+    result = result.replace(new RegExp(`\\s+${escaped}(?=\\s|$)`, "giu"), " ");
   }
 
   return cleanText(result);
@@ -368,14 +477,13 @@ function isKnownLanguageSkill(
     const line = cleanText(languageLine);
     const lineKey = skillKey(line);
     const nameKey = skillKey(line.split("—")[0] || line);
-
     return valueKey === lineKey || Boolean(nameKey && valueKey === nameKey);
   });
 }
 
 function rawSkillsFromSourceDocument(document: SourceResumeDocument | null) {
   return document
-    ? document.skills.items.map(cleanText).filter((item) => Boolean(item) && !isEducationLikeValue(item))
+    ? document.skills.items.map(cleanText).filter((item) => Boolean(item) && !isEducationLikeValue(item) && !isCityOnlySkill(item))
     : [];
 }
 
@@ -410,12 +518,10 @@ function resolveSkills(params: {
     ...skills.deprioritized,
   ]
     .map(cleanText)
-    .filter((item) => Boolean(item) && !isEducationLikeValue(item));
+    .filter((item) => Boolean(item) && !isEducationLikeValue(item) && !isCityOnlySkill(item));
   const rawSourceSkills = rawSkillsFromSourceDocument(params.sourceDocument);
   const candidates = normalizeSkillCandidates(rawAdaptedSkills);
-  const sourceSkills = rawSourceSkills.flatMap((item) =>
-    splitSkillValue(item, candidates)
-  );
+  const sourceSkills = rawSourceSkills.flatMap((item) => splitSkillValue(item, candidates));
   const adaptedSkills = rawAdaptedSkills.flatMap((item) =>
     splitSkillValue(item, candidates.length ? candidates : sourceSkills)
   );
@@ -435,6 +541,7 @@ function resolveSkills(params: {
       !value ||
       !key ||
       isEducationLikeValue(value) ||
+      isCityOnlySkill(value) ||
       isKnownLanguageSkill(value, languageLines, languagePartKeys) ||
       seen.has(key)
     ) {
@@ -466,7 +573,6 @@ function resolvePhotoSize(
 
   const width = normalizePhotoSize(sourceDocument?.photo?.displayWidth);
   const height = normalizePhotoSize(sourceDocument?.photo?.displayHeight);
-
   return width && height ? { width, height } : null;
 }
 
@@ -476,7 +582,6 @@ function salaryDigits(value: string) {
 
 function extractSalaryCandidates(value?: string | null) {
   const text = value || "";
-
   return Array.from(
     text.matchAll(
       /\d[\d\s]{1,14}\s*(?:₽|руб\.?|RUB)(?:\s*(?:на руки|net|gross|до вычета налогов|до вычета|после вычета))?/giu
@@ -496,31 +601,8 @@ function isStandaloneSalaryCandidate(value?: string | null) {
   return candidates.some((candidate) => {
     const normalizedCandidate = cleanText(candidate);
     const normalizedText = text.replace(/[.,;:]$/u, "");
-
-    return (
-      normalizedText === normalizedCandidate ||
-      normalizedText.length <= normalizedCandidate.length + 14
-    );
+    return normalizedText === normalizedCandidate || normalizedText.length <= normalizedCandidate.length + 14;
   });
-}
-
-function collectSourceTextTargetSalaries(sourceText: string) {
-  const lines = sourceText.split(/\n+/u).map(cleanText).filter(Boolean);
-  const targetIndex = lines.findIndex((line) =>
-    line.startsWith("Желаемая должность")
-  );
-
-  if (targetIndex < 0) return [];
-
-  const nextSectionIndex = lines.findIndex(
-    (line, index) => index > targetIndex && line.startsWith("Опыт работы")
-  );
-  const targetLines = lines.slice(
-    targetIndex,
-    nextSectionIndex > targetIndex ? nextSectionIndex : targetIndex + 12
-  );
-
-  return targetLines.flatMap(extractSalaryCandidates);
 }
 
 function collectDocumentExperienceSalaries(
@@ -556,7 +638,6 @@ function pickBestSalary(candidates: string[]) {
   const firstDigits = salaryDigits(firstCandidate);
   const richerCandidate = uniqueCandidates.find((candidate) => {
     const digits = salaryDigits(candidate);
-
     return (
       digits &&
       firstDigits &&
@@ -572,16 +653,30 @@ function resolveTargetSalary(params: {
   payload: ClassicExportPayload;
   sourceDocument: SourceResumeDocument | null;
   snapshot: SourceSnapshot;
-  sourceText: string;
 }) {
   return pickBestSalary([
     cleanText(params.payload.adaptation.target.salary),
     cleanText(params.sourceDocument?.target.salary),
     ...params.snapshot.targetDetails.flatMap(extractSalaryCandidates),
-    ...collectSourceTextTargetSalaries(params.sourceText),
     ...collectDocumentExperienceSalaries(params.sourceDocument),
     ...collectAdaptedExperienceSalaries(params.payload),
   ]);
+}
+
+function resolveEducationLines(params: {
+  payload: ClassicExportPayload;
+  snapshot: SourceSnapshot;
+  sourceDocument: SourceResumeDocument | null;
+}) {
+  const documentLines = educationFromSourceDocument(params.sourceDocument);
+  if (documentLines.length) return documentLines;
+
+  const notes = params.payload.adaptation.adaptedResume.education.notes
+    .map((item) => cleanText(item))
+    .filter(Boolean);
+  if (notes.length) return notes;
+
+  return params.snapshot.educationLines;
 }
 
 export function getCompanyMeta(snapshot: SourceSnapshot, company: string | null) {
@@ -597,29 +692,29 @@ export function buildClassicDocument(params: {
   payload: ClassicExportPayload;
 }): ClassicDocument {
   const sourceDocument = params.sourceDocument || null;
+  const structuredPayload = applySourceStructure(params.payload, sourceDocument);
   const snapshot = createSnapshot({
     sourceText: params.sourceText,
-    payload: params.payload,
+    payload: structuredPayload,
     sourceDocument,
   });
   const sourceTitle = createBaseName(
-    params.sourceTitle || params.payload.sourceTitle
+    params.sourceTitle || structuredPayload.sourceTitle
   );
   const targetTitle =
-    cleanText(params.payload.adaptation.adaptedResume.headline) ||
-    cleanText(params.payload.adaptation.target.title);
+    cleanText(structuredPayload.adaptation.adaptedResume.headline) ||
+    cleanText(structuredPayload.adaptation.target.title);
   const targetSalary = resolveTargetSalary({
-    payload: params.payload,
+    payload: structuredPayload,
     sourceDocument,
     snapshot,
-    sourceText: params.sourceText,
   });
   const payload = {
-    ...params.payload,
+    ...structuredPayload,
     adaptation: {
-      ...params.payload.adaptation,
+      ...structuredPayload.adaptation,
       target: {
-        ...params.payload.adaptation.target,
+        ...structuredPayload.adaptation.target,
         salary: targetSalary,
       },
     },
@@ -633,7 +728,11 @@ export function buildClassicDocument(params: {
     sourceTitle,
     snapshot,
     name: cleanText(payload.contacts.fullName) || snapshot.sourceName || sourceTitle,
-    contactLines: resolveContactLines(payload.contacts, snapshot),
+    contactLines: resolveContactLines({
+      contacts: payload.contacts,
+      snapshot,
+      sourceDocument,
+    }),
     targetTitle,
     skills: resolveSkills({ payload, sourceDocument, snapshot }),
     educationLines: resolveEducationLines({ payload, snapshot, sourceDocument }),
