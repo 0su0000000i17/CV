@@ -209,8 +209,14 @@ function isServiceLine(value: string) {
 }
 
 function isLikelyIndustryLine(value: string) {
-  const line = normalizeBulletPrefix(value);
-  return /информационные\s+технологии|системная\s+интеграция|интернет|разработка\s+программного\s+обеспечения|финансовый\s+сектор|банк|ритейл|производство|образование|медицина|строительство|маркетинг|реклама|консалтинг/i.test(line);
+  const line = normalizeBulletPrefix(value).toLowerCase();
+  if (!line) return false;
+
+  return (
+    line === "банк" ||
+    line === "финансовый сектор" ||
+    /информационные\s+технологии|системная\s+интеграция|интернет|разработка\s+программного\s+обеспечения|ритейл|производство|образование|медицина|строительство|маркетинг|реклама|консалтинг/iu.test(line)
+  );
 }
 
 function isLikelyPositionLine(value: string) {
@@ -226,7 +232,7 @@ function isLikelyPositionLine(value: string) {
 function isLikelyCompanyLine(value: string) {
   const line = text(value);
   if (!line || line.length > 80) return false;
-  if (isServiceLine(line) || isKnownCity(line) || isLikelyIndustryLine(line)) return false;
+  if (isServiceLine(line) || isCityValue(line) || isLikelyIndustryLine(line)) return false;
   if (looksLikeUrl(line) || isMixedCityUrl(line) || isLikelyPositionLine(line)) return false;
   if (/^[-—–•*]/u.test(line)) return false;
   if (/[:]/u.test(line)) return false;
@@ -240,16 +246,26 @@ function expandMetaLine(value: string) {
 }
 
 function isMetaLine(value: string) {
-  return isMixedCityUrl(value) || isKnownCity(value) || looksLikeUrl(value) || isLikelyIndustryLine(value);
+  return isMixedCityUrl(value) || isCityValue(value) || looksLikeUrl(value) || isLikelyIndustryLine(value);
+}
+
+function isBulletLikeLine(value: string) {
+  return /^[-—–•*]/u.test(text(value));
+}
+
+function getExperienceHeaderLines(lines: string[]) {
+  const firstBulletIndex = lines.findIndex(isBulletLikeLine);
+  return firstBulletIndex >= 0 ? lines.slice(0, firstBulletIndex) : lines;
 }
 
 function resolveExperienceConstants(item: ExperienceItem, position: string) {
   const lines = rawExperienceLines(item).filter((line) => !isServiceLine(line));
-  const positionIndex = lines.findIndex((line) => textKey(line) === textKey(position) || isLikelyPositionLine(line));
-  const beforePosition = positionIndex >= 0 ? lines.slice(0, positionIndex) : lines;
-  const companyFromHeader = beforePosition.find(isLikelyCompanyLine) || "";
-  const trailingCompany = [...lines].reverse().find(isLikelyCompanyLine) || "";
-  const company = companyFromHeader || trailingCompany;
+  const headerLines = getExperienceHeaderLines(lines);
+  const positionIndex = headerLines.findIndex(
+    (line) => textKey(line) === textKey(position) || isLikelyPositionLine(line)
+  );
+  const beforePosition = positionIndex >= 0 ? headerLines.slice(0, positionIndex) : headerLines;
+  const company = beforePosition.find(isLikelyCompanyLine) || "";
   const metaLines = uniquePreserve(
     beforePosition
       .filter((line) => !company || textKey(line) !== textKey(company))
@@ -261,7 +277,7 @@ function resolveExperienceConstants(item: ExperienceItem, position: string) {
 }
 
 function resolveRawPosition(item: ExperienceItem) {
-  const rawPosition = rawExperienceLines(item).find(isLikelyPositionLine);
+  const rawPosition = getExperienceHeaderLines(rawExperienceLines(item)).find(isLikelyPositionLine);
   const parsedPosition = text(item.position);
   if (rawPosition) return rawPosition;
   return isLikelyPositionLine(parsedPosition) ? parsedPosition : "";
