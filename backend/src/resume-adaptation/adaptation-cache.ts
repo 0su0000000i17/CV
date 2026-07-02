@@ -8,7 +8,7 @@ import {
 } from "./adaptation-generation/config.js";
 import { SYSTEM_PROMPT } from "./adaptation-generation/prompts.js";
 
-const ADAPTATION_CACHE_VERSION = "adaptation-cache-v1";
+const ADAPTATION_CACHE_VERSION = "adaptation-cache-v2";
 const ADAPTATION_USER_PROMPT_VERSION = "adaptation-user-prompt-v1";
 
 type StableValue =
