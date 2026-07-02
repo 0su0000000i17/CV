@@ -17,10 +17,15 @@ function targetLines(doc: ClassicDocument) {
 }
 
 function splitSalary(value: string) {
-  const salary = clean(value);
-  const match = salary.match(/^(.+?₽)(?:\s+(.+))?$/u);
+  const salary = clean(value).replace(/\s+/gu, " ");
+  const match = salary.match(/^(.+?)\s*[₽Р](?:\s+(.+))?$/u);
   if (!match?.[1]) return { amount: salary, note: "" };
-  return { amount: clean(match[1]), note: clean(match[2] || "") };
+
+  const note = clean(match[2] || "");
+  return {
+    amount: clean(match[1]),
+    note: note ? `₽ ${note}` : "₽",
+  };
 }
 
 function renderSalary(writer: PdfWriter, salary: string, y: number) {
@@ -29,22 +34,20 @@ function renderSalary(writer: PdfWriter, salary: string, y: number) {
 
   const width = 108;
   const x = writer.right - width;
-  let used = writer.textAt(amount, x, y, width, {
+  const amountHeight = writer.textAt(amount, x, y, width, {
     font: "bold",
     size: typography.salaryAmount,
     color: colors.black,
     lineGap: 0,
   });
 
-  if (note) {
-    used += writer.textAt(note, x, y + used + 1, width, {
-      size: typography.salaryNote,
-      color: colors.muted,
-      lineGap: 0,
-    }) + 1;
-  }
+  if (!note) return amountHeight;
 
-  return used;
+  return amountHeight + writer.textAt(note, x, y + amountHeight + 1, width, {
+    size: typography.salaryNote,
+    color: colors.muted,
+    lineGap: 0,
+  }) + 1;
 }
 
 export function renderTarget(writer: PdfWriter, doc: ClassicDocument) {
@@ -66,7 +69,7 @@ export function renderTarget(writer: PdfWriter, doc: ClassicDocument) {
     : 0;
   const salaryHeight = salary ? renderSalary(writer, salary, writer.y) : 0;
 
-  writer.y += (titleHeight || salaryHeight) + 1.5;
+  writer.y += (titleHeight || salaryHeight) + 0.75;
 
   for (const line of details) {
     const indent = line.startsWith("—");
