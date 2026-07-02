@@ -31,11 +31,11 @@ export function splitResumeSections(lines: string[]): ResumeSectionSplit {
   const skillsIndex = findIndexFrom(lines, isSkillsHeading, educationIndex + 1);
   const additionalIndex = findIndexFrom(lines, isAdditionalHeading, skillsIndex + 1);
 
-  if (targetIndex < 0) warnings.push("Не найден раздел: Желаемая должность и зарплата");
-  if (experienceIndex < 0) warnings.push("Не найден раздел: Опыт работы");
-  if (educationIndex < 0) warnings.push("Не найден раздел: Образование");
-  if (skillsIndex < 0) warnings.push("Не найден раздел: Навыки / Ключевые навыки");
-  if (additionalIndex < 0) warnings.push("Не найден раздел: Дополнительная информация");
+  if (targetIndex < 0) warnings.push("Missing section: target");
+  if (experienceIndex < 0) warnings.push("Missing section: experience");
+  if (educationIndex < 0) warnings.push("Missing section: education");
+  if (skillsIndex < 0) warnings.push("Missing section: skills");
+  if (additionalIndex < 0) warnings.push("Missing section: details");
 
   const firstKnownSectionIndex = [targetIndex, experienceIndex, educationIndex, skillsIndex, additionalIndex]
     .filter((index) => index >= 0)
@@ -89,7 +89,7 @@ function getInlineHeadingContent(line: string, kind: SectionKind) {
     target: /^Желаемая должность и зарплата\s*/i,
     experience: /^Опыт работы(?:\s+—\s+.+)?\s*/i,
     education: /^Образование\s*/i,
-    skills: /^(?:Навыки|Ключевые навыки)\s*/i,
+    skills: /^(?:Навыки|Ключевые навыки|Знание языков)\s*/i,
     additional: /^(?:Дополнительная информация|Обо мне)\s*/i,
   };
 
@@ -126,7 +126,7 @@ function isEducationHeading(line: string) {
 }
 
 function isSkillsHeading(line: string) {
-  return /^(?:Навыки|Ключевые навыки)(?:\s|$)/i.test(line);
+  return /^(?:Навыки|Ключевые навыки|Знание языков)(?:\s|$)/i.test(line);
 }
 
 function isAdditionalHeading(line: string) {
