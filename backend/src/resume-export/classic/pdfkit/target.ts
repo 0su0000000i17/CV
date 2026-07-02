@@ -16,38 +16,25 @@ function targetLines(doc: ClassicDocument) {
   ].filter(Boolean);
 }
 
-function splitSalary(value: string) {
-  const salary = clean(value).replace(/\s+/gu, " ");
-  const match = salary.match(/^(.+?)\s*[₽Р](?:\s+(.+))?$/u);
-  if (!match?.[1]) return { amount: salary, note: "" };
-
-  const note = clean(match[2] || "");
-  return {
-    amount: clean(match[1]),
-    note: note ? `₽ ${note}` : "₽",
-  };
+function normalizeSalary(value: string) {
+  return clean(value)
+    .replace(/\s+/gu, " ")
+    .replace(/\s+[Р₽](?=\s|$)/u, " ₽")
+    .replace(/\s+₽\s+/u, " ₽ ");
 }
 
 function renderSalary(writer: PdfWriter, salary: string, y: number) {
-  const { amount, note } = splitSalary(salary);
-  if (!amount) return 0;
+  const text = normalizeSalary(salary);
+  if (!text) return 0;
 
-  const width = 108;
+  const width = 128;
   const x = writer.right - width;
-  const amountHeight = writer.textAt(amount, x, y, width, {
+  return writer.textAt(text, x, y, width, {
     font: "bold",
     size: typography.salaryAmount,
     color: colors.black,
     lineGap: 0,
   });
-
-  if (!note) return amountHeight;
-
-  return amountHeight + writer.textAt(note, x, y + amountHeight + 1, width, {
-    size: typography.salaryNote,
-    color: colors.muted,
-    lineGap: 0,
-  }) + 1;
 }
 
 export function renderTarget(writer: PdfWriter, doc: ClassicDocument) {
@@ -59,7 +46,7 @@ export function renderTarget(writer: PdfWriter, doc: ClassicDocument) {
 
   writer.sectionTitle("Желаемая должность и зарплата");
 
-  const titleWidth = salary ? writer.contentWidth - 112 : writer.contentWidth;
+  const titleWidth = salary ? writer.contentWidth - 132 : writer.contentWidth;
   const titleHeight = doc.targetTitle
     ? writer.textAt(doc.targetTitle, writer.left, writer.y, titleWidth, {
         font: "bold",
@@ -69,7 +56,7 @@ export function renderTarget(writer: PdfWriter, doc: ClassicDocument) {
     : 0;
   const salaryHeight = salary ? renderSalary(writer, salary, writer.y) : 0;
 
-  writer.y += (titleHeight || salaryHeight) + 0.75;
+  writer.y += Math.max(titleHeight, salaryHeight) + 0.75;
 
   for (const line of details) {
     const indent = line.startsWith("—");
