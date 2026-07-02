@@ -11,7 +11,7 @@ export const page = {
   marginLeft: 14.5 * MM_TO_PT,
   marginRight: 14.5 * MM_TO_PT,
   marginTop: 18 * MM_TO_PT,
-  marginBottom: 22 * MM_TO_PT,
+  marginBottom: 25 * MM_TO_PT,
 };
 
 export const colors = {
@@ -36,10 +36,12 @@ export const layout = {
   columnGap: px(14),
   sectionGap: px(24),
   sectionBlockTopGap: px(18),
-  experienceSectionTopGap: px(18),
+  experienceSectionTopGap: px(23),
   experienceGap: px(8),
   skillLabelWidth: px(99),
   skillGap: px(14),
+  languageToSkillsGap: px(13),
+  skillsBottomGap: px(10),
   photoWidth: px(95),
   photoGap: px(19),
 };
