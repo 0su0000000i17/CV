@@ -16,7 +16,7 @@ function isStop(value: string) { const text = clean(value); return new RegExp(`^
 function isCity(value: string) { const text = clean(value); return text.length > 2 && text.length < 36 && !text.includes(".") && !text.includes("/") && text[0] === text[0].toUpperCase(); }
 function same(a: string, b: string) { const aKey = key(a); return Boolean(aKey && aKey === key(b)); }
 function bare(value: string) { return clean(value).replace(/^[-•]\s*/u, ""); }
-function metaMuted(value: string) { return looksLikeUrl(value) || /[a-zа-яё0-9.-]+\.[a-zа-яё]{2,}/iu.test(value); }
+function metaMuted(value: string) { return looksLikeUrl(value); }
 function lines(doc: ClassicDocument) { return toTextLines(doc.sourceText).map(clean).filter(Boolean); }
 function companyAt(doc: ClassicDocument, item: ClassicExperienceItem) { const company = clean(item.company); return company ? lines(doc).findIndex((line) => line === company) : -1; }
 
