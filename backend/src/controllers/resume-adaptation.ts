@@ -3,6 +3,10 @@ import { z } from "zod";
 
 import { supabaseAdmin } from "../lib/supabase.js";
 import { applySourceResumeStructure } from "../resume-adaptation/apply-source-resume-structure.js";
+import {
+  createAdaptationCacheMetadata,
+  type AdaptationCacheMetadata,
+} from "../resume-adaptation/adaptation-cache.js";
 import { generateResumeAdaptation } from "../resume-adaptation/generate-resume-adaptation.js";
 import { loadSourceResumeDocument } from "../resume-adaptation/load-source-resume-document.js";
 import { stringifyResumeAdaptationAiPayload } from "../resume-adaptation/resume-ai-payload.js";
@@ -11,10 +15,7 @@ import type {
   ResumeAdaptationResult,
   ResumeVacancyFitResult,
 } from "../resume-adaptation/types.js";
-import {
-  findResumeFileRecord,
-  findResumeOwnerRecord,
-} from "../resume-analysis/repositories/resumes-repository.js";
+import { findResumeFileRecord } from "../resume-analysis/repositories/resumes-repository.js";
 import { createAiDebugArtifactWriter } from "../utils/ai-debug-artifacts.js";
 import { formatVacancyForAdaptation } from "../vacancy-ai/format-vacancy-for-adaptation.js";
 import type { NormalizedVacancy } from "../vacancy-ai/types.js";
@@ -44,6 +45,8 @@ type AdaptationTaskRequest = {
   vacancyText: string;
   fit: ResumeVacancyFitResult;
   adaptationSettings: AdaptationSettings;
+  cacheKey?: string;
+  cache?: AdaptationCacheMetadata;
 };
 
 type AdaptationTaskResult = {
@@ -59,6 +62,8 @@ type AdaptationTaskResult = {
     model: string;
     debugArtifactDir: string | null;
     debugReportPath: string | null;
+    cacheHit?: boolean;
+    cacheKey?: string | null;
   };
 };
 
@@ -160,11 +165,32 @@ async function findAdaptationTask(params: {
   const { data, error } = await supabaseAdmin
     .from("adaptation_tasks")
     .select(
-      "id, user_id, resume_id, status, result, error_message, attempts, locked_by, locked_at, created_at, updated_at"
+      "id, user_id, resume_id, status, request, result, error_message, attempts, locked_by, locked_at, created_at, updated_at"
     )
     .eq("id", params.taskId)
     .eq("resume_id", params.resumeId)
     .eq("user_id", params.userId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data as AdaptationTaskRecord | null;
+}
+
+async function findCachedAdaptationTask(params: {
+  userId: string;
+  resumeId: string;
+  cacheKey: string;
+}) {
+  const { data, error } = await supabaseAdmin
+    .from("adaptation_tasks")
+    .select("id, user_id, resume_id, status, request, result, error_message, attempts, locked_by, locked_at, created_at, updated_at")
+    .eq("resume_id", params.resumeId)
+    .eq("user_id", params.userId)
+    .eq("status", "completed")
+    .contains("request", { cacheKey: params.cacheKey })
+    .not("result", "is", null)
+    .order("updated_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (error) throw error;
@@ -223,6 +249,20 @@ async function markAdaptationTaskFailed(params: {
   if (error) throw error;
 }
 
+function createCachedAdaptationResponse(
+  result: AdaptationTaskResult,
+  cacheKey: string
+): AdaptationTaskResult {
+  return {
+    ...result,
+    meta: {
+      ...result.meta,
+      cacheHit: true,
+      cacheKey,
+    },
+  };
+}
+
 async function runAdaptationTask(task: AdaptationTaskRecord) {
   try {
     const request = task.request;
@@ -276,6 +316,8 @@ async function runAdaptationTask(task: AdaptationTaskRecord) {
         model: result.generation.model,
         debugArtifactDir: debugWriter?.artifactDir || null,
         debugReportPath: debugWriter?.reportPath || null,
+        cacheHit: false,
+        cacheKey: request.cacheKey || null,
       },
     };
 
@@ -358,8 +400,30 @@ export async function adaptResumeToVacancyController(req: Request, res: Response
     const vacancyText = body.data.vacancyText?.trim() || formatVacancyForAdaptation(vacancy);
     if (!vacancyText) return sendError(res, 400, "Vacancy has not enough data");
 
-    const resume = await findResumeOwnerRecord({ userId: user.id, resumeId });
+    const resume = await findResumeFileRecord({ userId: user.id, resumeId });
     if (!resume) return sendError(res, 404, "Resume not found");
+
+    const source = await loadSourceResumeDocument(resume);
+    const resumeJson = stringifyResumeAdaptationAiPayload(source.document);
+    const adaptationSettings = normalizeSettings(body.data.adaptationSettings);
+    const cache = createAdaptationCacheMetadata({
+      userId: user.id,
+      resumeId,
+      resumePayload: resumeJson,
+      vacancy,
+      vacancyText,
+      fit,
+      settings: adaptationSettings,
+    });
+    const cachedTask = await findCachedAdaptationTask({
+      userId: user.id,
+      resumeId,
+      cacheKey: cache.cacheKey,
+    });
+
+    if (cachedTask?.result) {
+      return res.json(createCachedAdaptationResponse(cachedTask.result, cache.cacheKey));
+    }
 
     const task = await createAdaptationTask({
       userId: user.id,
@@ -368,7 +432,9 @@ export async function adaptResumeToVacancyController(req: Request, res: Response
         vacancy,
         vacancyText,
         fit,
-        adaptationSettings: normalizeSettings(body.data.adaptationSettings),
+        adaptationSettings,
+        cacheKey: cache.cacheKey,
+        cache,
       },
     });
 
