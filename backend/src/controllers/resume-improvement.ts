@@ -6,12 +6,22 @@ import { loadSourceResumeDocument } from "../resume-adaptation/load-source-resum
 import { stringifyResumeAdaptationAiPayload } from "../resume-adaptation/resume-ai-payload.js";
 import type { ResumeAdaptationResult } from "../resume-adaptation/types.js";
 import { findResumeFileRecord } from "../resume-analysis/repositories/resumes-repository.js";
+import {
+  createImprovementCacheMetadata,
+  type ImprovementCacheMetadata,
+} from "../resume-improvement/improvement-cache.js";
 import { generateResumeImprovement } from "../resume-improvement/generate-resume-improvement.js";
 import { getStringParam, sendError, sendServerError } from "../utils/api-responses.js";
 import { getUserFromRequest } from "../utils/auth.js";
 import { saveProductEvent } from "../utils/product-events.js";
 
 type ImprovementTaskStatus = "queued" | "running" | "completed" | "failed";
+
+type ImprovementTaskRequest = {
+  action: "improve_resume";
+  cacheKey?: string;
+  cache?: ImprovementCacheMetadata;
+};
 
 type ImprovementTaskResult = {
   status: "adapted";
@@ -24,6 +34,8 @@ type ImprovementTaskResult = {
     markdownLimited: boolean;
     provider: string;
     model: string;
+    cacheHit?: boolean;
+    cacheKey?: string | null;
   };
 };
 
@@ -32,7 +44,7 @@ type ImprovementTaskRecord = {
   user_id: string;
   resume_id: string;
   status: ImprovementTaskStatus;
-  request: Record<string, unknown>;
+  request: ImprovementTaskRequest;
   result: ImprovementTaskResult | null;
   error_message: string | null;
   attempts: number;
@@ -91,13 +103,17 @@ function getErrorMessage(error: unknown) {
   return "Unknown improvement task error";
 }
 
-async function createImprovementTask(params: { userId: string; resumeId: string }) {
+async function createImprovementTask(params: {
+  userId: string;
+  resumeId: string;
+  request: ImprovementTaskRequest;
+}) {
   const { data, error } = await supabaseAdmin
     .from("improvement_tasks")
     .insert({
       user_id: params.userId,
       resume_id: params.resumeId,
-      request: { action: "improve_resume" },
+      request: params.request,
       status: "queued",
     })
     .select("id, user_id, resume_id, status, created_at, updated_at")
@@ -118,7 +134,7 @@ async function findImprovementTask(params: {
   const { data, error } = await supabaseAdmin
     .from("improvement_tasks")
     .select(
-      "id, user_id, resume_id, status, result, error_message, attempts, locked_by, locked_at, created_at, updated_at"
+      "id, user_id, resume_id, status, request, result, error_message, attempts, locked_by, locked_at, created_at, updated_at"
     )
     .eq("id", params.taskId)
     .eq("resume_id", params.resumeId)
@@ -127,6 +143,45 @@ async function findImprovementTask(params: {
 
   if (error) throw error;
   return data as ImprovementTaskRecord | null;
+}
+
+async function findCachedImprovementTask(params: {
+  userId: string;
+  resumeId: string;
+  cacheKey: string;
+}) {
+  const { data, error } = await supabaseAdmin
+    .from("improvement_tasks")
+    .select(
+      "id, user_id, resume_id, status, request, result, error_message, attempts, locked_by, locked_at, created_at, updated_at"
+    )
+    .eq("resume_id", params.resumeId)
+    .eq("user_id", params.userId)
+    .eq("status", "completed")
+    .contains("request", { cacheKey: params.cacheKey })
+    .not("result", "is", null)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data as ImprovementTaskRecord | null;
+}
+
+async function findCachedImprovementTaskSafe(params: {
+  userId: string;
+  resumeId: string;
+  cacheKey: string;
+}) {
+  try {
+    return await findCachedImprovementTask(params);
+  } catch (error) {
+    console.warn("[improvementCache] Cache lookup failed; continuing without cache", {
+      resumeId: params.resumeId,
+      error: getErrorMessage(error),
+    });
+    return null;
+  }
 }
 
 async function claimNextImprovementTask() {
@@ -181,6 +236,20 @@ async function markImprovementTaskFailed(params: {
   if (error) throw error;
 }
 
+function createCachedImprovementResponse(
+  result: ImprovementTaskResult,
+  cacheKey: string
+): ImprovementTaskResult {
+  return {
+    ...result,
+    meta: {
+      ...result.meta,
+      cacheHit: true,
+      cacheKey,
+    },
+  };
+}
+
 async function runImprovementTask(task: ImprovementTaskRecord) {
   try {
     const resume = await findResumeFileRecord({
@@ -211,6 +280,8 @@ async function runImprovementTask(task: ImprovementTaskRecord) {
         markdownLimited: source.markdownLimited,
         provider: result.generation.provider,
         model: result.generation.model,
+        cacheHit: false,
+        cacheKey: task.request?.cacheKey || null,
       },
     };
 
@@ -283,7 +354,32 @@ export async function improveResumeController(req: Request, res: Response) {
     const resume = await findResumeFileRecord({ userId: user.id, resumeId });
     if (!resume) return sendError(res, 404, "Resume not found");
 
-    const task = await createImprovementTask({ userId: user.id, resumeId });
+    const source = await loadSourceResumeDocument(resume);
+    const resumeJson = stringifyResumeAdaptationAiPayload(source.document);
+    const cache = createImprovementCacheMetadata({
+      userId: user.id,
+      resumeId,
+      resumePayload: resumeJson,
+    });
+    const cachedTask = await findCachedImprovementTaskSafe({
+      userId: user.id,
+      resumeId,
+      cacheKey: cache.cacheKey,
+    });
+
+    if (cachedTask?.result) {
+      return res.json(createCachedImprovementResponse(cachedTask.result, cache.cacheKey));
+    }
+
+    const task = await createImprovementTask({
+      userId: user.id,
+      resumeId,
+      request: {
+        action: "improve_resume",
+        cacheKey: cache.cacheKey,
+        cache,
+      },
+    });
     wakeImprovementWorker();
 
     return res.status(202).json({
