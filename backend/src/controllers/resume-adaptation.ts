@@ -183,7 +183,9 @@ async function findCachedAdaptationTask(params: {
 }) {
   const { data, error } = await supabaseAdmin
     .from("adaptation_tasks")
-    .select("id, user_id, resume_id, status, request, result, error_message, attempts, locked_by, locked_at, created_at, updated_at")
+    .select(
+      "id, user_id, resume_id, status, request, result, error_message, attempts, locked_by, locked_at, created_at, updated_at"
+    )
     .eq("resume_id", params.resumeId)
     .eq("user_id", params.userId)
     .eq("status", "completed")
@@ -195,6 +197,22 @@ async function findCachedAdaptationTask(params: {
 
   if (error) throw error;
   return data as AdaptationTaskRecord | null;
+}
+
+async function findCachedAdaptationTaskSafe(params: {
+  userId: string;
+  resumeId: string;
+  cacheKey: string;
+}) {
+  try {
+    return await findCachedAdaptationTask(params);
+  } catch (error) {
+    console.warn("[adaptationCache] Cache lookup failed; continuing without cache", {
+      resumeId: params.resumeId,
+      error: getErrorMessage(error),
+    });
+    return null;
+  }
 }
 
 async function claimNextAdaptationTask() {
@@ -415,7 +433,7 @@ export async function adaptResumeToVacancyController(req: Request, res: Response
       fit,
       settings: adaptationSettings,
     });
-    const cachedTask = await findCachedAdaptationTask({
+    const cachedTask = await findCachedAdaptationTaskSafe({
       userId: user.id,
       resumeId,
       cacheKey: cache.cacheKey,
