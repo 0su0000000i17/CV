@@ -3,7 +3,7 @@ import { ADAPT_MAX_TOKENS, ADAPT_RESUME_MAX_CHARS } from "../resume-adaptation/a
 import { createSystemPrompt } from "./improvement-prompts/system-prompt.js";
 import { createUserPrompt } from "./improvement-prompts/user-prompt.js";
 
-const CACHE_VERSION = "improvement-cache-v3";
+const CACHE_VERSION = "improvement-cache-v4";
 const PROMPT_PLACEHOLDER = "__RESUME_MARKDOWN__";
 
 export type ImprovementCacheMetadata = {
