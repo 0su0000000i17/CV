@@ -160,6 +160,12 @@ function getLanguageLines(lines: string[]) {
   return result.filter(Boolean);
 }
 
+function getDetailLines(lines: string[]) {
+  return sliceAfter(lines, detailsHeadings, [])
+    .map((line) => line.replace(/^Обо мне\s*/iu, "").trim())
+    .filter((line) => Boolean(line) && !line.includes("Резюме обновлено"));
+}
+
 function isExperienceMetaLine(line: string, item: ClassicExperienceItem) {
   if (!line || line === item.position) return false;
 
@@ -233,6 +239,7 @@ export function createSourceSnapshot(params: {
     companyMeta: getCompanyMeta(lines, params.experience),
     educationLines: getEducationLines(lines),
     languageLines: getLanguageLines(lines),
+    detailLines: getDetailLines(lines),
     footer: lines.find((line) => line.includes("Резюме обновлено")) ?? null,
   };
 }
