@@ -1,0 +1,450 @@
+.trigger {
+  display: flex;
+  width: 100%;
+  height: 2.75rem;
+  cursor: pointer;
+  align-items: center;
+  gap: 0.7rem;
+  margin-top: 0.5rem;
+  padding: 0 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--color-foreground) 11%, transparent);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--color-foreground) 2.5%, transparent);
+  color: var(--color-foreground);
+  outline: none;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.trigger:hover,
+.trigger:focus-visible {
+  border-color: color-mix(in srgb, var(--color-foreground) 26%, transparent);
+}
+
+.trigger:disabled {
+  cursor: default;
+}
+
+.triggerIcon,
+.triggerChevron {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  color: color-mix(in srgb, var(--color-foreground) 42%, transparent);
+}
+
+.triggerChevron {
+  margin-left: auto;
+  transform: rotate(90deg);
+  transition: transform 180ms ease;
+}
+
+.triggerChevronOpen {
+  transform: rotate(-90deg);
+}
+
+.triggerValue,
+.placeholder {
+  overflow: hidden;
+  font-size: 0.875rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.placeholder {
+  color: color-mix(in srgb, var(--color-foreground) 28%, transparent);
+}
+
+.popover {
+  z-index: 40;
+  width: min(17.5rem, calc(100vw - 1.5rem));
+  padding: 0.45rem;
+  border: 1px solid color-mix(in srgb, var(--color-foreground) 13%, transparent);
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, var(--color-card) 96%, transparent);
+  box-shadow: 0 1.4rem 3.8rem rgb(0 0 0 / 0.22);
+  -webkit-backdrop-filter: blur(1.5rem) saturate(1.15);
+  backdrop-filter: blur(1.5rem) saturate(1.15);
+  transform-origin: var(--radix-popover-content-transform-origin);
+  will-change: opacity, filter, transform;
+}
+
+.popover[data-state='open'] {
+  animation: calendar-in 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.popover[data-state='closed'] {
+  animation: calendar-out 170ms ease-in both;
+}
+
+.calendarHeader {
+  display: grid;
+  grid-template-columns: 2rem 1fr 2rem;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.monthTitle {
+  color: var(--color-foreground);
+  font-size: 0.82rem;
+  font-weight: 560;
+  text-align: center;
+  text-transform: capitalize;
+}
+
+.navButton {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  cursor: pointer;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: color-mix(in srgb, var(--color-foreground) 52%, transparent);
+  transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease;
+}
+
+.navButton:hover,
+.navButton:focus-visible {
+  border-color: color-mix(in srgb, var(--color-foreground) 10%, transparent);
+  background: color-mix(in srgb, var(--color-foreground) 5%, transparent);
+  color: var(--color-foreground);
+  outline: none;
+}
+
+.navButton svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.weekDays,
+.daysGrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.weekDays {
+  margin-top: 0.25rem;
+  color: color-mix(in srgb, var(--color-foreground) 32%, transparent);
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.weekDays span {
+  padding: 0.22rem 0;
+}
+
+.daysGrid {
+  gap: 0.08rem;
+  margin-top: 0.1rem;
+}
+
+.dayButton {
+  display: grid;
+  height: 1.5rem;
+  cursor: pointer;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: color-mix(in srgb, var(--color-foreground) 72%, transparent);
+  font-size: 0.74rem;
+  transition: border-color 120ms ease, background-color 120ms ease, color 120ms ease, transform 120ms ease;
+}
+
+.dayButton[data-outside='true'] {
+  color: color-mix(in srgb, var(--color-foreground) 22%, transparent);
+}
+
+.dayButton:hover,
+.dayButton:focus-visible {
+  border-color: color-mix(in srgb, var(--color-brand-500) 38%, transparent);
+  color: var(--color-foreground);
+  outline: none;
+}
+
+.dayButton:active {
+  transform: scale(0.92);
+}
+
+.dayButton[data-selected='true'] {
+  border-color: color-mix(in srgb, var(--color-brand-500) 50%, transparent);
+  background: var(--color-brand-500);
+  color: #fff;
+}
+
+.timeRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.3rem;
+  padding: 0.3rem 0;
+  border-top: 1px solid color-mix(in srgb, var(--color-foreground) 9%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-foreground) 9%, transparent);
+}
+
+.timeLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: color-mix(in srgb, var(--color-foreground) 58%, transparent);
+  font-size: 0.75rem;
+}
+
+.timeLabel svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.timePickerShell {
+  position: relative;
+}
+
+.timeTrigger {
+  display: inline-flex;
+  width: 6.6rem;
+  height: 2rem;
+  cursor: pointer;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--color-foreground) 11%, transparent);
+  border-radius: 0.45rem;
+  background: color-mix(in srgb, var(--color-foreground) 3%, transparent);
+  color: var(--color-foreground);
+  font-size: 0.78rem;
+  outline: none;
+  font-variant-numeric: tabular-nums;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.timeTrigger:hover:not(:disabled),
+.timeTrigger:focus-visible,
+.timeTrigger[aria-expanded='true'] {
+  border-color: color-mix(in srgb, var(--color-brand-500) 52%, transparent);
+}
+
+.timeTrigger:disabled {
+  cursor: default;
+  opacity: 0.38;
+}
+
+.timeChevron,
+.timeChevronOpen {
+  width: 0.8rem;
+  height: 0.8rem;
+  color: color-mix(in srgb, var(--color-foreground) 42%, transparent);
+  transition: transform 180ms ease;
+}
+
+.timeChevron {
+  transform: rotate(90deg);
+}
+
+.timeChevronOpen {
+  transform: rotate(-90deg);
+}
+
+.timeMenu {
+  position: absolute;
+  z-index: 3;
+  right: 0;
+  bottom: calc(100% + 0.4rem);
+  width: 8.5rem;
+  overflow: hidden;
+  padding: 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--color-foreground) 14%, transparent);
+  border-radius: 0.55rem;
+  background: color-mix(in srgb, var(--color-card) 94%, transparent);
+  box-shadow: 0 1rem 2.4rem rgb(0 0 0 / 0.2);
+  -webkit-backdrop-filter: blur(1.25rem) saturate(1.15);
+  backdrop-filter: blur(1.25rem) saturate(1.15);
+  transform-origin: bottom right;
+}
+
+.timeMenu[data-state='open'] {
+  animation: time-menu-in 190ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.timeMenu[data-state='closed'] {
+  pointer-events: none;
+  animation: time-menu-out 140ms ease-in both;
+}
+
+.timeMenuHeader,
+.timeColumns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.3rem;
+}
+
+.timeMenuHeader {
+  padding: 0.1rem 0.2rem 0.3rem;
+  color: color-mix(in srgb, var(--color-foreground) 38%, transparent);
+  font-size: 0.58rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.timeList {
+  height: 8.25rem;
+  overflow-y: auto;
+  padding: 0.12rem;
+  border-radius: 0.4rem;
+  background: color-mix(in srgb, var(--color-foreground) 3%, transparent);
+  scrollbar-color: color-mix(in srgb, var(--color-foreground) 18%, transparent) transparent;
+  scrollbar-width: thin;
+  scroll-snap-type: y proximity;
+  overscroll-behavior: contain;
+}
+
+.timeOption {
+  display: grid;
+  width: 100%;
+  height: 1.75rem;
+  cursor: pointer;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 0.35rem;
+  background: transparent;
+  color: color-mix(in srgb, var(--color-foreground) 72%, transparent);
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
+  scroll-snap-align: center;
+  transition: border-color 120ms ease, background-color 120ms ease, color 120ms ease;
+}
+
+.timeOption:hover,
+.timeOption:focus-visible {
+  border-color: color-mix(in srgb, var(--color-brand-500) 36%, transparent);
+  color: var(--color-foreground);
+  outline: none;
+}
+
+.timeOption[data-selected='true'] {
+  border-color: color-mix(in srgb, var(--color-brand-500) 52%, transparent);
+  background: var(--color-brand-500);
+  color: #fff;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+}
+
+.clearButton,
+.doneButton {
+  height: 2rem;
+  cursor: pointer;
+  padding: 0 0.8rem;
+  border-radius: 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 520;
+  transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease, transform 140ms ease;
+}
+
+.clearButton {
+  border: 1px solid color-mix(in srgb, var(--color-foreground) 11%, transparent);
+  background: transparent;
+  color: color-mix(in srgb, var(--color-foreground) 55%, transparent);
+}
+
+.clearButton:hover:not(:disabled) {
+  color: var(--color-foreground);
+}
+
+.clearButton:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.doneButton {
+  border: 1px solid color-mix(in srgb, var(--color-brand-500) 55%, transparent);
+  background: var(--color-brand-500);
+  color: #fff;
+}
+
+.doneButton:hover {
+  background: var(--color-brand-600);
+}
+
+.clearButton:active,
+.doneButton:active {
+  transform: scale(0.96);
+}
+
+@keyframes calendar-in {
+  from {
+    opacity: 0;
+    filter: blur(0.65rem);
+    transform: translate3d(0, -0.4rem, 0) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+}
+
+@keyframes calendar-out {
+  from {
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+
+  to {
+    opacity: 0;
+    filter: blur(0.4rem);
+    transform: translate3d(0, -0.2rem, 0) scale(0.99);
+  }
+}
+
+@keyframes time-menu-in {
+  from {
+    opacity: 0;
+    filter: blur(0.5rem);
+    transform: translate3d(0, 0.3rem, 0) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+}
+
+@keyframes time-menu-out {
+  from {
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+
+  to {
+    opacity: 0;
+    filter: blur(0.35rem);
+    transform: translate3d(0, 0.2rem, 0) scale(0.985);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popover,
+  .triggerChevron,
+  .dayButton,
+  .timeMenu,
+  .timeChevron,
+  .timeChevronOpen {
+    animation: none !important;
+    transition: none;
+  }
+}

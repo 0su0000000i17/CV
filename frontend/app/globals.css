@@ -1,0 +1,334 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-background: #000000;
+  --color-foreground: #ffffff;
+  --color-card: #07090d;
+  --color-border: #262626;
+  --color-muted: #262626;
+  --color-muted-foreground: #a3a3a3;
+
+  --radius-xs: 0.125rem;
+  --radius-sm: 0.1875rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.375rem;
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.625rem;
+  --radius-3xl: 0.75rem;
+  --radius-4xl: 0.875rem;
+
+  --color-brand-300: #9db4cd;
+  --color-brand-400: #7396bd;
+  --color-brand-500: #4779ad;
+  --color-brand-600: #3b699a;
+}
+
+html.light {
+  --color-background: #f4f5f7;
+  --color-foreground: #171a1f;
+  --color-card: #ffffff;
+  --color-border: #d6dae0;
+  --color-muted: #e7e9ed;
+  --color-muted-foreground: #646c77;
+  --color-white: #171a1f;
+  --color-black: #ffffff;
+  --color-brand-300: #527eaa;
+  --color-brand-400: #4779ad;
+  --color-brand-500: #3f6f9f;
+  --color-brand-600: #345f8c;
+
+  color-scheme: light;
+  background: var(--color-background);
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+html.light
+  :where(
+    [class*='bg-brand-'],
+    [class*='bg-red-'],
+    [class*='bg-emerald-'],
+    [class*='bg-blue-'],
+    [class~='bg-[#2563a9]']
+  ) {
+  --color-white: #ffffff;
+}
+
+html.light :where([class~='bg-black/45'], [class~='bg-black/55']) {
+  --color-black: #000000;
+}
+
+html[data-theme-changing='out'] body::after,
+html[data-theme-changing='in'] body::after {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483646;
+  pointer-events: none;
+  content: '';
+  background: color-mix(in srgb, var(--color-background) 10%, transparent);
+  will-change: opacity, backdrop-filter;
+}
+
+html[data-theme-changing='out'] body::after {
+  animation: theme-blur-out 160ms ease-in both;
+}
+
+html[data-theme-changing='in'] body::after {
+  animation: theme-blur-in 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes theme-blur-out {
+  from {
+    opacity: 0;
+    -webkit-backdrop-filter: blur(0);
+    backdrop-filter: blur(0);
+  }
+
+  to {
+    opacity: 0.78;
+    -webkit-backdrop-filter: blur(0.62rem) saturate(0.9);
+    backdrop-filter: blur(0.62rem) saturate(0.9);
+  }
+}
+
+@keyframes theme-blur-in {
+  from {
+    opacity: 0.78;
+    -webkit-backdrop-filter: blur(0.62rem) saturate(0.9);
+    backdrop-filter: blur(0.62rem) saturate(0.9);
+  }
+
+  to {
+    opacity: 0;
+    -webkit-backdrop-filter: blur(0);
+    backdrop-filter: blur(0);
+  }
+}
+
+@keyframes gradient-flow {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    min-width: 0;
+  }
+
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
+  html {
+    scrollbar-gutter: stable;
+  }
+
+  html {
+    background: #000000;
+  }
+
+  html.light {
+    background: #f4f5f7;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+
+  :where(
+    p,
+    span,
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    li,
+    a,
+    button,
+    label,
+    input,
+    textarea,
+    td,
+    th,
+    code,
+    pre
+  ) {
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+
+  pre {
+    white-space: pre-wrap;
+  }
+
+  a[href],
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  summary,
+  label,
+  select:not(:disabled),
+  input[type='button']:not(:disabled),
+  input[type='submit']:not(:disabled),
+  input[type='reset']:not(:disabled),
+  input[type='checkbox']:not(:disabled),
+  input[type='radio']:not(:disabled),
+  input[type='file']:not(:disabled),
+  input[type='color']:not(:disabled),
+  [tabindex]:not([tabindex='-1']):not(input):not(textarea),
+  .cursor-pointer {
+    cursor: pointer !important;
+  }
+
+  button:disabled,
+  input:disabled,
+  select:disabled,
+  textarea:disabled,
+  [disabled],
+  [aria-disabled='true'] {
+    cursor: not-allowed !important;
+  }
+
+  ::selection {
+    background-color: rgb(71 121 173 / 0.4) !important;
+    color: #ffffff !important;
+  }
+
+  ::-moz-selection {
+    background-color: rgb(71 121 173 / 0.4) !important;
+    color: #ffffff !important;
+  }
+
+  html.light ::selection {
+    background-color: rgb(63 111 159 / 0.28) !important;
+    color: #171a1f !important;
+  }
+
+  html.light ::-moz-selection {
+    background-color: rgb(63 111 159 / 0.28) !important;
+    color: #171a1f !important;
+  }
+
+  ::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    background: transparent;
+  }
+
+  * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+}
+
+.logo-plus {
+  background-image: linear-gradient(
+    90deg,
+    #0050c7,
+    #7db2ff,
+    #4c93ff,
+    #a8ccff,
+    #0064f7,
+    #0050c7
+  );
+  background-size: 300% auto;
+  animation: gradient-flow 2.6s ease-in-out infinite;
+  animation-play-state: paused;
+}
+
+.group:hover .logo-plus,
+.group:focus-visible .logo-plus {
+  animation-play-state: running;
+}
+
+/*
+ * Старые крупные произвольные радиусы не используют theme-токены Tailwind.
+ * Сводим их к той же более строгой шкале без изменения круглых бейджей,
+ * аватаров и индикаторов.
+ */
+:where([class~='rounded-[2rem]']) {
+  border-radius: var(--radius-4xl);
+}
+
+:where([class~='rounded-[1.75rem]']) {
+  border-radius: var(--radius-3xl);
+}
+
+:where([class~='rounded-[1.5rem]']) {
+  border-radius: var(--radius-3xl);
+}
+
+:where([class~='rounded-[1.35rem]']) {
+  border-radius: var(--radius-2xl);
+}
+
+:where([class~='rounded-[1.1rem]']) {
+  border-radius: var(--radius-xl);
+}
+
+main[data-route-surface] {
+  transition:
+    opacity 180ms ease,
+    filter 180ms ease,
+    transform 180ms cubic-bezier(0.4, 0, 1, 1);
+}
+
+main[data-route-surface]:has([data-dashboard-header-anchor]) {
+  padding-top: 0.875rem;
+}
+
+html[data-home-route-transition='leaving'] main[data-route-surface] {
+  pointer-events: none;
+  opacity: 0;
+  filter: blur(0.5rem);
+  transform: translate3d(0, 0.5rem, 0) scale(0.995);
+}
+
+html[data-home-route-transition='entering'] main[data-route-surface] {
+  animation: home-route-enter 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes home-route-enter {
+  from {
+    opacity: 0;
+    filter: blur(0.65rem);
+    transform: translate3d(0, 0.75rem, 0) scale(0.995);
+  }
+
+  to {
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme-changing='out'] body::after,
+  html[data-theme-changing='in'] body::after {
+    display: none;
+  }
+
+  .logo-plus {
+    animation: none;
+  }
+
+  main[data-route-surface] {
+    transition: none;
+  }
+
+  html[data-home-route-transition='entering'] main[data-route-surface] {
+    animation: none;
+  }
+}

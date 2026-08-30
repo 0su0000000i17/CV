@@ -1,0 +1,259 @@
+.page {
+  position: relative;
+}
+
+.workspace {
+  display: grid;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.rail {
+  align-self: start;
+  padding: 0.75rem;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 0.625rem;
+  background: rgb(255 255 255 / 0.018);
+}
+
+.identity {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.65rem 0.7rem 1rem;
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+}
+
+.avatar {
+  display: grid;
+  flex: 0 0 auto;
+  width: 2.4rem;
+  height: 2.4rem;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 0.13);
+  border-radius: 0.5rem;
+  background: rgb(255 255 255 / 0.045);
+  color: rgb(255 255 255 / 0.78);
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+}
+
+.identityName,
+.identityEmail,
+.sectionLabel,
+.sectionDescription {
+  display: block;
+}
+
+.identityName {
+  overflow: hidden;
+  color: rgb(255 255 255 / 0.88);
+  font-size: 0.84rem;
+  font-weight: 550;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.identityEmail {
+  overflow: hidden;
+  margin-top: 0.15rem;
+  color: rgb(255 255 255 / 0.35);
+  font-size: 0.7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sectionNav {
+  display: flex;
+  gap: 0.4rem;
+  padding-top: 0.65rem;
+  overflow-x: auto;
+}
+
+.sectionButton {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.65rem;
+  align-items: center;
+  min-width: 10rem;
+  padding: 0.65rem 0.7rem;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  color: rgb(255 255 255 / 0.45);
+  text-align: left;
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.sectionButton:hover {
+  color: rgb(255 255 255 / 0.72);
+  background: rgb(255 255 255 / 0.025);
+}
+
+.sectionButton[data-active] {
+  border-color: rgb(255 255 255 / 0.12);
+  color: rgb(255 255 255 / 0.92);
+  background: rgb(255 255 255 / 0.055);
+}
+
+.sectionIcon {
+  display: grid;
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: 0.375rem;
+  background: rgb(255 255 255 / 0.035);
+}
+
+.sectionLabel {
+  font-size: 0.78rem;
+  font-weight: 550;
+}
+
+.sectionDescription {
+  margin-top: 0.14rem;
+  color: rgb(255 255 255 / 0.3);
+  font-size: 0.66rem;
+}
+
+.railNote {
+  display: none;
+  margin: 0.8rem 0.7rem 0.2rem;
+  color: rgb(255 255 255 / 0.28);
+  font-size: 0.68rem;
+  line-height: 1.55;
+}
+
+.content {
+  min-width: 0;
+}
+
+.contentHeader {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  padding: 0.15rem 0.1rem 0.9rem;
+}
+
+.contentIcon {
+  display: grid;
+  flex: 0 0 auto;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 0.5rem;
+  background: rgb(255 255 255 / 0.025);
+  color: rgb(255 255 255 / 0.55);
+}
+
+.contentTitle {
+  color: rgb(255 255 255 / 0.92);
+  font-size: 1.05rem;
+  font-weight: 560;
+  letter-spacing: -0.018em;
+}
+
+.contentDescription {
+  max-width: 34rem;
+  margin-top: 0.25rem;
+  color: rgb(255 255 255 / 0.38);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.sectionStage {
+  animation: settings-section-enter 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+:global(html.light) .rail {
+  border-color: rgb(23 26 31 / 0.12);
+  background: rgb(255 255 255 / 0.68);
+}
+
+:global(html.light) .identity {
+  border-color: rgb(23 26 31 / 0.09);
+}
+
+:global(html.light) .avatar,
+:global(html.light) .contentIcon {
+  color: rgb(23 26 31 / 0.62);
+  border-color: rgb(23 26 31 / 0.12);
+  background: rgb(23 26 31 / 0.035);
+}
+
+:global(html.light) .identityName,
+:global(html.light) .sectionButton[data-active],
+:global(html.light) .contentTitle {
+  color: rgb(23 26 31 / 0.92);
+}
+
+:global(html.light) .identityEmail,
+:global(html.light) .sectionDescription,
+:global(html.light) .railNote,
+:global(html.light) .contentDescription {
+  color: rgb(23 26 31 / 0.42);
+}
+
+:global(html.light) .sectionButton {
+  color: rgb(23 26 31 / 0.52);
+}
+
+:global(html.light) .sectionButton:hover {
+  color: rgb(23 26 31 / 0.76);
+  background: rgb(23 26 31 / 0.03);
+}
+
+:global(html.light) .sectionButton[data-active] {
+  border-color: rgb(23 26 31 / 0.13);
+  background: rgb(23 26 31 / 0.055);
+}
+
+:global(html.light) .sectionIcon {
+  background: rgb(23 26 31 / 0.04);
+}
+
+@keyframes settings-section-enter {
+  from {
+    opacity: 0;
+    filter: blur(0.4rem);
+    transform: translate3d(0, 0.35rem, 0);
+  }
+}
+
+@media (min-width: 1024px) {
+  .workspace {
+    grid-template-columns: 14rem minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .rail {
+    position: sticky;
+    top: 6rem;
+  }
+
+  .sectionNav {
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .sectionButton {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .railNote {
+    display: block;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sectionStage {
+    animation: none;
+  }
+}

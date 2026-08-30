@@ -1,0 +1,21 @@
+.art {
+  --feature-art-halo: rgb(255 255 255 / 0.07);
+  --feature-art-surface: #080808;
+  --feature-art-surface-raised: #101010;
+  --feature-art-stroke: #383838;
+  --feature-art-stroke-soft: #555555;
+  --feature-art-line: #d4d4d4;
+  --feature-art-line-muted: #666666;
+  --feature-art-line-bright: #f0f0f0;
+}
+
+:global(html.light) .art {
+  --feature-art-halo: rgb(63 111 159 / 0.075);
+  --feature-art-surface: transparent;
+  --feature-art-surface-raised: rgb(23 26 31 / 0.025);
+  --feature-art-stroke: rgb(23 26 31 / 0.2);
+  --feature-art-stroke-soft: rgb(23 26 31 / 0.3);
+  --feature-art-line: rgb(23 26 31 / 0.68);
+  --feature-art-line-muted: rgb(23 26 31 / 0.34);
+  --feature-art-line-bright: rgb(23 26 31 / 0.82);
+}

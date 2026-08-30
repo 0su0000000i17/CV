@@ -1,0 +1,57 @@
+.dashboardPage {
+  position: relative;
+}
+
+.dashboardPage > * {
+  animation: dashboard-section-enter 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.dashboardPage > :nth-child(2) {
+  animation-delay: 90ms;
+}
+
+.dashboardPage > :nth-child(3) {
+  animation-delay: 160ms;
+}
+
+.heroSurface {
+  position: relative;
+}
+
+.heroSurface::before {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: '';
+  background: radial-gradient(
+    circle at 12% 0%,
+    rgb(255 255 255 / 0.055),
+    transparent 34%
+  );
+}
+
+:global(html.light) .heroSurface::before {
+  background: radial-gradient(
+    circle at 12% 0%,
+    rgb(23 26 31 / 0.045),
+    transparent 34%
+  );
+}
+
+@keyframes dashboard-section-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 0.75rem, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboardPage > * {
+    animation: none;
+  }
+}

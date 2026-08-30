@@ -1,0 +1,29 @@
+node_modules
+**/node_modules
+.DS_Store
+
+.next
+dist
+build
+
+.env
+.env.local
+.env.*
+
+# Local AI/editor metadata. Keep project-specific notes on the workstation,
+# not in the public repository.
+.claude/
+.serena/
+**/AGENTS.md
+**/CLAUDE.md
+**/MASTER_CONTEXT.md
+
+# One-off review artifacts.
+*.diff
+*.patch
+codex_status.txt
+
+backend/.venv/
+backend/tmp/
+/artifacts/
+/tmp/pdfs/

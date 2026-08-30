@@ -1,0 +1,29 @@
+.analyzePage {
+  position: relative;
+}
+
+.analyzePage > * {
+  animation: analyze-section-enter 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.analyzePage > :nth-child(2) {
+  animation-delay: 100ms;
+}
+
+@keyframes analyze-section-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 0.75rem, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .analyzePage > * {
+    animation: none;
+  }
+}

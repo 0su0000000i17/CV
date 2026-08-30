@@ -1,0 +1,90 @@
+.loading {
+  display: flex;
+  min-height: min(62vh, 38rem);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: rgb(255 255 255 / 0.42);
+  animation: loading-enter 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.mark {
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  border-top-color: rgb(255 255 255 / 0.72);
+  border-radius: 999px;
+  animation: loading-spin 1.4s linear infinite;
+}
+
+.loading p {
+  margin-top: 1.15rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+}
+
+.track {
+  width: 8.5rem;
+  height: 0.125rem;
+  margin-top: 0.8rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.07);
+}
+
+.track span {
+  display: block;
+  width: 38%;
+  height: 100%;
+  border-radius: inherit;
+  background: rgb(255 255 255 / 0.65);
+  animation: loading-progress 1.6s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+:global(html.light) .loading {
+  color: rgb(23 26 31 / 0.45);
+}
+
+:global(html.light) .mark {
+  border-color: rgb(23 26 31 / 0.14);
+  border-top-color: rgb(23 26 31 / 0.7);
+}
+
+:global(html.light) .track {
+  background: rgb(23 26 31 / 0.08);
+}
+
+:global(html.light) .track span {
+  background: rgb(23 26 31 / 0.64);
+}
+
+@keyframes loading-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 0.35rem, 0);
+  }
+}
+
+@keyframes loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes loading-progress {
+  from {
+    transform: translate3d(-120%, 0, 0);
+  }
+
+  to {
+    transform: translate3d(340%, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading,
+  .mark,
+  .track span {
+    animation: none;
+  }
+}

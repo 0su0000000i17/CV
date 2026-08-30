@@ -1,0 +1,34 @@
+import {
+  createAnalyzeResumeUserPrompt,
+  type PreviousResumeAssessment,
+} from "../../prompts/analyze-resume-prompt.js";
+
+export function createStrictRetryPrompt(
+  resumeMarkdown: string,
+  previousError: string,
+  previousAssessment?: PreviousResumeAssessment
+) {
+  return `
+Предыдущий ответ был отклонён backend-парсером.
+
+Причина:
+${previousError}
+
+Верни анализ заново.
+
+ЖЁСТКИЕ ПРАВИЛА:
+- Ответ должен быть только одним валидным JSON-объектом.
+- Не используй markdown.
+- Не используй \`\`\`json.
+- Не добавляй текст до или после JSON.
+- Все ключи должны быть в двойных кавычках.
+- Все строковые значения должны быть в двойных кавычках.
+- Если внутри строки нужны кавычки, экранируй их.
+- Не используй trailing comma.
+- Не ставь финальный score.
+- Не используй контактные данные кандидата в ответе.
+- Строго соблюдай schema из system prompt.
+
+${createAnalyzeResumeUserPrompt(resumeMarkdown, previousAssessment)}
+`.trim();
+}

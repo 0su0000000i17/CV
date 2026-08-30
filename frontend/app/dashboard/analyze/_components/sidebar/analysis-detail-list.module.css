@@ -1,0 +1,27 @@
+.detailReveal {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transform: translate3d(0, -0.35rem, 0);
+  transition:
+    grid-template-rows 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 240ms ease,
+    transform 360ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.detailReveal > div {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.detailRevealOpen {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .detailReveal {
+    transition: none;
+  }
+}

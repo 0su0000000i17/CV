@@ -1,0 +1,70 @@
+.logo {
+  display: inline-flex;
+  height: 2rem;
+  align-items: center;
+  gap: 0.48rem;
+  white-space: nowrap;
+}
+
+.mark {
+  width: 1.55rem;
+  height: 1.55rem;
+  flex: 0 0 auto;
+  color: color-mix(in srgb, var(--color-foreground) 82%, var(--color-brand-400));
+  filter: drop-shadow(0 0 0.65rem color-mix(in srgb, var(--color-brand-500) 18%, transparent));
+}
+
+.petalOffset {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.petalSpin {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.markPetal {
+  fill: currentColor;
+}
+
+.markPetalAccent {
+  fill: var(--color-brand-400);
+}
+
+:global(html.light) .markPetal {
+  fill: #7bb2d4;
+}
+
+:global(html.light) .markPetalAccent {
+  fill: #7bb2d4;
+}
+
+.logo:hover .petalOffset {
+  transform: translateY(-3.4px);
+}
+
+.logo:hover .petalSpin {
+  transform: rotate(14deg) scale(1.12);
+}
+
+.wordmark {
+  color: color-mix(in srgb, var(--color-foreground) 88%, transparent);
+  font-size: 0.94rem;
+  font-weight: 620;
+  letter-spacing: -0.045em;
+  line-height: 1;
+}
+
+.wordmark span {
+  color: var(--color-brand-400);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .petalOffset,
+  .petalSpin {
+    transition: none;
+  }
+}

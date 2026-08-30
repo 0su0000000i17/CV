@@ -1,0 +1,144 @@
+.headerEnter {
+  transform-origin: 50% 0%;
+  animation: header-enter 900ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+.headerMotion {
+  pointer-events: auto;
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  transition:
+    transform 240ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 160ms ease,
+    filter 180ms ease;
+}
+
+.headerHidden {
+  pointer-events: none;
+  opacity: 0;
+  filter: blur(0.45rem);
+  transform: translate3d(0, calc(-100% - 1.25rem), 0);
+  transition-duration: 180ms;
+}
+
+.headerGlass {
+  position: relative;
+  -webkit-backdrop-filter: blur(18px) saturate(1.5);
+  backdrop-filter: blur(18px) saturate(1.5);
+}
+
+.headerShell {
+  max-width: 48rem;
+  transform: translate3d(0, 0, 0);
+  transition:
+    max-width 560ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 560ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: 0ms;
+}
+
+.headerShellExpanded {
+  max-width: 64rem;
+}
+
+.headerCenterNav {
+  max-width: 32rem;
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: 1;
+  filter: blur(0);
+  transform: translate3d(0, 0, 0);
+  transition:
+    max-width 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    padding 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 220ms ease,
+    filter 320ms ease,
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: 60ms;
+}
+
+.headerCenterNavDashboard {
+  max-width: 12rem;
+  animation: dashboard-nav-enter 360ms 90ms cubic-bezier(0.22, 1, 0.36, 1)
+    both;
+}
+
+:global(html[data-home-route-transition='leaving']) .headerCenterNav,
+:global(html[data-home-route-transition='entering']) .headerCenterNav {
+  pointer-events: none;
+  opacity: 0;
+  filter: blur(0.45rem);
+  transform: translate3d(0, -0.3rem, 0);
+  transition-delay: 0ms;
+}
+
+@keyframes header-enter {
+  from {
+    opacity: 0;
+    filter: blur(0.7rem);
+    transform: translate3d(0, calc(-100% - 1.25rem), 0) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+}
+
+@keyframes dashboard-nav-enter {
+  from {
+    opacity: 0;
+    filter: blur(0.5rem);
+    transform: translate3d(0, -0.4rem, 0);
+  }
+
+  to {
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+}
+
+@media (min-width: 64rem) and (max-width: 79.999rem) {
+  .headerShellDashboard {
+    --dashboard-main-edge: max(2.5rem, calc(50vw - 41.25rem));
+
+    max-width: calc(
+      100vw - var(--dashboard-main-edge) - var(--dashboard-main-edge) - 16.5rem
+    );
+    transform: translate3d(8.25rem, 0, 0);
+  }
+}
+
+@media (min-width: 80rem) {
+  .headerShellDashboard {
+    --dashboard-main-edge: max(3rem, calc(50vw - 40.75rem));
+
+    max-width: calc(
+      100vw - var(--dashboard-main-edge) - var(--dashboard-main-edge) - 19.5rem
+    );
+    transform: translate3d(9.75rem, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .headerEnter {
+    animation: none;
+  }
+
+  .headerShell {
+    transition: none;
+  }
+
+  .headerMotion {
+    transition: none;
+  }
+
+  .headerCenterNav {
+    transition: none;
+  }
+
+  .headerCenterNavDashboard {
+    animation: none;
+  }
+}

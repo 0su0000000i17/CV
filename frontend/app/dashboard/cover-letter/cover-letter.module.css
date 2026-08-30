@@ -1,0 +1,23 @@
+.page {
+  position: relative;
+}
+
+.workspace,
+.result {
+  animation: cover-state-enter 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes cover-state-enter {
+  from {
+    opacity: 0;
+    filter: blur(0.4rem);
+    transform: translate3d(0, 0.5rem, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace,
+  .result {
+    animation: none;
+  }
+}

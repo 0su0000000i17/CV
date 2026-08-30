@@ -1,0 +1,37 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "test": "tsx --test \"src/**/*.test.ts\"",
+    "test:ai-pipeline": "tsx --test src/ai/services/resume-analysis-comparison.test.ts src/resume-improvement/*.test.ts src/resume-improvement/clarifying-questions/*.test.ts src/resume-adaptation/*.test.ts src/resume-adaptation/adaptation-questions/*.test.ts src/resume-adaptation/adaptation-generation/*.test.ts",
+    "audit:hh-resumes": "tsx src/scripts/audit-hh-resumes.ts",
+    "backfill:resume-json": "tsx src/scripts/backfill-resume-json.ts",
+    "cleanup:resume-files": "tsx src/scripts/cleanup-legacy-resume-files.ts"
+  },
+  "dependencies": {
+    "@openfonts/arimo_all": "^1.44.2",
+    "@openfonts/pt-sans_all": "^1.44.2",
+    "@supabase/supabase-js": "^2.108.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.5.2",
+    "helmet": "^8.3.0",
+    "ipaddr.js": "^2.4.0",
+    "multer": "^2.2.0",
+    "pdfkit": "^0.17.2",
+    "playwright": "^1.61.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/multer": "^2.1.0",
+    "@types/node": "^24.6.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.3"
+  }
+}
